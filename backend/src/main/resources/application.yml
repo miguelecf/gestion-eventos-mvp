@@ -69,7 +69,6 @@ springdoc:
     path: /swagger-ui
     operations-sorter: method
     tags-sorter: alpha
-<<<<<<< HEAD
 
 app:
   cors:
@@ -78,5 +77,3 @@ app:
     from: ${MAIL_FROM:noreply@gestion-eventos.local}
     mock-mode: ${MAIL_MOCK_MODE:true}
     fail-on-error: ${MAIL_FAIL_ON_ERROR:true}
-=======
->>>>>>> 4d3e962 (fix application.yml)
