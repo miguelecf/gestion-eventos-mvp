@@ -9,6 +9,7 @@ import com.mvp.backend.feature.tech.dto.TechEventResponse;
 import com.mvp.backend.feature.tech.model.TechCapacityConfig;
 import com.mvp.backend.feature.tech.repository.TechCapacityConfigRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,12 @@ public class TechCapacityService {
     private final TechCapacityConfigRepository configRepository;
     private final EventRepository eventRepository;
 
+    /**
+     * Verifica cupo técnico. Bloquea la configuración activa (FOR UPDATE) dentro de la transacción
+     * del llamador, de modo que dos operaciones concurrentes no puedan leer el mismo uso y superar
+     * la capacidad (hallazgo 5.2). El lock se libera al commit/rollback del llamador.
+     */
+    @Transactional
     public boolean hasCapacity(LocalDate date,
                                LocalTime from,
                                LocalTime to,
@@ -37,7 +44,7 @@ public class TechCapacityService {
         if (date == null || from == null || to == null) {
             return true;
         }
-        TechCapacityConfig config = getActiveConfig();
+        TechCapacityConfig config = lockActiveConfig();
         Map<LocalTime, Integer> usage = buildUsage(date, ignoreEventId, config);
         List<LocalTime> requiredBlocks = computeBlocks(date, from, to, bufferBefore, bufferAfter, mode, config.getBlockMinutes());
         int capacity = config.getDefaultSlotsPerBlock();
@@ -154,6 +161,12 @@ public class TechCapacityService {
             }
             cursor = blockEnd;
         }
+    }
+
+    private TechCapacityConfig lockActiveConfig() {
+        return configRepository.findActiveForUpdate(PageRequest.of(0, 1)).stream()
+                .findFirst()
+                .orElseGet(this::getActiveConfig);
     }
 
     private TechCapacityConfig getActiveConfig() {

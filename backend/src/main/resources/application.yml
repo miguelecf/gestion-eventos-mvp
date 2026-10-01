@@ -4,6 +4,12 @@ spring:
   profiles:
     default: local
 
+  # READ_COMMITTED: tras esperar el lock de capacidad técnica (5.2), cada consulta ve lo último
+  # confirmado. Con el REPEATABLE_READ por defecto de InnoDB se seguiría leyendo una foto vieja.
+  datasource:
+    hikari:
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+
   security:
     user:
       name: admin
