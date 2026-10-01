@@ -13,9 +13,6 @@ public record PriorityConflictDecisionRequest(
         @NotBlank
         String conflictId,
         @NotNull
-        @Positive
-        Long deciderUserId,
-        @NotNull
         PriorityConflictDecision decision,
         Target target,
         String reason

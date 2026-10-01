@@ -18,7 +18,7 @@ import com.mvp.backend.feature.priority.repository.PriorityConflictRepository;
 import com.mvp.backend.feature.tech.exception.TechCapacityExceededException;
 import com.mvp.backend.feature.tech.service.TechCapacityService;
 import com.mvp.backend.feature.users.model.User;
-import com.mvp.backend.feature.users.service.UserService;
+import com.mvp.backend.feature.auth.security.CurrentUserService;
 import com.mvp.backend.shared.DomainValidationException;
 import com.mvp.backend.feature.notifications.event.PriorityConflictEvent;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +50,7 @@ public class PriorityConflictService {
     private final PriorityConflictRepository repository;
     private final EventRepository eventRepository;
     private final SpaceRepository spaceRepository;
-    private final UserService userService;
+    private final CurrentUserService currentUserService;
     private final AuditService auditService;
     private final AvailabilityService availabilityService;
     private final TechCapacityService techCapacityService;
@@ -137,7 +137,8 @@ public class PriorityConflictService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "CONFLICT_ALREADY_CLOSED");
         }
 
-        User decider = userService.getById(request.deciderUserId());
+        // El decisor es siempre el usuario autenticado (hallazgo 1.7); nunca se acepta desde el cliente.
+        User decider = currentUserService.get();
 
         Event displaced = conflict.getDisplacedEvent();
         if (displaced == null) {
