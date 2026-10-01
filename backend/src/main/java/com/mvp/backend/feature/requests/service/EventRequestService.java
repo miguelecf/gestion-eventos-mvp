@@ -22,6 +22,7 @@ import com.mvp.backend.feature.requests.dto.CreateEventRequestDto;
 import com.mvp.backend.feature.requests.dto.EventRequestCreatedDto;
 import com.mvp.backend.feature.requests.dto.EventRequestResponseDto;
 import com.mvp.backend.feature.requests.dto.TrackingResponse;
+import com.mvp.backend.feature.requests.dto.RequestHistoryEntryDto;
 import com.mvp.backend.feature.requests.dto.ConvertRequestToEventDto;
 import com.mvp.backend.feature.events.model.TechSupportMode;
 import com.mvp.backend.feature.tech.service.TechCapacityService;
@@ -179,6 +180,7 @@ public class EventRequestService {
         return new TrackingResponse(
                 request.getTrackingUuid(),
                 request.getName(),
+                rejectionReason(request, requestStatus),
                 requestData,
                 eventData,
                 scheduleData,
@@ -234,6 +236,18 @@ public class EventRequestService {
 
         entries.sort(Comparator.comparing(TimelineEntry::at));
         return List.copyOf(entries);
+    }
+
+    /** Motivo de rechazo de la solicitud, redactado para el solicitante. */
+    private String rejectionReason(EventRequest request, RequestStatus status) {
+        if (status != RequestStatus.RECHAZADO) {
+            return null;
+        }
+        return eventRequestHistoryRepository.findByRequestIdOrderByAtAsc(request.getId()).stream()
+                .filter(h -> RequestStatus.RECHAZADO.name().equals(h.getToValue()) && h.getReason() != null)
+                .reduce((first, second) -> second)
+                .map(EventRequestHistory::getReason)
+                .orElse(null);
     }
 
     private Type toPublicType(HistoryType type) {
@@ -296,6 +310,21 @@ public class EventRequestService {
 
     /* ---------- Admin ---------- */
 
+    /** Historial completo de una solicitud con actor y motivo (hallazgos 4.1 / 4.2). */
+    @Transactional(readOnly = true)
+    public List<RequestHistoryEntryDto> getAdminHistory(Long id) {
+        if (!eventRequestRepository.existsById(id)) {
+            throw new EntityNotFoundException("EventRequest not found with id: " + id);
+        }
+        return eventRequestHistoryRepository.findByRequestIdOrderByAtAsc(id).stream()
+                .map(h -> new RequestHistoryEntryDto(
+                        h.getId(), h.getAt(), h.getType(), h.getFromValue(), h.getToValue(), h.getReason(),
+                        h.getActor() == null ? null : new RequestHistoryEntryDto.ActorRef(
+                                h.getActor().getId(), h.getActor().getUsername(),
+                                h.getActor().getName(), h.getActor().getLastName())))
+                .toList();
+    }
+
     /** Bandeja administrativa: todas las solicitudes activas (cualquier estado), más recientes primero. */
     @Transactional(readOnly = true)
     public List<EventRequestResponseDto> listAdmin(List<RequestStatus> statuses) {
@@ -332,17 +361,18 @@ public class EventRequestService {
 
         validateStatusTransition(current, newStatus);
 
-        String fromValue = current.name();
-
-        if (newStatus == RequestStatus.EN_REVISION) {
-            User actor = getCurrentUser();
-            request.setReviewedAt(Instant.now());
-            request.setReviewedBy(actor.getUsername());
+        // Rechazar exige motivo; se guarda en el historial (no pisa las observaciones del solicitante).
+        String reason = trimToNull(dto.reason());
+        if (newStatus == RequestStatus.RECHAZADO && reason == null) {
+            throw new DomainValidationException("Debe indicar el motivo del rechazo");
         }
 
-        if (newStatus == RequestStatus.RECHAZADO
-                && dto.reason() != null && !dto.reason().isBlank()) {
-            request.setObservations(dto.reason().trim());
+        String fromValue = current.name();
+        User actor = getCurrentUser();
+
+        if (newStatus == RequestStatus.EN_REVISION) {
+            request.setReviewedAt(Instant.now());
+            request.setReviewedBy(actor.getUsername());
         }
 
         request.setStatus(newStatus);
@@ -352,8 +382,10 @@ public class EventRequestService {
                 .request(saved)
                 .at(Instant.now())
                 .type(HistoryType.STATUS)
+                .actor(actor)
                 .fromValue(fromValue)
                 .toValue(saved.getStatus().name())
+                .reason(newStatus == RequestStatus.RECHAZADO ? reason : null)
                 .build());
 
         return EventRequestMapper.toDto(saved);
@@ -483,6 +515,7 @@ public class EventRequestService {
                 .request(savedRequest)
                 .at(now)
                 .type(HistoryType.STATUS)
+                .actor(actor)
                 .fromValue(fromStatus)
                 .toValue(RequestStatus.CONVERTIDO.name())
                 .build());

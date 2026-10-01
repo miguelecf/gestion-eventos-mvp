@@ -4,6 +4,7 @@ import com.mvp.backend.feature.requests.dto.ConvertRequestToEventDto;
 import com.mvp.backend.feature.events.dto.EventResponseDto;
 import com.mvp.backend.feature.requests.dto.ChangeRequestStatusDto;
 import com.mvp.backend.feature.requests.dto.EventRequestResponseDto;
+import com.mvp.backend.feature.requests.dto.RequestHistoryEntryDto;
 import com.mvp.backend.feature.requests.model.RequestStatus;
 import com.mvp.backend.feature.requests.service.EventRequestService;
 
@@ -41,6 +42,12 @@ public class AdminEventRequestController {
      * Mueve la solicitud entre estados: RECIBIDO↔EN_REVISION, cualquiera→RECHAZADO.
      * La conversión a CONVERTIDO se resuelve en /convert-to-event.
      */
+    /** Historial de la solicitud con actor y motivo de cada decisión. */
+    @GetMapping("/{id}/history")
+    public List<RequestHistoryEntryDto> history(@PathVariable Long id) {
+        return eventRequestService.getAdminHistory(id);
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<EventRequestResponseDto> changeStatus(
             @PathVariable Long id,

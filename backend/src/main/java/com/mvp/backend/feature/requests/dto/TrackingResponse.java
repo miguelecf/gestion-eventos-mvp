@@ -16,6 +16,8 @@ import java.util.List;
 public record TrackingResponse(
         String trackingUuid,
         String name,
+        /** Motivo informado al rechazar la solicitud (sólo si está RECHAZADA). */
+        String rejectionReason,
         RequestData request,
         EventData event,
         ScheduleData schedule,
