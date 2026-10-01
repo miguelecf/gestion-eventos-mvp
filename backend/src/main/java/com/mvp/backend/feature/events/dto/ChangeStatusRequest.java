@@ -9,7 +9,5 @@ public record ChangeStatusRequest(
         String reason,
         String note,
         Boolean ceremonialOk,
-        Boolean technicalOk,
-        Long expectedVersion,
-        String clientMutationId
+        Boolean technicalOk
 ) { }
