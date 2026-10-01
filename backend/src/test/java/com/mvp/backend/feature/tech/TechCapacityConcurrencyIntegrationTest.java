@@ -21,9 +21,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Hallazgo 5.2: dos reservas concurrentes no pueden superar la capacidad técnica configurada. */
+/** Hallazgos 5.2 (concurrencia) y 3.8 (buffers que cruzan medianoche) sobre capacidad técnica. */
 class TechCapacityConcurrencyIntegrationTest extends IntegrationTestBase {
 
     @Autowired TechCapacityConfigRepository configRepository;
@@ -78,5 +81,34 @@ class TechCapacityConcurrencyIntegrationTest extends IntegrationTestBase {
                 .filter(e -> e.getStatus() == Status.RESERVADO).count();
         assertThat(reserved).as("estados HTTP %s", statuses).isEqualTo(1);
         assertThat(statuses).contains(409);
+    }
+
+    /** Hallazgo 3.8: el desmontaje técnico que cruza medianoche consume cupo del día siguiente. */
+    @Test
+    void bufferTecnicoQueCruzaMedianocheConsumeCupoDelDiaSiguiente() throws Exception {
+        config = configRepository.save(TechCapacityConfig.builder()
+                .active(true).blockMinutes(30).defaultSlotsPerBlock(1).timezone("UTC").build());
+
+        Event late = techEvent();
+        late.setStatus(Status.RESERVADO);
+        late.setScheduleFrom(java.time.LocalTime.of(23, 0));
+        late.setScheduleTo(java.time.LocalTime.of(23, 45));
+        late.setBufferAfterMin(60); // ocupa hasta las 00:45 del día siguiente
+        eventRepository.save(late);
+
+        Event early = techEvent();
+        early.setDate(late.getDate().plusDays(1));
+        early.setScheduleFrom(java.time.LocalTime.of(0, 0));
+        early.setScheduleTo(java.time.LocalTime.of(0, 30));
+        eventRepository.save(early);
+
+        mockMvc.perform(as(Role.ADMIN_FULL, json(post("/api/events/{id}/status", early.getId()), java.util.Map.of("to", "RESERVADO"))))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(as(Role.ADMIN_FULL, get("/api/tech/capacity").param("date", early.getDate().toString())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.blocks[0].from").value("00:00"))
+                .andExpect(jsonPath("$.blocks[0].used").value(1))
+                .andExpect(jsonPath("$.blocks[2].used").value(0)); // 01:00 ya libre
     }
 }

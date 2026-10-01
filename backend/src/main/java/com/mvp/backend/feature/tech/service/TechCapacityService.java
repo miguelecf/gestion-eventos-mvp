@@ -45,10 +45,10 @@ public class TechCapacityService {
             return true;
         }
         TechCapacityConfig config = lockActiveConfig();
-        Map<LocalTime, Integer> usage = buildUsage(date, ignoreEventId, config);
-        List<LocalTime> requiredBlocks = computeBlocks(date, from, to, bufferBefore, bufferAfter, mode, config.getBlockMinutes());
+        Map<LocalDateTime, Integer> usage = buildUsage(date, ignoreEventId, config);
+        List<LocalDateTime> requiredBlocks = computeBlocks(date, from, to, bufferBefore, bufferAfter, mode, config.getBlockMinutes());
         int capacity = config.getDefaultSlotsPerBlock();
-        for (LocalTime block : requiredBlocks) {
+        for (LocalDateTime block : requiredBlocks) {
             int used = usage.getOrDefault(block, 0);
             if (used + 1 > capacity) {
                 return false;
@@ -59,14 +59,14 @@ public class TechCapacityService {
 
     public TechCapacityResponse getCapacity(LocalDate date) {
         TechCapacityConfig config = getActiveConfig();
-        Map<LocalTime, Integer> usage = buildUsage(date, null, config);
+        Map<LocalDateTime, Integer> usage = buildUsage(date, null, config);
         List<TechCapacityResponse.Block> blocks = new ArrayList<>();
         LocalDateTime cursor = date.atStartOfDay();
         LocalDateTime dayEnd = cursor.plusDays(1);
         while (cursor.isBefore(dayEnd)) {
             LocalTime start = cursor.toLocalTime();
             LocalTime end = cursor.plusMinutes(config.getBlockMinutes()).toLocalTime();
-            int used = usage.getOrDefault(start, 0);
+            int used = usage.getOrDefault(cursor, 0);
             int available = Math.max(config.getDefaultSlotsPerBlock() - used, 0);
             blocks.add(new TechCapacityResponse.Block(start, end, used, available));
             cursor = cursor.plusMinutes(config.getBlockMinutes());
@@ -91,26 +91,31 @@ public class TechCapacityService {
                 .toList();
     }
 
-    private Map<LocalTime, Integer> buildUsage(LocalDate date, Long ignoreEventId, TechCapacityConfig config) {
-        List<Event> events = eventRepository.findTechEventsForDate(date, BLOCKING_STATUSES, ignoreEventId);
-        Map<LocalTime, Integer> usage = new HashMap<>();
+    /**
+     * Uso por bloque (fecha+hora). Incluye eventos del día anterior y siguiente: sus buffers
+     * pueden cruzar medianoche y consumir bloques de {@code date} (hallazgo 3.8).
+     */
+    private Map<LocalDateTime, Integer> buildUsage(LocalDate date, Long ignoreEventId, TechCapacityConfig config) {
+        List<Event> events = eventRepository.findTechEventsBetween(date.minusDays(1), date.plusDays(1),
+                BLOCKING_STATUSES, ignoreEventId);
+        Map<LocalDateTime, Integer> usage = new HashMap<>();
         for (Event event : events) {
             TechSupportMode mode = event.getTechSupportMode() != null ? event.getTechSupportMode() : TechSupportMode.SETUP_ONLY;
-            List<LocalTime> blocks = computeBlocks(date,
+            List<LocalDateTime> blocks = computeBlocks(event.getDate(),
                     event.getScheduleFrom(),
                     event.getScheduleTo(),
                     event.getBufferBeforeMin(),
                     event.getBufferAfterMin(),
                     mode,
                     config.getBlockMinutes());
-            for (LocalTime block : blocks) {
+            for (LocalDateTime block : blocks) {
                 usage.merge(block, 1, Integer::sum);
             }
         }
         return usage;
     }
 
-    private List<LocalTime> computeBlocks(LocalDate date,
+    private List<LocalDateTime> computeBlocks(LocalDate date,
                                           LocalTime from,
                                           LocalTime to,
                                           int bufferBefore,
@@ -121,45 +126,40 @@ public class TechCapacityService {
             return List.of();
         }
         mode = mode != null ? mode : TechSupportMode.SETUP_ONLY;
-        Set<LocalTime> blocks = new LinkedHashSet<>();
+        Set<LocalDateTime> blocks = new LinkedHashSet<>();
         if (mode == TechSupportMode.ATTENDED) {
             LocalDateTime start = date.atTime(from).minusMinutes(bufferBefore);
             LocalDateTime end = date.atTime(to).plusMinutes(bufferAfter);
-            collectBlocks(date, start, end, blockMinutes, blocks);
+            collectBlocks(start, end, blockMinutes, blocks);
         } else {
             if (bufferBefore > 0) {
                 LocalDateTime start = date.atTime(from).minusMinutes(bufferBefore);
                 LocalDateTime end = date.atTime(from);
-                collectBlocks(date, start, end, blockMinutes, blocks);
+                collectBlocks(start, end, blockMinutes, blocks);
             }
             if (bufferAfter > 0) {
                 LocalDateTime start = date.atTime(to);
                 LocalDateTime end = date.atTime(to).plusMinutes(bufferAfter);
-                collectBlocks(date, start, end, blockMinutes, blocks);
+                collectBlocks(start, end, blockMinutes, blocks);
             }
         }
         return new ArrayList<>(blocks);
     }
 
-    private void collectBlocks(LocalDate date,
-                               LocalDateTime rangeStart,
+    /** Bloques de la grilla (alineados a blockMinutes desde las 00:00) que intersectan el rango, sin recortar al día. */
+    private void collectBlocks(LocalDateTime rangeStart,
                                LocalDateTime rangeEnd,
                                int blockMinutes,
-                               Set<LocalTime> accumulator) {
-        LocalDateTime dayStart = date.atStartOfDay();
-        LocalDateTime dayEnd = dayStart.plusDays(1);
-        LocalDateTime start = rangeStart.isBefore(dayStart) ? dayStart : rangeStart;
-        LocalDateTime end = rangeEnd.isAfter(dayEnd) ? dayEnd : rangeEnd;
-        if (!end.isAfter(start)) {
+                               Set<LocalDateTime> accumulator) {
+        if (!rangeEnd.isAfter(rangeStart)) {
             return;
         }
-        LocalDateTime cursor = dayStart;
-        while (cursor.isBefore(dayEnd)) {
-            LocalDateTime blockEnd = cursor.plusMinutes(blockMinutes);
-            if (cursor.isBefore(end) && blockEnd.isAfter(start)) {
-                accumulator.add(cursor.toLocalTime());
-            }
-            cursor = blockEnd;
+        int minuteOfDay = rangeStart.getHour() * 60 + rangeStart.getMinute();
+        LocalDateTime cursor = rangeStart.toLocalDate().atStartOfDay()
+                .plusMinutes((long) (minuteOfDay / blockMinutes) * blockMinutes);
+        while (cursor.isBefore(rangeEnd)) {
+            accumulator.add(cursor);
+            cursor = cursor.plusMinutes(blockMinutes);
         }
     }
 

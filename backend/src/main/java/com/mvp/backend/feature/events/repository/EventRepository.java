@@ -61,6 +61,20 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                            @Param("statuses") List<Status> statuses,
                                            @Param("ignoreEventId") Long ignoreEventId);
 
+  /** Eventos técnicos bloqueantes en un rango de fechas (días adyacentes por buffers, hallazgo 3.8). */
+  @Query("""
+      select e from Event e
+      where e.active = true
+        and e.date between :fromDate and :toDate
+        and e.requiresTech = true
+        and e.status in :statuses
+        and (:ignoreEventId is null or e.id <> :ignoreEventId)
+      """)
+  List<Event> findTechEventsBetween(@Param("fromDate") LocalDate fromDate,
+                                    @Param("toDate") LocalDate toDate,
+                                    @Param("statuses") List<Status> statuses,
+                                    @Param("ignoreEventId") Long ignoreEventId);
+
   @Query("""
       select e from Event e
       where e.active = true
