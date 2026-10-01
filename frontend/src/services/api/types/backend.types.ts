@@ -770,5 +770,4 @@ export interface AvailabilityConflictResponse {
   effectiveFrom: string;           // formato: HH:mm
   effectiveTo: string;             // formato: HH:mm
   conflicts: ConflictItem[];
-  suggestions: unknown[];
 }

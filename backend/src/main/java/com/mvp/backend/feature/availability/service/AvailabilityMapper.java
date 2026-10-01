@@ -23,8 +23,7 @@ public class AvailabilityMapper {
                 result.reason(),
                 result.effectiveFrom(),
                 result.effectiveTo(),
-                conflicts,
-                result.suggestions()
+                conflicts
         );
     }
 
@@ -49,8 +48,7 @@ public class AvailabilityMapper {
                 result.reason(),
                 result.effectiveFrom(),
                 result.effectiveTo(),
-                conflicts,
-                result.suggestions()
+                conflicts
         );
     }
 

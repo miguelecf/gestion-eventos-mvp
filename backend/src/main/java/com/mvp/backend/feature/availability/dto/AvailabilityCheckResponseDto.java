@@ -8,7 +8,6 @@ public record AvailabilityCheckResponseDto(
         String reason,
         String effectiveFrom,
         String effectiveTo,
-        List<ConflictItemDto> conflicts,
-        List<Object> suggestions
+        List<ConflictItemDto> conflicts
 ) {
 }

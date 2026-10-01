@@ -28,7 +28,6 @@ public class AvailabilityService {
                     .skipped(true)
                     .reason("freeLocation: no se valida por recurso")
                     .conflicts(List.of())
-                    .suggestions(List.of())
                     .build();
         }
 
@@ -81,7 +80,6 @@ public class AvailabilityService {
                 .effectiveFrom(candidateWindow.formattedStart())
                 .effectiveTo(candidateWindow.formattedEnd())
                 .conflicts(conflicts)
-                .suggestions(List.of())
                 .build();
     }
 

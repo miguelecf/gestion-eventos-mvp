@@ -3,7 +3,6 @@ package com.mvp.backend.feature.availability.model;
 import lombok.Builder;
 import lombok.Singular;
 
-import java.util.Collections;
 import java.util.List;
 
 @Builder
@@ -13,10 +12,6 @@ public record AvailabilityResult(
         String reason,
         String effectiveFrom,
         String effectiveTo,
-        @Singular List<ConflictItem> conflicts,
-        List<Object> suggestions
+        @Singular List<ConflictItem> conflicts
 ) {
-    public AvailabilityResult {
-        suggestions = suggestions == null ? Collections.emptyList() : suggestions;
-    }
 }
