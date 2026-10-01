@@ -10,6 +10,7 @@ import lombok.Setter;
 @Setter
 public class ChangePasswordRequest {
 
+    @NotBlank(message = "Debe indicar la contraseña actual")
     private String currentPassword;
 
     @NotBlank

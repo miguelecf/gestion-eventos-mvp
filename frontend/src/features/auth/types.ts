@@ -19,10 +19,11 @@ export type LoginRequest = {
 
 export type LoginResponse = {
     accessToken: string;
-    refreshToken: string;
+    refreshToken?: string;
     tokenType: string;
     expiresIn: number;
-    user: {
+    mustChangePassword?: boolean;
+    user?: {
         id: number;
         username: string;
         role: string;
@@ -31,9 +32,12 @@ export type LoginResponse = {
 
 
 export type ChangePasswordRequest = {
-    oldPassword: string;
+    currentPassword: string;
     newPassword: string;
 };
+
+
+export type LoginResult = { mustChangePassword: true; tempToken: string } | undefined;
 
 
 export type RefreshRequest = {

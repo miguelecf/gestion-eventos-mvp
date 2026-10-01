@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { AuthApi } from "@/features/auth/api";
 import { PublicAccessPanel } from "@/features/public/components";
 
 type LoginLocationState = {
@@ -25,6 +26,8 @@ type LoginError = {
   message?: string;
 };
 
+const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d).{10,}$/;
+
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,6 +41,11 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [tempToken, setTempToken] = useState<string | null>(null);
+  const [newPasswordData, setNewPasswordData] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  });
 
   const from =
     (location.state as LoginLocationState | null)?.from?.pathname || "/dashboard";
@@ -92,10 +100,15 @@ export function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await login({
+      const result = await login({
         username: formData.username.trim(),
         password: formData.password,
       });
+
+      if (result?.mustChangePassword) {
+        setTempToken(result.tempToken);
+        return;
+      }
 
       // Marcar login exitoso para disparar navegación en useEffect
       setLoginSuccess(true);
@@ -115,6 +128,86 @@ export function LoginPage() {
       } else {
         setError("Error de conexión. Verificá tu conexión a internet.");
       }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleNewPasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewPasswordData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (error) setError(null);
+  };
+
+  const validateNewPassword = () => {
+    const { newPassword, confirmPassword } = newPasswordData;
+    if (newPassword.length < 10 || newPassword.length > 128) {
+      setError("La nueva contraseña debe tener entre 10 y 128 caracteres");
+      return false;
+    }
+    if (!PASSWORD_PATTERN.test(newPassword)) {
+      setError("La nueva contraseña debe contener al menos una letra y un número");
+      return false;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Las contraseñas no coinciden");
+      return false;
+    }
+    return true;
+  };
+
+  const resetPasswordChange = () => {
+    setTempToken(null);
+    setNewPasswordData({ newPassword: "", confirmPassword: "" });
+    setFormData((prev) => ({ ...prev, password: "" }));
+  };
+
+  const handleChangeTemporaryPassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!tempToken || !validateNewPassword()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      await AuthApi.changePassword(
+        {
+          currentPassword: formData.password,
+          newPassword: newPasswordData.newPassword,
+        },
+        tempToken
+      );
+    } catch (err: unknown) {
+      console.error("Error al cambiar la contraseña temporal:", err);
+      const changeError = err as LoginError;
+      const status = changeError.response?.status ?? changeError.status;
+      const message = changeError.response?.data?.message ?? changeError.message;
+
+      if (status === 401) {
+        resetPasswordChange();
+        setError("La sesión temporal expiró. Volvé a iniciar sesión.");
+      } else {
+        setError(message || "No se pudo cambiar la contraseña");
+      }
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      await login({
+        username: formData.username.trim(),
+        password: newPasswordData.newPassword,
+      });
+      setLoginSuccess(true);
+    } catch (err: unknown) {
+      console.error("Error en login tras cambiar la contraseña:", err);
+      resetPasswordChange();
+      setError("La contraseña se cambió, pero no se pudo iniciar sesión. Ingresá con tu nueva contraseña.");
     } finally {
       setIsSubmitting(false);
     }
@@ -159,6 +252,89 @@ export function LoginPage() {
           </Alert>
         )}
 
+        {tempToken ? (
+          <form onSubmit={handleChangeTemporaryPassword} className="space-y-6" noValidate>
+            <Alert className="border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Debe cambiar su contraseña temporal antes de continuar. Usá al menos 10
+                caracteres, con al menos una letra y un número.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="newPassword"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
+                Nueva contraseña
+              </label>
+              <div className="relative">
+                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  value={newPasswordData.newPassword}
+                  onChange={handleNewPasswordChange}
+                  placeholder="Ingresá tu nueva contraseña"
+                  required
+                  maxLength={128}
+                  disabled={isLoading}
+                  autoComplete="new-password"
+                  className="h-12 rounded-xl border-slate-200 bg-white pl-11 shadow-none focus-visible:border-slate-400 focus-visible:ring-slate-300/40 dark:border-slate-700 dark:bg-slate-950 dark:focus-visible:border-slate-500"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
+                Confirmar contraseña
+              </label>
+              <div className="relative">
+                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={newPasswordData.confirmPassword}
+                  onChange={handleNewPasswordChange}
+                  placeholder="Repetí tu nueva contraseña"
+                  required
+                  maxLength={128}
+                  disabled={isLoading}
+                  autoComplete="new-password"
+                  className="h-12 rounded-xl border-slate-200 bg-white pl-11 shadow-none focus-visible:border-slate-400 focus-visible:ring-slate-300/40 dark:border-slate-700 dark:bg-slate-950 dark:focus-visible:border-slate-500"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                type="submit"
+                className="h-12 w-full rounded-xl bg-[#6f1717] text-white shadow-lg shadow-[#6f1717]/20 hover:bg-[#5b1111] dark:bg-[#8f2323] dark:hover:bg-[#a12a2a]"
+                disabled={isLoading}
+              >
+                {isLoading ? "Guardando..." : "Cambiar contraseña y continuar"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-10 w-full rounded-xl"
+                disabled={isLoading}
+                onClick={() => {
+                  resetPasswordChange();
+                  setError(null);
+                }}
+              >
+                Volver
+              </Button>
+            </div>
+          </form>
+        ) : (
         <form onSubmit={handleLogin} className="space-y-6" noValidate>
           <div className="space-y-2">
             <label
@@ -234,6 +410,7 @@ export function LoginPage() {
             {isLoading ? "Ingresando..." : "Ingresar a la plataforma"}
           </Button>
         </form>
+        )}
       </div>
     </div>
   );

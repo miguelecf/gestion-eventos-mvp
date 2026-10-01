@@ -117,14 +117,9 @@ public class AuthService {
         }
         User user = userService.getById(principal.getId());
 
-        if (user.isMustChangePassword()) {
-            if (!StringUtils.hasText(request.getCurrentPassword())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe indicar la contraseña temporal actual");
-            }
-        }
-
-        if (StringUtils.hasText(request.getCurrentPassword()) && !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "La contraseña actual no es válida");
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            // 400 y no 401: un 401 lo interpreta el cliente como sesión vencida (refresh/logout).
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña actual no es válida");
         }
 
         String hash = passwordEncoder.encode(request.getNewPassword());

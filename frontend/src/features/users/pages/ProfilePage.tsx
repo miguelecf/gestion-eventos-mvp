@@ -4,10 +4,95 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useRole } from '@/hooks/useRole';
 import { User, Shield, Mail, Key } from 'lucide-react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { toast } from 'sonner';
+import { AuthApi } from '@/features/auth/api';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+
+const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d).{10,}$/;
+
+const EMPTY_PASSWORD_FORM = {
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+};
+
+type ChangePasswordError = {
+  response?: { status?: number; data?: { message?: string } };
+  status?: number;
+  message?: string;
+};
 
 export function ProfilePage() {
   const { user } = useAuth();
   const { role } = useRole();
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD_FORM);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const handlePasswordDialogChange = (open: boolean) => {
+    setPasswordDialogOpen(open);
+    if (!open) {
+      setPasswordForm(EMPTY_PASSWORD_FORM);
+      setPasswordError(null);
+    }
+  };
+
+  const handlePasswordInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordForm((prev) => ({ ...prev, [name]: value }));
+    if (passwordError) setPasswordError(null);
+  };
+
+  const validatePasswordForm = () => {
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
+    if (!currentPassword) return 'La contraseña actual es requerida';
+    if (newPassword.length < 10 || newPassword.length > 128) {
+      return 'La nueva contraseña debe tener entre 10 y 128 caracteres';
+    }
+    if (!PASSWORD_PATTERN.test(newPassword)) {
+      return 'La nueva contraseña debe contener al menos una letra y un número';
+    }
+    if (newPassword !== confirmPassword) return 'Las contraseñas no coinciden';
+    return null;
+  };
+
+  const handleChangePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    const validationError = validatePasswordForm();
+    if (validationError) {
+      setPasswordError(validationError);
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await AuthApi.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      toast.success('Contraseña actualizada correctamente');
+      handlePasswordDialogChange(false);
+    } catch (err: unknown) {
+      const changeError = err as ChangePasswordError;
+      const message = changeError.response?.data?.message ?? changeError.message;
+      setPasswordError(message || 'No se pudo cambiar la contraseña');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -185,12 +270,80 @@ export function ProfilePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="outline" disabled>
-            Cambiar Contraseña
-          </Button>
-          <p className="text-xs text-muted-foreground mt-2">
-            Funcionalidad próximamente disponible
-          </p>
+          <Dialog open={passwordDialogOpen} onOpenChange={handlePasswordDialogChange}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Cambiar Contraseña</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <form onSubmit={handleChangePassword} className="space-y-4" noValidate>
+                <DialogHeader>
+                  <DialogTitle>Cambiar contraseña</DialogTitle>
+                  <DialogDescription>
+                    La nueva contraseña debe tener al menos 10 caracteres, con al menos una letra y un número.
+                  </DialogDescription>
+                </DialogHeader>
+
+                {passwordError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{passwordError}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Contraseña actual</Label>
+                  <Input
+                    id="currentPassword"
+                    name="currentPassword"
+                    type="password"
+                    autoComplete="current-password"
+                    value={passwordForm.currentPassword}
+                    onChange={handlePasswordInputChange}
+                    disabled={isChangingPassword}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">Nueva contraseña</Label>
+                  <Input
+                    id="newPassword"
+                    name="newPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    maxLength={128}
+                    value={passwordForm.newPassword}
+                    onChange={handlePasswordInputChange}
+                    disabled={isChangingPassword}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    maxLength={128}
+                    value={passwordForm.confirmPassword}
+                    onChange={handlePasswordInputChange}
+                    disabled={isChangingPassword}
+                  />
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handlePasswordDialogChange(false)}
+                    disabled={isChangingPassword}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={isChangingPassword}>
+                    {isChangingPassword ? 'Guardando...' : 'Guardar'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>

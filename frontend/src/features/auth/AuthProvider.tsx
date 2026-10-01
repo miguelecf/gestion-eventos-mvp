@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { AuthApi } from "./api";
 import { getStoredTokens, setStoredTokens, clearStoredTokens, type Tokens } from "../../lib/http";
-import type { LoginRequest, RegisterRequest, UserSummary } from "./types";
+import type { LoginRequest, LoginResult, RegisterRequest, UserSummary } from "./types";
 import { useAppStore } from "@/store";
 
 export type AuthContextType = {
   user: UserSummary | null;
   tokens: Tokens | null;
   loading: boolean;
-  login: (payload: LoginRequest) => Promise<void>;
+  login: (payload: LoginRequest) => Promise<LoginResult>;
   register: (payload: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -72,10 +72,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("storage", handleStorageSync);
   }, [setAuth, clearAuth]);
 
-  const login = async (payload: LoginRequest) => {
+  const login = async (payload: LoginRequest): Promise<LoginResult> => {
     console.log('🔐 Iniciando login...');
     
     const response = await AuthApi.login(payload);
+
+    // Contraseña temporal: el token sólo sirve para /auth/change-password.
+    // No se guarda ni se consulta /auth/me; la pantalla de login maneja el cambio.
+    if (response.mustChangePassword) {
+      return { mustChangePassword: true, tempToken: response.accessToken };
+    }
     
     console.log('✅ Login exitoso:', {
       username: payload.username,
@@ -85,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const nextTokens: Tokens = {
       accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
+      refreshToken: response.refreshToken ?? "",
       expiresIn: response.expiresIn,
     };
     
@@ -152,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await AuthApi.refresh({ refreshToken: authTokens.refreshToken });
     const nextTokens: Tokens = {
       accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
+      refreshToken: response.refreshToken ?? authTokens.refreshToken,
       expiresIn: response.expiresIn,
     };
     
