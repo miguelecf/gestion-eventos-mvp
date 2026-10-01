@@ -102,23 +102,6 @@ export interface CalendarEventsParams {
 }
 
 /**
- * Parámetros para estadísticas de eventos
- */
-export interface EventStatsParams {
-  startDate?: string;
-  endDate?: string;
-  groupBy?: 'status' | 'space' | 'department';
-}
-
-/**
- * Parámetros para exportar eventos
- */
-export interface ExportEventsParams {
-  format: 'pdf' | 'excel' | 'ics';
-  filters?: EventFilters;
-}
-
-/**
  * Respuesta de disponibilidad adaptada
  */
 export interface AvailabilityResponse {
@@ -160,28 +143,9 @@ export async function getEvents(params: EventsQueryParams = {}): Promise<PageRes
   // 1. Construir query params de paginación
   const paginationQuery = buildPaginationQuery(params);
 
-  // 2. Agregar filtros si existen
-  if (params.filters) {
-    const { status, startDate, endDate, spaceIds, departmentIds, requiresTech, createdBy } = params.filters;
-
-    if (status && status.length > 0) {
-      status.forEach(s => paginationQuery.append('status', s));
-    }
-    if (startDate) paginationQuery.append('startDate', startDate);
-    if (endDate) paginationQuery.append('endDate', endDate);
-    if (spaceIds && spaceIds.length > 0) {
-      spaceIds.forEach(id => paginationQuery.append('spaceIds', id.toString()));
-    }
-    if (departmentIds && departmentIds.length > 0) {
-      departmentIds.forEach(id => paginationQuery.append('departmentIds', id.toString()));
-    }
-    if (requiresTech !== undefined) {
-      paginationQuery.append('requiresTech', requiresTech.toString());
-    }
-    if (createdBy) {
-      paginationQuery.append('createdBy', createdBy);
-    }
-  }
+  // 2. GET /api/events sólo soporta paginación y orden (page, size, sort).
+  //    Los filtros de la UI (búsqueda, estado, fechas, internal) se aplican en el cliente
+  //    sobre el conjunto activo; no se envían parámetros que el backend ignoraría (hallazgo 2.3).
 
   // 3. Hacer request al backend
   // El backend ahora detecta automáticamente:
@@ -423,92 +387,6 @@ export async function getCalendarEvents(
 }
 
 /**
- * Obtiene estadísticas de eventos
- * 
- * @param filters - Filtros opcionales
- * @returns Estadísticas agregadas
- * 
- * @example
- * const stats = await eventsApi.getEventStats({
- *   startDate: '2025-01-01',
- *   endDate: '2025-12-31'
- * });
- */
-export async function getEventStats(filters?: {
-  startDate?: string;
-  endDate?: string;
-  departmentIds?: number[];
-}): Promise<{
-  total: number;
-  byStatus: Record<string, number>;
-  byPriority: Record<string, number>;
-  bySpace: Record<string, number>;
-}> {
-  const queryParams = new URLSearchParams();
-  if (filters?.startDate) queryParams.append('startDate', filters.startDate);
-  if (filters?.endDate) queryParams.append('endDate', filters.endDate);
-  if (filters?.departmentIds) {
-    filters.departmentIds.forEach(id => queryParams.append('departmentIds', id.toString()));
-  }
-
-  return await httpClient.get(
-    `/api/events/stats?${queryParams.toString()}`
-  );
-}
-
-/**
- * Exporta eventos a diferentes formatos
- * 
- * @param format - Formato de exportación ('pdf' | 'excel' | 'ics')
- * @param filters - Filtros opcionales
- * @returns Blob con el archivo
- * 
- * @example
- * const blob = await eventsApi.exportEvents('excel', {
- *   startDate: '2025-01-01',
- *   endDate: '2025-12-31'
- * });
- * 
- * // Descargar archivo
- * const url = URL.createObjectURL(blob);
- * const a = document.createElement('a');
- * a.href = url;
- * a.download = 'eventos.xlsx';
- * a.click();
- */
-export async function exportEvents(
-  format: 'pdf' | 'excel' | 'ics',
-  filters?: EventFilters
-): Promise<Blob> {
-  const queryParams = new URLSearchParams();
-  queryParams.append('format', format);
-
-  if (filters) {
-    if (filters.status) filters.status.forEach(s => queryParams.append('status', s));
-    if (filters.startDate) queryParams.append('startDate', filters.startDate);
-    if (filters.endDate) queryParams.append('endDate', filters.endDate);
-    if (filters.spaceIds) filters.spaceIds.forEach(id => queryParams.append('spaceIds', id.toString()));
-    if (filters.departmentIds) filters.departmentIds.forEach(id => queryParams.append('departmentIds', id.toString()));
-  }
-
-  const response = await fetch(
-    `${ENDPOINTS.EVENTS}/export?${queryParams.toString()}`,
-    {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error('Error al exportar eventos');
-  }
-
-  return await response.blob();
-}
-
-/**
  * Obtiene lista simple de eventos activos (sin paginación)
  * Este endpoint del backend devuelve directamente un array de eventos
  * 
@@ -543,8 +421,6 @@ export const eventsApi = {
   changeEventStatus,
   checkAvailability,
   getCalendarEvents,
-  getEventStats,
-  exportEvents,
   listActive
 };
 

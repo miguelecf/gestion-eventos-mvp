@@ -150,7 +150,6 @@ export interface EventsStore {
   /**
    * Obtener estadísticas
    */
-  fetchStats: (params?: any) => Promise<void>;
   
   // ==================== ACCIONES UI ====================
   
@@ -492,32 +491,6 @@ const createEventsStore: StateCreator<EventsStore> = (set, get) => ({
       });
       
       return false;
-    }
-  },
-  
-  fetchStats: async (params?: any) => {
-    set((state) => ({
-      loading: { ...state.loading, stats: true },
-      errors: { ...state.errors, stats: null },
-    }));
-    
-    try {
-      const stats = await eventsApi.getEventStats(params);
-      
-      set({
-        stats,
-        loading: { ...get().loading, stats: false },
-      });
-    } catch (error) {
-      logError(error, 'EventsStore.fetchStats');
-      
-      const apiError = handleApiError(error);
-      
-      set({
-        stats: null,
-        loading: { ...get().loading, stats: false },
-        errors: { ...get().errors, stats: apiError.message },
-      });
     }
   },
   

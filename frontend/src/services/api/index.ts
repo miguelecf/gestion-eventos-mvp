@@ -107,9 +107,7 @@ export type {
   UpdateEventInput,
   ChangeStatusInput,
   AvailabilityCheckParams,
-  CalendarEventsParams,
-  EventStatsParams,
-  ExportEventsParams
+  CalendarEventsParams
 } from './events.api';
 
 // SDK de Comentarios
