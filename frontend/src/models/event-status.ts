@@ -12,7 +12,6 @@
  * Re-exportamos del backend para mantener consistencia
  */
 export type EventStatus =
-  | 'SOLICITADO'
   | 'EN_REVISION'
   | 'RESERVADO'
   | 'APROBADO'
@@ -23,7 +22,6 @@ export type EventStatus =
  * Usado para validación y mapeo seguro
  */
 export const KNOWN_EVENT_STATUSES: readonly EventStatus[] = [
-  'SOLICITADO',
   'EN_REVISION',
   'RESERVADO',
   'APROBADO',
@@ -77,13 +75,6 @@ export interface EventStatusMetadata {
  * Mapeo de estados a metadata para UI
  */
 export const EVENT_STATUS_METADATA: Record<EventStatus, EventStatusMetadata> = {
-  SOLICITADO: {
-    status: 'SOLICITADO',
-    label: 'Solicitado',
-    description: 'El evento ha sido solicitado y está pendiente de revisión',
-    color: 'secondary',
-    icon: 'clock',
-  },
   EN_REVISION: {
     status: 'EN_REVISION',
     label: 'En Revisión',

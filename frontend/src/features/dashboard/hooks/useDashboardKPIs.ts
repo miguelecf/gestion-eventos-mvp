@@ -82,7 +82,7 @@ export function useDashboardKPIs(): DashboardKPIs {
   // ========================================
   // KPI 3: Pendientes de conformidad
   // ========================================
-  // Eventos que están en proceso (no SOLICITADO ni RECHAZADO)
+  // Eventos que están en proceso (todo menos RECHAZADO)
   const inProcessStates: EventStatus[] = ['EN_REVISION', 'RESERVADO', 'APROBADO'];
   
   const conformityPending = {

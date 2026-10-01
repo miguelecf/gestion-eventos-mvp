@@ -20,14 +20,11 @@ export const eventRules = {
 
   /**
    * Determina si falta alguna conformidad requerida para un evento
-   * Ignora eventos en estado SOLICITADO o RECHAZADO
+   * Ignora eventos en estado RECHAZADO
    */
   isMissingConformity: (event: Event): boolean => {
-    // Ignorar si está rechazado o solo solicitado
-    if (
-      event.status === EventStatus.SOLICITADO ||
-      event.status === EventStatus.RECHAZADO
-    ) {
+    // Ignorar si está rechazado
+    if (event.status === EventStatus.RECHAZADO) {
       return false;
     }
 

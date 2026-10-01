@@ -19,10 +19,6 @@ const STATUS_CONFIG: Record<
   EventStatus,
   { label: string; className: string }
 > = {
-  SOLICITADO: {
-    label: 'Solicitado',
-    className: 'bg-blue-100 text-blue-700 border-blue-200',
-  },
   EN_REVISION: {
     label: 'En Revisión',
     className: 'bg-yellow-100 text-yellow-700 border-yellow-200',

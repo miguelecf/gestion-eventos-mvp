@@ -31,7 +31,6 @@ export function getStatusBadgeVariant(
   status: EventStatus
 ): 'default' | 'success' | 'outline' {
   const variants: Record<EventStatus, 'default' | 'success' | 'outline'> = {
-    SOLICITADO: 'outline',      // Outline gris
     EN_REVISION: 'default',     // Azul primario
     RESERVADO: 'outline',       // Outline amarillo
     APROBADO: 'success',        // Verde
@@ -66,7 +65,6 @@ export function getStatusLabel(status: EventStatus): string {
  */
 export function getStatusDescription(status: EventStatus): string {
   const descriptions: Record<EventStatus, string> = {
-    SOLICITADO: 'El evento ha sido solicitado y está pendiente de revisión inicial',
     EN_REVISION: 'El evento está siendo revisado por el personal administrativo',
     RESERVADO: 'Los recursos están reservados, pendiente de aprobación final',
     APROBADO: 'El evento ha sido aprobado y confirmado',
@@ -134,17 +132,6 @@ export function canEditEvent(status: EventStatus): boolean {
 }
 
 /**
- * Verifica si un evento puede ser eliminado según su estado
- * Solo se pueden eliminar eventos en SOLICITADO
- * 
- * @param status - Estado del evento
- * @returns true si puede ser eliminado
- */
-export function canDeleteEvent(status: EventStatus): boolean {
-  return status === 'SOLICITADO';
-}
-
-/**
  * Obtiene el mensaje de confirmación para un cambio de estado
  * 
  * @param currentStatus - Estado actual
@@ -164,7 +151,6 @@ export function getConfirmationMessage(
     RECHAZADO: '¿Rechazar el evento? Debe proporcionar un motivo. Esta acción es definitiva.',
     RESERVADO: '¿Reservar recursos para este evento?',
     EN_REVISION: '¿Enviar el evento a revisión?',
-    SOLICITADO: '¿Marcar el evento como solicitado?',
   };
 
   return messages[targetStatus];
@@ -182,7 +168,6 @@ export function getConfirmationMessage(
  */
 export function getSuccessMessage(newStatus: EventStatus): string {
   const messages: Record<EventStatus, string> = {
-    SOLICITADO: 'Evento marcado como solicitado',
     EN_REVISION: 'Evento enviado a revisión',
     RESERVADO: 'Recursos reservados exitosamente',
     APROBADO: '¡Evento aprobado exitosamente!',
@@ -205,7 +190,6 @@ export function getSuccessMessage(newStatus: EventStatus): string {
  */
 export function getStatusBackgroundClass(status: EventStatus): string {
   const classes: Record<EventStatus, string> = {
-    SOLICITADO: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
     EN_REVISION: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     RESERVADO: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
     APROBADO: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
@@ -223,7 +207,6 @@ export function getStatusBackgroundClass(status: EventStatus): string {
  */
 export function getStatusBorderClass(status: EventStatus): string {
   const classes: Record<EventStatus, string> = {
-    SOLICITADO: 'border-gray-300 dark:border-gray-600',
     EN_REVISION: 'border-blue-300 dark:border-blue-600',
     RESERVADO: 'border-yellow-300 dark:border-yellow-600',
     APROBADO: 'border-green-300 dark:border-green-600',
@@ -235,18 +218,17 @@ export function getStatusBorderClass(status: EventStatus): string {
 
 /**
  * Obtiene el orden de prioridad para ordenar eventos por estado
- * Útil para sorting: SOLICITADO > EN_REVISION > RESERVADO > APROBADO > RECHAZADO
+ * Útil para sorting: EN_REVISION > RESERVADO > APROBADO > RECHAZADO
  * 
  * @param status - Estado del evento
  * @returns Número de prioridad (menor = más prioritario)
  */
 export function getStatusSortOrder(status: EventStatus): number {
   const order: Record<EventStatus, number> = {
-    SOLICITADO: 1,
-    EN_REVISION: 2,
-    RESERVADO: 3,
-    APROBADO: 4,
-    RECHAZADO: 5,
+    EN_REVISION: 1,
+    RESERVADO: 2,
+    APROBADO: 3,
+    RECHAZADO: 4,
   };
 
   return order[status];
@@ -260,21 +242,16 @@ export function getStatusSortOrder(status: EventStatus): number {
  * 
  * @example
  * const allowedStatuses = getStatusesForRole('DOCENTE');
- * // ['SOLICITADO'] (solo puede crear solicitudes)
+ * // [] (no crea ni transiciona eventos; solo solicitudes públicas)
  */
 export function getStatusesForRole(userRole: string): EventStatus[] {
-  // Los docentes solo pueden solicitar eventos
-  if (userRole === 'DOCENTE') {
-    return ['SOLICITADO'];
-  }
-
   // Admin y staff pueden usar todos los estados
   if (userRole === 'ADMIN' || userRole === 'PERSONAL_APOYO') {
-    return ['SOLICITADO', 'EN_REVISION', 'RESERVADO', 'APROBADO', 'RECHAZADO'];
+    return ['EN_REVISION', 'RESERVADO', 'APROBADO', 'RECHAZADO'];
   }
 
-  // Por defecto, solo SOLICITADO
-  return ['SOLICITADO'];
+  // El resto no crea ni transiciona eventos (solo solicitudes públicas)
+  return [];
 }
 
 /**

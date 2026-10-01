@@ -87,7 +87,6 @@ public class NotificationFactory {
 
     private String formatStatus(Status status) {
         return switch (status) {
-            case SOLICITADO -> "Solicitado";
             case EN_REVISION -> "En revision";
             case RESERVADO -> "Reservado";
             case APROBADO -> "Aprobado";

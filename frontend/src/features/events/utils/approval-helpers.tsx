@@ -166,18 +166,6 @@ export function formatBuffers(bufferBefore: number, bufferAfter: number): string
 }
 
 /**
- * Determina si se deben mostrar los indicadores de aprobación
- * Criterio: Siempre mostrar cuando el evento está EN_REVISION o posterior
- * 
- * @param eventStatus - Estado actual del evento
- * @returns true si se deben mostrar los indicadores
- */
-export function shouldShowApprovalIndicators(eventStatus: string): boolean {
-  // Mostrar siempre excepto en SOLICITADO (aún no entró en flujo de aprobación)
-  return eventStatus !== 'SOLICITADO';
-}
-
-/**
  * Obtiene el mensaje descriptivo para el estado de aprobaciones
  * 
  * @param ceremonialOk - Si la aprobación ceremonial fue otorgada

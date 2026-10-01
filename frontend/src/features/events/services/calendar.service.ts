@@ -107,7 +107,6 @@ export function getPriorityLabel(priority: Event['priority']): string {
  */
 export function getStatusLabel(status: Event['status']): string {
   const labels = {
-    SOLICITADO: 'Solicitado',
     EN_REVISION: 'En Revisión',
     RESERVADO: 'Reservado',
     APROBADO: 'Aprobado',

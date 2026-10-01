@@ -35,7 +35,6 @@ import {
   getStatusBadgeVariant,
   getStatusLabel,
   canEditEvent,
-  canDeleteEvent,
   getPriorityBadgeVariant,
   getPriorityLabel,
 } from '@/features/events/utils/status-helpers';
@@ -48,6 +47,7 @@ import {
   type EventTableSortField,
 } from '@/features/events/utils/list-sorting';
 import { getEditBlockReason } from '@/features/events/utils/edit-event';
+import { useEventPermissions } from '@/features/events/hooks/useEventPermissions';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { Event, EventFilters } from '@/models/event';
@@ -219,6 +219,8 @@ export function ListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<10 | 20 | 50>(20);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  // Baja lógica permitida en cualquier estado; solo depende del rol (sin evento => sin ownership)
+  const { canDeleteEvent } = useEventPermissions(null);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
   const loadEvents = useCallback(async () => {
@@ -321,8 +323,8 @@ export function ListPage() {
 
   const handleDeleteClick = (event: Event, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!canDeleteEvent(event.status)) {
-      toast.error('Solo se pueden eliminar eventos en estado SOLICITADO');
+    if (!canDeleteEvent) {
+      toast.error('No tenés permiso para eliminar eventos');
       return;
     }
     setEventToDelete(event);
@@ -449,7 +451,6 @@ export function ListPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="SOLICITADO">Solicitado</SelectItem>
                 <SelectItem value="EN_REVISION">En Revisión</SelectItem>
                 <SelectItem value="RESERVADO">Reservado</SelectItem>
                 <SelectItem value="APROBADO">Aprobado</SelectItem>
@@ -739,8 +740,8 @@ export function ListPage() {
                               variant="ghost"
                               size="sm"
                               onClick={(e) => handleDeleteClick(event, e)}
-                              disabled={!canDeleteEvent(event.status)}
-                              title={canDeleteEvent(event.status) ? 'Eliminar evento' : 'Solo se pueden eliminar eventos solicitados'}
+                              disabled={!canDeleteEvent}
+                              title={canDeleteEvent ? 'Eliminar evento' : 'No tenés permiso para eliminar eventos'}
                             >
                               <Trash className="w-4 h-4" />
                             </Button>
@@ -854,7 +855,7 @@ export function ListPage() {
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
-                        {canDeleteEvent(event.status) && (
+                        {canDeleteEvent && (
                           <Button
                             variant="outline"
                             size="sm"

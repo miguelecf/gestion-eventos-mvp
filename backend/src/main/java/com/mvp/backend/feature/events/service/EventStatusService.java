@@ -83,7 +83,6 @@ public class EventStatusService {
             case RESERVADO -> handleReservation(event, actor, request);
             case EN_REVISION -> handleReversion(event, actor, request);
             case RECHAZADO -> handleRejection(event, actor, request);
-            case SOLICITADO -> throw new DomainValidationException("Cannot transition back to SOLICITADO");
         };
     }
 
@@ -394,7 +393,6 @@ public class EventStatusService {
 
     private static Map<Status, List<Status>> buildTransitions() {
         Map<Status, List<Status>> map = new EnumMap<>(Status.class);
-        map.put(Status.SOLICITADO, List.of(Status.EN_REVISION));
         map.put(Status.EN_REVISION, List.of(Status.RESERVADO, Status.RECHAZADO, Status.APROBADO));
         map.put(Status.RESERVADO, List.of(Status.APROBADO, Status.RECHAZADO, Status.EN_REVISION));
         map.put(Status.APROBADO, List.of(Status.EN_REVISION));

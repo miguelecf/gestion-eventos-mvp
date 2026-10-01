@@ -46,7 +46,6 @@ import {
   ApprovalBadge,
   formatMissingApprovals,
   getApprovalStatusMessage,
-  shouldShowApprovalIndicators,
 } from '@/features/events/utils/approval-helpers';
 import { getEditBlockReason } from '@/features/events/utils/edit-event';
 import {
@@ -144,7 +143,7 @@ export function DetailPage() {
   );
 
   const displayStatus = currentStatus ?? event?.status ?? null;
-  const showApprovals = Boolean(event && shouldShowApprovalIndicators(displayStatus ?? event.status));
+  const showApprovals = Boolean(event);
   const canEditCurrentEvent = Boolean(event && canEditEventForStatus(event.status));
 
   const eventErrorState = useMemo(() => {

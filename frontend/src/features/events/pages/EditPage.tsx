@@ -231,7 +231,7 @@ export function EditPage() {
     return null;
   }
 
-  const knownStatuses = ['SOLICITADO', 'EN_REVISION', 'RESERVADO', 'APROBADO', 'RECHAZADO'] as const;
+  const knownStatuses = ['EN_REVISION', 'RESERVADO', 'APROBADO', 'RECHAZADO'] as const;
   const hasKnownStatus = knownStatuses.includes(event.status);
   const blockedStatusLabel = hasKnownStatus ? getStatusLabel(event.status) : String(event.status);
   const blockedStatusVariant = hasKnownStatus ? getStatusBadgeVariant(event.status) : 'outline';

@@ -149,7 +149,7 @@ export interface AvailabilityResponse {
  *   size: 20,
  *   sort: [{ field: 'date', direction: 'DESC' }],
  *   filters: {
- *     status: ['SOLICITADO', 'EN_REVISION'],
+ *     status: ['EN_REVISION', 'RESERVADO'],
  *     startDate: '2025-01-01',
  *     endDate: '2025-12-31'
  *   }

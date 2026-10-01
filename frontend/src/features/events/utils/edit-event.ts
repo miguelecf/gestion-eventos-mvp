@@ -101,8 +101,6 @@ export function getEditBlockReason(status: string | null | undefined): string {
       return 'Este evento está APROBADO. Para editarlo primero debés cambiar su estado a EN_REVISION.';
     case 'RECHAZADO':
       return 'Este evento está RECHAZADO y no puede editarse desde la UI.';
-    case 'SOLICITADO':
-      return 'Este evento todavía está en estado SOLICITADO. En este MVP solo se editan eventos EN_REVISION o RESERVADO.';
     default:
       return 'Este evento no puede editarse en su estado actual.';
   }

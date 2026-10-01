@@ -22,7 +22,6 @@ interface StatusDistributionKPIProps {
  * Configuración de estilos y etiquetas por estado
  */
 const STATUS_CONFIG: Record<EventStatus, { label: string; color: string }> = {
-  SOLICITADO: { label: 'Solicitado', color: 'bg-blue-500' },
   EN_REVISION: { label: 'En revisión', color: 'bg-yellow-500' },
   RESERVADO: { label: 'Reservado', color: 'bg-indigo-500' },
   APROBADO: { label: 'Aprobado', color: 'bg-green-500' },
@@ -49,7 +48,7 @@ export function StatusDistributionKPI({ distribution }: StatusDistributionKPIPro
     .sort(([_, a], [__, b]) => (b || 0) - (a || 0));
 
   // Estado predominante (el que tiene más eventos)
-  const [topStatus, topCount] = entries[0] || ['SOLICITADO', 0];
+  const [topStatus, topCount] = entries[0] || ['EN_REVISION', 0];
   const topConfig = STATUS_CONFIG[topStatus as EventStatus];
 
   return (

@@ -355,7 +355,6 @@ export function canChangeEventStatus(event: Event, targetStatus: EventStatus): b
 
   // Definir transiciones válidas
   const validTransitions: Record<EventStatus, EventStatus[]> = {
-    SOLICITADO: ['EN_REVISION', 'RECHAZADO'],
     EN_REVISION: ['RESERVADO', 'RECHAZADO'],
     RESERVADO: ['APROBADO', 'RECHAZADO'],
     APROBADO: [], // Estado final (no se puede cambiar)
@@ -378,7 +377,6 @@ export function canChangeEventStatus(event: Event, targetStatus: EventStatus): b
  */
 export function getEventStatusColor(status: EventStatus): string {
   const colorMap: Record<EventStatus, string> = {
-    SOLICITADO: 'bg-blue-100 text-blue-800',
     EN_REVISION: 'bg-yellow-100 text-yellow-800',
     RESERVADO: 'bg-purple-100 text-purple-800',
     APROBADO: 'bg-green-100 text-green-800',

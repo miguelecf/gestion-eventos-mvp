@@ -176,7 +176,6 @@ function getStatusVariant(
     case 'RESERVADO':
       return 'default'; // Color primario
     case 'EN_REVISION':
-    case 'SOLICITADO':
       return 'outline';
     case 'RECHAZADO':
       return 'outline'; // No hay destructive, usamos outline

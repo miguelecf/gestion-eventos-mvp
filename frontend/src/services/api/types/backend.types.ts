@@ -15,7 +15,6 @@
  * Estado del Evento
  */
 export const EventStatus = {
-  SOLICITADO: 'SOLICITADO',
   EN_REVISION: 'EN_REVISION',
   RESERVADO: 'RESERVADO',
   APROBADO: 'APROBADO',
@@ -604,7 +603,7 @@ export interface PublicEventRequestPayload {
  */
 export interface EventRequestCreatedResponse {
   tracking_uuid: string;           // UUID para tracking público (snake_case del backend)
-  status: string;                  // ej: "SOLICITADO"
+  status: string;                  // ej: "RECIBIDO" (RequestStatus)
   request_date: string;            // ISO 8601 (snake_case del backend)
 }
 
