@@ -151,6 +151,9 @@ public class EventStatusService {
     }
 
     private StatusChangeResponse handleRejection(Event event, User actor, ChangeStatusRequest request) {
+        if (request.reason() == null || request.reason().isBlank()) {
+            throw new DomainValidationException("Debe indicar el motivo del rechazo");
+        }
         Status previousStatus = event.getStatus();
         event.setStatus(Status.RECHAZADO);
         event.setLastModifiedBy(actor);

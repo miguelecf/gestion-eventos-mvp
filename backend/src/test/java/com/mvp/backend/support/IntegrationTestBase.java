@@ -6,6 +6,9 @@ import com.mvp.backend.feature.catalogs.model.Department;
 import com.mvp.backend.feature.catalogs.model.Space;
 import com.mvp.backend.feature.catalogs.repository.DepartmentRepository;
 import com.mvp.backend.feature.catalogs.repository.SpaceRepository;
+import com.mvp.backend.feature.events.model.Event;
+import com.mvp.backend.feature.events.model.Status;
+import com.mvp.backend.feature.events.repository.EventRepository;
 import com.mvp.backend.feature.users.model.User;
 import com.mvp.backend.feature.users.repository.UserRepository;
 import com.mvp.backend.shared.Priority;
@@ -19,6 +22,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
@@ -46,6 +51,7 @@ public abstract class IntegrationTestBase {
     @Autowired protected SpaceRepository spaceRepository;
     @Autowired protected DepartmentRepository departmentRepository;
     @Autowired protected PasswordEncoder passwordEncoder;
+    @Autowired protected EventRepository eventRepository;
 
     private final Map<Role, String> tokens = new EnumMap<>(Role.class);
 
@@ -100,6 +106,23 @@ public abstract class IntegrationTestBase {
     protected Department newDepartment() {
         return departmentRepository.save(Department.builder()
                 .name("Depto " + UUID.randomUUID().toString().substring(0, 8))
+                .build());
+    }
+
+    /**
+     * Evento persistido directamente (sin pasar por reglas de servicio) en un espacio propio,
+     * para no colisionar con otros tests. Fecha lejana para evitar conflictos de agenda.
+     */
+    protected Event newEvent(Status status) {
+        return eventRepository.save(Event.builder()
+                .name("Evento IT " + UUID.randomUUID().toString().substring(0, 8))
+                .date(LocalDate.now().plusYears(1))
+                .scheduleFrom(LocalTime.of(10, 0))
+                .scheduleTo(LocalTime.of(12, 0))
+                .status(status)
+                .priority(Priority.MEDIUM)
+                .space(newSpace())
+                .createdBy(user(Role.ADMIN_FULL))
                 .build());
     }
 }
