@@ -1,6 +1,7 @@
 package com.mvp.backend.feature.auth.service;
 
 import com.mvp.backend.feature.auth.exception.EmailDeliveryException;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,19 @@ public class EmailService {
 
     @Value("${app.mail.fail-on-error:true}")
     private boolean failOnError;
+
+    /**
+     * Hallazgo 5.5: el modo mock debe ser evidente. En mock no se envía nada: los correos (incluidas
+     * credenciales temporales) sólo se escriben en el log. Uso exclusivo de desarrollo local;
+     * el perfil docker lo desactiva (MAIL_MOCK_MODE=false) y entrega en Mailpit.
+     */
+    @PostConstruct
+    void warnIfMockMode() {
+        if (mockMode) {
+            log.warn("[MAIL_MOCK] app.mail.mock-mode=true: NO se envían correos; se registran en el log "
+                    + "(incluye contraseñas temporales). Sólo para desarrollo local.");
+        }
+    }
 
     public void sendNewPassword(String to, String temporaryPassword) {
         String subject = "Gestion de Eventos - ALTA DE USUARIO";
