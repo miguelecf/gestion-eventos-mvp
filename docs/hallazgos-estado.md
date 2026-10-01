@@ -4,6 +4,30 @@ Fuente: el reporte "Errores Gestión de Eventos". Se atacan de **menor a mayor c
 
 - **Estados:** `pendiente` · `en curso` · `corregido` · `documentado` (decisión sin cambio de código) · `descartado`.
 - **Próxima migración Flyway libre:** `V15`.
+- **Decisiones funcionales:** ver `docs/decisiones-funcionales.md`.
+
+## Pendientes para decidir juntos
+- **1.7-bis — pantalla de resolución de conflictos de prioridad:** no existe. Hoy sólo se pueden resolver por API. Opciones:
+  - construir la pantalla, unas horas de trabajo;
+  - documentarlo como alcance futuro.
+- **Limpieza de legacy sin consumidores:** `services/http/client.ts`, `services/api/{spaces,departments,calendar}.ts`, `catalogsApi.getConflicts/makeDecision` (que apuntan a `/internal/**`, inexistente), `CalendarPage.OLD.tsx` y los stores y slices sin uso.
+- **Carpetas sin versionar:** `artifacts/` (273 MB de video y audio) y `synthetic-user-engine/`. Esta última todavía usa el estado `SOLICITADO` y la decisión `CANCELLED`.
+- **Credenciales de seeds:** la contraseña en texto plano de los usuarios sembrados no está en el repo.
+
+## Verificación final (5.7)
+Docker limpio con un proyecto aislado (`-p gestion-eventos-mvp-check`), ya dado de baja con `down -v`:
+- Flyway aplicó V1 a V14 sobre MySQL 8.
+- Smoke por nginx:
+  - alta y seguimiento público;
+  - 403 en el listado público y en `/admin` sin login;
+  - bandeja admin, revisión y conversión con soporte técnico;
+  - un comentario interno no aparece en el seguimiento;
+  - USUARIO recibe 403 al editar y 200 al leer eventos y catálogos;
+  - ADMIN_TECNICA recibe 403 al resolver conflictos;
+  - la baja queda auditada.
+- Mailpit recibió confirmación, revisión y conversión.
+- Carrera de dos reservas con un cupo: una 200 y otra 409.
+- Backend: 39 tests en verde. Frontend: build OK; el lint bajó de 66 a 63 errores.
 
 ## Hallazgos adicionales detectados durante la corrección
 - **2.7-bis:** al loguearse con contraseña temporal, el frontend ignoraba `mustChangePassword` y entraba con un token que sólo sirve para cambiar la contraseña, así que todas las pantallas daban 403. Además, `currentPassword` podía omitirse si la contraseña no era temporal. Corregido en el mismo commit que 2.7.
@@ -49,16 +73,16 @@ Fuente: el reporte "Errores Gestión de Eventos". Se atacan de **menor a mayor c
 | 3 | 4.3 | Tipos de auditoría sin uso | corregido | 5f25614 | suite completa |
 | 3 | 4.6 | Conflictos de prioridad fuera del historial | corregido | 5f25614 | PriorityConflictDecisionIntegrationTest |
 | 3 | 2.8 | Edición de comentarios sin UI | corregido | 4b3ce25 | tsc + lint |
-| 4 | 5.2 | Carrera en capacidad técnica | pendiente | | |
-| 4 | 3.8 | Buffers que cruzan medianoche | pendiente | | |
-| 4 | 4.4 | Auditoría incompleta de campos del evento | pendiente | | |
-| 4 | 5.4 | Indicador de capacidad en frontend ≠ backend | pendiente | | |
-| 4 | 6.2 | Reprogramación pendiente poco visible | pendiente | | |
-| doc | 3.1 | technicalOk siempre obligatoria | documentado | | — ver `docs/permisos.md` |
-| doc | 3.5 | Sin administración de capacidad técnica | pendiente | | |
-| doc | 3.6 | technicalSchedule no afecta capacidad | pendiente | | |
-| doc | 3.9 | Aprobación parcial antes de validar capacidad | pendiente | | |
-| doc | 5.5 | Fallas de correo silenciosas | pendiente | | |
-| doc | 6.1 | Ubicación libre no se valida como recurso | pendiente | | |
-| test | 5.6 | Cobertura de flujos críticos | en curso | | harness `IntegrationTestBase` |
-| final | 5.7 | Verificación E2E en entorno limpio | pendiente | | |
+| 4 | 5.2 | Carrera en capacidad técnica | corregido | 4551e5a | TechCapacityConcurrencyIntegrationTest (+ carrera real en MySQL) |
+| 4 | 3.8 | Buffers que cruzan medianoche | corregido | 1505f52, f3e1e53 | CrossMidnightAvailabilityIntegrationTest, TechCapacityConcurrencyIntegrationTest |
+| 4 | 4.4 | Auditoría incompleta de campos del evento | corregido | b4ba03b | EventFieldAuditIntegrationTest |
+| 4 | 5.4 | Indicador de capacidad en frontend ≠ backend | corregido | 655739e | tsc + lint |
+| 4 | 6.2 | Reprogramación pendiente poco visible | cubierto (sin cambios) | 5f25614 (auditoría) | badge requiresRebooking ya presente en detalle, listado y dashboard |
+| doc | 3.1 | technicalOk siempre obligatoria | documentado | 7933c8a | docs/decisiones-funcionales.md |
+| doc | 3.5 | Sin administración de capacidad técnica | documentado | dd0415b, 7933c8a | docs/decisiones-funcionales.md |
+| doc | 3.6 | technicalSchedule no afecta capacidad | documentado | 7933c8a | docs/decisiones-funcionales.md |
+| doc | 3.9 | Aprobación parcial antes de validar capacidad | documentado | 7933c8a | docs/decisiones-funcionales.md |
+| doc | 5.5 | Fallas de correo silenciosas | corregido + documentado | a5d6328, 7933c8a | docs/decisiones-funcionales.md |
+| doc | 6.1 | Ubicación libre no se valida como recurso | documentado | 7933c8a | docs/decisiones-funcionales.md |
+| test | 5.6 | Cobertura de flujos críticos | corregido | varios | 39 tests de integración (antes 3) |
+| final | 5.7 | Verificación E2E en entorno limpio | verificado | d43a58a | Docker limpio: 14 migraciones OK, smoke por rol, correos en Mailpit, carrera de capacidad en MySQL |
