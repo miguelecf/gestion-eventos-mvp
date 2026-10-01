@@ -140,7 +140,12 @@ export function DetailPage() {
     event?.date ?? null,
     event?.scheduleFrom ?? null,
     event?.scheduleTo ?? null,
-    Boolean(event?.requiresTech) && permissions.canViewTechCapacity
+    Boolean(event?.requiresTech) && permissions.canViewTechCapacity,
+    {
+      bufferBeforeMin: event?.bufferBeforeMin,
+      bufferAfterMin: event?.bufferAfterMin,
+      techSupportMode: event?.techSupportMode,
+    }
   );
 
   const displayStatus = currentStatus ?? event?.status ?? null;

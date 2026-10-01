@@ -2,9 +2,12 @@
  * ===================================================================
  * HOOK: useTechCapacityStatus
  * ===================================================================
- * Consulta el endpoint /internal/tech/capacity para verificar
- * si hay saturación de capacidad técnica en los bloques horarios
- * del evento
+ * Consulta GET /api/tech/capacity (fuente de verdad: uso por bloque calculado
+ * en el backend) y evalúa SOLO los bloques que el evento consume, con la misma
+ * regla que TechCapacityService.computeBlocks (hallazgo 5.4):
+ *  - ATTENDED: [inicio - bufferAntes, fin + bufferDespués]
+ *  - SETUP_ONLY: [inicio - bufferAntes, inicio] y [fin, fin + bufferDespués]
+ * Limitación: el endpoint es por fecha; bloques de días adyacentes no se evalúan.
  * ===================================================================
  */
 
@@ -64,8 +67,12 @@ export function useTechCapacityStatus(
   date: string | null,
   scheduleFrom: string | null,
   scheduleTo: string | null,
-  enabled: boolean = true
+  enabled: boolean = true,
+  options: { bufferBeforeMin?: number; bufferAfterMin?: number; techSupportMode?: 'SETUP_ONLY' | 'ATTENDED' | string | null } = {}
 ): UseTechCapacityStatusReturn {
+  const bufferBefore = options.bufferBeforeMin ?? 0;
+  const bufferAfter = options.bufferAfterMin ?? 0;
+  const mode = options.techSupportMode === 'ATTENDED' ? 'ATTENDED' : 'SETUP_ONLY';
   const [isSaturated, setIsSaturated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,14 +108,23 @@ export function useTechCapacityStatus(
         const eventStartMinutes = startHour * 60 + startMinute;
         const eventEndMinutes = endHour * 60 + endMinute;
 
-        // Filtrar bloques que se solapan con el horario del evento
+        // Intervalos que el evento consume según modalidad y buffers (igual que el backend)
+        const ranges: Array<[number, number]> = mode === 'ATTENDED'
+          ? [[eventStartMinutes - bufferBefore, eventEndMinutes + bufferAfter]]
+          : [
+              ...(bufferBefore > 0 ? [[eventStartMinutes - bufferBefore, eventStartMinutes] as [number, number]] : []),
+              ...(bufferAfter > 0 ? [[eventEndMinutes, eventEndMinutes + bufferAfter] as [number, number]] : []),
+            ];
+
         const relevantBlocks = response.blocks.filter((block) => {
           const [blockStartHour, blockStartMinute] = block.from.split(':').map(Number);
           const [blockEndHour, blockEndMinute] = block.to.split(':').map(Number);
           const blockStartMinutes = blockStartHour * 60 + blockStartMinute;
-          const blockEndMinutes = blockEndHour * 60 + blockEndMinute;
+          // El último bloque del día termina "00:00": equivale a 24:00
+          const rawEnd = blockEndHour * 60 + blockEndMinute;
+          const blockEndMinutes = rawEnd <= blockStartMinutes ? 24 * 60 : rawEnd;
 
-          return blockStartMinutes < eventEndMinutes && blockEndMinutes > eventStartMinutes;
+          return ranges.some(([from, to]) => blockStartMinutes < to && blockEndMinutes > from);
         });
 
         // Filtrar bloques saturados (available === 0)
@@ -139,7 +155,7 @@ export function useTechCapacityStatus(
     return () => {
       cancelled = true;
     };
-  }, [date, scheduleFrom, scheduleTo, enabled]);
+  }, [date, scheduleFrom, scheduleTo, enabled, bufferBefore, bufferAfter, mode]);
 
   return {
     isSaturated,
