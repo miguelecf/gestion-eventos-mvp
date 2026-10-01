@@ -7,11 +7,13 @@ import com.mvp.backend.feature.events.repository.EventRepository;
 import com.mvp.backend.feature.catalogs.repository.SpaceRepository;
 import com.mvp.backend.feature.notifications.event.EventCreatedEmailEvent;
 import com.mvp.backend.feature.notifications.event.EventRequestCreatedEmailEvent;
+import com.mvp.backend.feature.notifications.event.EventRequestStatusChangedEmailEvent;
 import com.mvp.backend.feature.notifications.event.EventRescheduledEmailEvent;
 import com.mvp.backend.feature.notifications.event.EventStatusChangedEvent;
 import com.mvp.backend.feature.requests.model.EventRequest;
 import com.mvp.backend.feature.requests.repository.EventRequestRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -31,6 +33,10 @@ public class EmailNotificationListener {
     private final EventRepository eventRepository;
     private final SpaceRepository spaceRepository;
     private final EventRequestRepository eventRequestRepository;
+
+    /** URL pública del sitio, para armar el link de seguimiento en los correos. */
+    @Value("${app.public-base-url:http://localhost:5173}")
+    private String publicBaseUrl;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -165,16 +171,65 @@ public class EmailNotificationListener {
                 Fecha y horario: %s
                 Ubicación: %s
 
-                Gracias por contactarnos. Te informaremos cualquier novedad.
+                Código de seguimiento: %s
+                Podés consultar el estado en: %s
+
+                Te avisaremos por este medio cuando la solicitud sea revisada, rechazada
+                o convertida en evento.
                 """.formatted(
                 safeString(request.getContactName()),
                 safeString(request.getName()),
                 request.getStatus(),
                 formatSchedule(request.getDate(), request.getScheduleFrom(), request.getScheduleTo()),
                 formatLocation(request.getSpace() != null ? request.getSpace().getName() : null,
-                        request.getFreeLocation()));
+                        request.getFreeLocation()),
+                request.getTrackingUuid(),
+                trackingUrl(request));
 
         sendSafe(recipient, subject, body, "publicEventRequestCreated", request.getId());
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onEventRequestStatusChanged(EventRequestStatusChangedEmailEvent event) {
+        EventRequest request = eventRequestRepository.findById(event.eventRequestId()).orElse(null);
+        if (request == null || !StringUtils.hasText(request.getContactEmail())) {
+            return;
+        }
+
+        String detail = switch (event.newStatus()) {
+            case EN_REVISION -> "Tu solicitud está siendo revisada por el equipo.";
+            case RECHAZADO -> "Tu solicitud fue rechazada.\nMotivo: " + safeString(event.reason());
+            case CONVERTIDO -> """
+                    Tu solicitud fue aceptada para su tramitación y se convirtió en un evento.
+                    El evento todavía debe recibir la conformidad de Ceremonial y Técnica:
+                    te avisaremos cuando cambie su estado.""";
+            default -> null;
+        };
+        if (detail == null) {
+            return;
+        }
+
+        String subject = "Gestión de Eventos - Novedades de tu solicitud: " + request.getName();
+        String body = """
+                Hola %s,
+
+                %s
+
+                Código de seguimiento: %s
+                Podés consultar el estado en: %s
+                """.formatted(
+                safeString(request.getContactName()),
+                detail,
+                request.getTrackingUuid(),
+                trackingUrl(request));
+
+        sendSafe(request.getContactEmail(), subject, body, "publicEventRequestStatus", request.getId());
+    }
+
+    private String trackingUrl(EventRequest request) {
+        String base = publicBaseUrl.endsWith("/") ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1) : publicBaseUrl;
+        return base + "/track/" + request.getTrackingUuid();
     }
 
     private void sendSafe(String to, String subject, String body, String reason, Long aggregateId) {

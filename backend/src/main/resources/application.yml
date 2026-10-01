@@ -71,6 +71,8 @@ springdoc:
     tags-sorter: alpha
 
 app:
+  # URL pública del frontend (links de seguimiento en correos)
+  public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:5173}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
   mail:

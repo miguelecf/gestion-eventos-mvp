@@ -22,6 +22,7 @@ import com.mvp.backend.feature.requests.dto.CreateEventRequestDto;
 import com.mvp.backend.feature.requests.dto.EventRequestCreatedDto;
 import com.mvp.backend.feature.requests.dto.EventRequestResponseDto;
 import com.mvp.backend.feature.requests.dto.TrackingResponse;
+import com.mvp.backend.feature.notifications.event.EventRequestStatusChangedEmailEvent;
 import com.mvp.backend.feature.requests.dto.RequestHistoryEntryDto;
 import com.mvp.backend.feature.requests.dto.ConvertRequestToEventDto;
 import com.mvp.backend.feature.events.model.TechSupportMode;
@@ -388,6 +389,9 @@ public class EventRequestService {
                 .reason(newStatus == RequestStatus.RECHAZADO ? reason : null)
                 .build());
 
+        eventPublisher.publishEvent(new EventRequestStatusChangedEmailEvent(saved.getId(), saved.getStatus(),
+                newStatus == RequestStatus.RECHAZADO ? reason : null));
+
         return EventRequestMapper.toDto(saved);
     }
 
@@ -519,6 +523,9 @@ public class EventRequestService {
                 .fromValue(fromStatus)
                 .toValue(RequestStatus.CONVERTIDO.name())
                 .build());
+
+        eventPublisher.publishEvent(new EventRequestStatusChangedEmailEvent(savedRequest.getId(),
+                RequestStatus.CONVERTIDO, null));
 
         return EventMapper.toDto(savedEvent);
     }
