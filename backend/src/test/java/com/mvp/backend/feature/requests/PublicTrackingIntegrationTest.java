@@ -42,6 +42,7 @@ class PublicTrackingIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.request.status").value("CONVERTIDO"))
                 .andExpect(jsonPath("$.event.status").value("EN_REVISION"))
+                .andExpect(jsonPath("$.schedule.from").value("10:00"))
                 .andExpect(jsonPath("$.event.id").doesNotExist())
                 .andExpect(jsonPath("$.event.internal").doesNotExist())
                 .andExpect(jsonPath("$.location.spaceId").doesNotExist())

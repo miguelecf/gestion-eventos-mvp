@@ -1,5 +1,6 @@
 package com.mvp.backend.feature.requests.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.mvp.backend.feature.events.model.Status;
 import com.mvp.backend.feature.requests.model.RequestStatus;
 
@@ -29,7 +30,10 @@ public record TrackingResponse(
     /** Estado del evento creado al convertir la solicitud (null si aún no se convirtió). */
     public record EventData(Status status) { }
 
-    public record ScheduleData(LocalDate date, LocalTime from, LocalTime to) { }
+    public record ScheduleData(
+            @JsonFormat(pattern = "yyyy-MM-dd") LocalDate date,
+            @JsonFormat(pattern = "HH:mm") LocalTime from,
+            @JsonFormat(pattern = "HH:mm") LocalTime to) { }
 
     public record LocationData(LocationType type, String spaceName, String freeLocation) {
         public enum LocationType { SPACE, FREE }
