@@ -9,6 +9,8 @@ import com.mvp.backend.feature.catalogs.repository.SpaceRepository;
 import com.mvp.backend.feature.events.model.Event;
 import com.mvp.backend.feature.events.model.Status;
 import com.mvp.backend.feature.events.repository.EventRepository;
+import com.mvp.backend.feature.requests.model.EventRequest;
+import com.mvp.backend.feature.requests.repository.EventRequestRepository;
 import com.mvp.backend.feature.users.model.User;
 import com.mvp.backend.feature.users.repository.UserRepository;
 import com.mvp.backend.shared.Priority;
@@ -25,6 +27,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -52,6 +55,7 @@ public abstract class IntegrationTestBase {
     @Autowired protected DepartmentRepository departmentRepository;
     @Autowired protected PasswordEncoder passwordEncoder;
     @Autowired protected EventRepository eventRepository;
+    @Autowired protected EventRequestRepository eventRequestRepository;
 
     private final Map<Role, String> tokens = new EnumMap<>(Role.class);
 
@@ -124,5 +128,27 @@ public abstract class IntegrationTestBase {
                 .space(newSpace())
                 .createdBy(user(Role.ADMIN_FULL))
                 .build());
+    }
+
+    /** Crea una solicitud por el endpoint público (sin login) y la devuelve persistida. */
+    protected EventRequest createPublicRequest() throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("date", LocalDate.now().plusYears(1).toString());
+        body.put("scheduleFrom", "10:00");
+        body.put("scheduleTo", "12:00");
+        body.put("space_id", newSpace().getId());
+        body.put("name", "Solicitud IT " + UUID.randomUUID().toString().substring(0, 8));
+        body.put("priority", "MEDIUM");
+        body.put("audienceType", "ESTUDIANTES");
+        body.put("contactName", "Ana Solicitante");
+        body.put("contactEmail", "ana@test.local");
+        body.put("contactPhone", "+54 11 5555-5555");
+        body.put("bufferBeforeMin", 0);
+        body.put("bufferAfterMin", 0);
+        String res = mockMvc.perform(json(post("/public/event-requests"), body))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String uuid = objectMapper.readTree(res).get("tracking_uuid").asText();
+        return eventRequestRepository.findByTrackingUuid(uuid).orElseThrow();
     }
 }

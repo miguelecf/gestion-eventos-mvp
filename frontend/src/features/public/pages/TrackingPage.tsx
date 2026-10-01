@@ -154,7 +154,7 @@ export function TrackingPage() {
   };
 
   const currentStatus = stageConfig[stage];
-  const eventName = data.event?.id ? `Evento #${data.event.id}` : 'Solicitud de Evento';
+  const eventName = data.name || 'Solicitud de Evento';
   const locationDisplay = data.location.type === 'SPACE' 
     ? data.location.spaceName || 'Espacio no especificado'
     : data.location.freeLocation || 'Ubicación no especificada';
@@ -198,13 +198,11 @@ export function TrackingPage() {
         )}
 
         {/* Estado rechazado */}
-        {data.request.status === 'RECHAZADO' && data.timeline.some(t => t.type === 'COMMENT') && (
+        {stage === 'REJECTED' && (
           <Alert variant="destructive">
             <AlertDescription>
               <p className="font-semibold mb-1">Solicitud rechazada</p>
-              <p className="text-sm">
-                {data.timeline.find(t => t.type === 'COMMENT')?.details || 'Sin comentarios'}
-              </p>
+              <p className="text-sm">Ante cualquier consulta, comuníquese con la institución.</p>
             </AlertDescription>
           </Alert>
         )}
@@ -238,13 +236,6 @@ export function TrackingPage() {
             </p>
           </div>
 
-          {/* Comentarios adicionales */}
-          {data.timeline.filter(t => t.type === 'COMMENT' && data.request.status !== 'RECHAZADO').map((comment, idx) => (
-            <div key={idx} className="md:col-span-2">
-              <p className="text-sm font-medium text-muted-foreground mb-1">Comentarios</p>
-              <p className="text-sm">{comment.details}</p>
-            </div>
-          ))}
         </div>
       </Card>
 

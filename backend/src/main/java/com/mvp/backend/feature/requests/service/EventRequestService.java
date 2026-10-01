@@ -22,7 +22,6 @@ import com.mvp.backend.feature.requests.dto.CreateEventRequestDto;
 import com.mvp.backend.feature.requests.dto.EventRequestCreatedDto;
 import com.mvp.backend.feature.requests.dto.EventRequestResponseDto;
 import com.mvp.backend.feature.requests.dto.TrackingResponse;
-import com.mvp.backend.feature.requests.dto.TrackingResponse.DepartmentData;
 import com.mvp.backend.feature.requests.dto.TrackingResponse.EventData;
 import com.mvp.backend.feature.requests.dto.TrackingResponse.LocationData;
 import com.mvp.backend.feature.requests.dto.TrackingResponse.LocationData.LocationType;
@@ -171,49 +170,23 @@ public class EventRequestService {
         RequestStatus requestStatus = event != null ? RequestStatus.CONVERTIDO : request.getStatus();
         RequestData requestData = new RequestData(requestStatus, request.getRequestDate());
 
-        EventData eventData = null;
-        ScheduleData scheduleData;
-        LocationData locationData;
-        DepartmentData departmentData;
-
-        if (event != null) {
-            eventData = new EventData(event.getId(), event.getStatus(), event.isInternal());
-            scheduleData = new ScheduleData(
-                    event.getDate(),
-                    event.getScheduleFrom(),
-                    event.getScheduleTo(),
-                    event.getTechnicalSchedule(),
-                    event.getBufferBeforeMin(),
-                    event.getBufferAfterMin());
-            locationData = toLocationData(event.getSpace(), event.getFreeLocation());
-            departmentData = event.getDepartment() != null
-                    ? new DepartmentData(event.getDepartment().getId(), event.getDepartment().getName())
-                    : null;
-        } else {
-            scheduleData = new ScheduleData(
-                    request.getDate(),
-                    request.getScheduleFrom(),
-                    request.getScheduleTo(),
-                    request.getTechnicalSchedule(),
-                    request.getBufferBeforeMin(),
-                    request.getBufferAfterMin());
-            locationData = toLocationData(request.getSpace(), request.getFreeLocation());
-            departmentData = request.getRequestingDepartment() != null
-                    ? new DepartmentData(request.getRequestingDepartment().getId(),
-                            request.getRequestingDepartment().getName())
-                    : null;
-        }
-
-        List<TimelineEntry> timeline = buildTimeline(request, event);
+        // Si la solicitud ya se convirtió, la agenda/ubicación vigente es la del evento.
+        EventData eventData = event != null ? new EventData(event.getStatus()) : null;
+        ScheduleData scheduleData = event != null
+                ? new ScheduleData(event.getDate(), event.getScheduleFrom(), event.getScheduleTo())
+                : new ScheduleData(request.getDate(), request.getScheduleFrom(), request.getScheduleTo());
+        LocationData locationData = event != null
+                ? toLocationData(event.getSpace(), event.getFreeLocation())
+                : toLocationData(request.getSpace(), request.getFreeLocation());
 
         return new TrackingResponse(
                 request.getTrackingUuid(),
+                request.getName(),
                 requestData,
                 eventData,
                 scheduleData,
                 locationData,
-                departmentData,
-                timeline);
+                buildTimeline(request, event));
     }
 
     @Transactional(readOnly = true)
@@ -252,39 +225,29 @@ public class EventRequestService {
         return space != null ? space.getDefaultBufferAfterMin() : 0;
     }
 
+    /**
+     * Línea temporal pública: sólo cambios de estado y de agenda, sin {@code details}.
+     * Comentarios internos, toggles de visibilidad, conformidades y demás auditoría
+     * quedan fuera del contrato público (hallazgos 1.1 y 1.3).
+     */
     private List<TimelineEntry> buildTimeline(EventRequest request, Event event) {
         List<TimelineEntry> entries = new ArrayList<>();
 
-        List<EventRequestHistory> requestHistories = eventRequestHistoryRepository
-                .findByRequestIdOrderByAtAsc(request.getId());
-        for (EventRequestHistory history : requestHistories) {
-            Type type = mapType(history.getType());
-            if (type == null) {
-                continue;
+        for (EventRequestHistory history : eventRequestHistoryRepository.findByRequestIdOrderByAtAsc(request.getId())) {
+            Type type = toPublicType(history.getType());
+            if (type != null) {
+                entries.add(new TimelineEntry(history.getAt(), Scope.REQUEST, type,
+                        publicValue(type, history.getFromValue()), publicValue(type, history.getToValue())));
             }
-            entries.add(new TimelineEntry(
-                    history.getAt(),
-                    Scope.REQUEST,
-                    type,
-                    history.getFromValue(),
-                    history.getToValue(),
-                    history.getDetails()));
         }
 
         if (event != null) {
-            List<EventHistory> eventHistories = eventHistoryRepository.findByEventIdOrderByAtAsc(event.getId());
-            for (EventHistory history : eventHistories) {
-                Type type = mapType(history.getType());
-                if (type == null) {
-                    continue;
+            for (EventHistory history : eventHistoryRepository.findByEventIdOrderByAtAsc(event.getId())) {
+                Type type = toPublicType(history.getType());
+                if (type != null) {
+                    entries.add(new TimelineEntry(history.getAt(), Scope.EVENT, type,
+                            publicValue(type, history.getFromValue()), publicValue(type, history.getToValue())));
                 }
-                entries.add(new TimelineEntry(
-                        history.getAt(),
-                        Scope.EVENT,
-                        type,
-                        history.getFromValue(),
-                        history.getToValue(),
-                        history.getDetails()));
             }
         }
 
@@ -292,26 +255,24 @@ public class EventRequestService {
         return List.copyOf(entries);
     }
 
-    private Type mapType(HistoryType type) {
+    private Type toPublicType(HistoryType type) {
         return switch (type) {
             case STATUS -> Type.STATUS;
-            case SCHEDULE_CHANGE -> Type.SCHEDULE_CHANGE;
-            case FIELD_UPDATE -> Type.FIELD_UPDATE;
-            case REPROGRAM -> Type.REPROGRAM;
-            case TECH_CAPACITY_REJECT -> Type.TECH_CAPACITY_REJECT;
-            case SPACE_CONFLICT -> Type.SPACE_CONFLICT;
-            case PRIORITY_CONFLICT -> Type.PRIORITY_CONFLICT;
-            case COMMENT_CREATED, COMMENT_UPDATED, COMMENT_DELETED -> Type.COMMENT;
-            case INTERNAL_TOGGLED -> Type.FIELD_UPDATE;
+            case SCHEDULE_CHANGE, REPROGRAM -> Type.SCHEDULE_CHANGE;
+            default -> null;
         };
+    }
+
+    /** Los valores from/to sólo se exponen para estados; un cambio de agenda se informa sin detalle. */
+    private String publicValue(Type type, String value) {
+        return type == Type.STATUS ? value : null;
     }
 
     private LocationData toLocationData(Space space, String freeLocation) {
         if (space != null) {
-            return new LocationData(LocationType.SPACE, space.getId(), space.getName(), null);
+            return new LocationData(LocationType.SPACE, space.getName(), null);
         }
-        String normalized = trimToNull(freeLocation);
-        return new LocationData(LocationType.FREE, null, null, normalized);
+        return new LocationData(LocationType.FREE, null, trimToNull(freeLocation));
     }
 
     private void validateBuffers(CreateEventRequestDto dto) {

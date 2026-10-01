@@ -638,40 +638,32 @@ export interface EventRequestCreatedResponse {
  */
 export interface EventRequestStatusResponse {
   trackingUuid: string;
+  name: string;
   request: {
-    status: string;               // RequestStatus: "SOLICITADO", "EN_REVISION", "CONVERTIDO"
+    status: 'RECIBIDO' | 'EN_REVISION' | 'CONVERTIDO' | 'RECHAZADO';
     submittedAt: string;          // ISO 8601
   };
+  /** Estado del evento creado al convertir la solicitud; null si aún no se convirtió. */
   event: {
-    id: number;
-    status: string;               // Status del evento
-    internal: boolean;
+    status: string;
   } | null;
   schedule: {
     date: string;                 // formato: yyyy-MM-dd
     from: string;                 // formato: HH:mm
     to: string;                   // formato: HH:mm
-    technical: string | null;     // formato: HH:mm
-    bufferBeforeMin: number;
-    bufferAfterMin: number;
   };
   location: {
     type: 'SPACE' | 'FREE';
-    spaceId: number | null;
     spaceName: string | null;
     freeLocation: string | null;
   };
-  department: {
-    id: number;
-    name: string;
-  } | null;
+  /** Sólo hitos públicos: cambios de estado y de agenda, sin detalles internos. */
   timeline: Array<{
     at: string;                   // ISO 8601
     scope: 'REQUEST' | 'EVENT';
-    type: 'STATUS' | 'SCHEDULE_CHANGE' | 'FIELD_UPDATE' | 'REPROGRAM' | 'TECH_CAPACITY_REJECT' | 'SPACE_CONFLICT' | 'PRIORITY_CONFLICT' | 'COMMENT';
+    type: 'STATUS' | 'SCHEDULE_CHANGE';
     from: string | null;
     to: string | null;
-    details: string | null;
   }>;
 }
 
