@@ -20,7 +20,8 @@ Roles: **AF** = ADMIN_FULL · **AC** = ADMIN_CEREMONIAL · **AT** = ADMIN_TECNIC
 | Ver capacidad técnica | `GET /api/tech/**` | | | ✔ | ✔ | ✔ |
 | Ver conflictos de prioridad | `GET /api/priority/conflicts/**` | | | ✔ | ✔ | ✔ |
 | Resolver conflictos de prioridad | `POST /api/priority/decisions` | | | ✔ | | ✔ |
-| Catálogos (espacios, departamentos) | `/api/catalogs/**` | | | ✔ | ✔ | ✔ |
+| Ver catálogos (espacios, departamentos) | `GET /api/catalogs/**` | | ✔ | ✔ | ✔ | ✔ |
+| Administrar catálogos | `POST/PATCH /api/catalogs/**` | | | ✔ | ✔ | ✔ |
 | Usuarios y roles | `/api/users/**`, `POST /auth/register` | | | | | ✔ |
 | Notificaciones propias | `/api/notifications/**` | | ✔ | ✔ | ✔ | ✔ |
 | Perfil y cambio de contraseña propio | `GET /auth/me`, `POST /auth/change-password` | | ✔ | ✔ | ✔ | ✔ |

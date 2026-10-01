@@ -55,7 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/public/catalogs/spaces").permitAll()
                         .requestMatchers(HttpMethod.GET, "/public/events").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/catalogs/**")
-                        .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
+                        .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "USUARIO")
                         .requestMatchers(HttpMethod.POST, "/api/catalogs/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.PATCH, "/api/catalogs/**")
@@ -76,6 +76,10 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.DELETE, "/api/events/*/comments/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
+                        // Alta, edición y baja lógica de eventos: sólo roles admin. USUARIO sólo crea
+                        // solicitudes (POST /public/event-requests) — hallazgo 1.4, docs/permisos.md.
+                        .requestMatchers(HttpMethod.PATCH, "/api/events/**")
+                        .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.GET, "/api/events/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "USUARIO")
                         .requestMatchers(HttpMethod.POST, "/api/availability/check")
@@ -95,7 +99,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/notifications/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "USUARIO")
                         .requestMatchers(HttpMethod.POST, "/api/events/**")
-                        .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "USUARIO")
+                        .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.GET, "/admin/event-requests/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.PATCH, "/admin/event-requests/**")
