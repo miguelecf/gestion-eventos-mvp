@@ -19,7 +19,7 @@ RUN ./mvnw -B -ntp -DskipTests package
 FROM eclipse-temurin:17-jre-jammy AS runtime
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system spring \
@@ -28,8 +28,10 @@ RUN groupadd --system spring \
 WORKDIR /app
 
 COPY --from=build /workspace/target/*.jar app.jar
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-RUN chown spring:spring /app/app.jar
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
+    && chown spring:spring /app/app.jar
 
 USER spring
 
@@ -41,4 +43,4 @@ EXPOSE 9090
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=5 \
   CMD curl -fsS http://localhost:9090/actuator/health || exit 1
 
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["docker-entrypoint.sh"]

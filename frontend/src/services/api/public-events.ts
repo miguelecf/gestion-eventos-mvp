@@ -20,7 +20,7 @@ import { adaptEventsFromBackend } from './adapters/event.adapter';
  */
 export async function fetchPublicEvents(): Promise<Event[]> {
   try {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9090';
+    const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
     const response = await fetch(`${baseUrl}/public/events`, {
       method: 'GET',
       headers: {
