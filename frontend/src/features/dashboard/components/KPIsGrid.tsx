@@ -12,6 +12,7 @@ import { TotalEventsKPI } from './TotalEventsKPI';
 import { StatusDistributionKPI } from './StatusDistributionKPI';
 import { ConformityPendingKPI } from './ConformityPendingKPI';
 import { TechLoadKPI } from './TechLoadKPI';
+import { useCan } from '@/hooks/useCan';
 
 /**
  * Grid de Indicadores KPI del Dashboard
@@ -28,6 +29,7 @@ import { TechLoadKPI } from './TechLoadKPI';
  */
 export function KPIsGrid() {
   const kpis = useDashboardKPIs();
+  const canViewTechCapacity = useCan()('viewTechCapacity', 'TechCapacity');
 
   return (
     <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -41,7 +43,7 @@ export function KPIsGrid() {
       <ConformityPendingKPI pending={kpis.conformityPending} />
 
       {/* KPI 4: Carga técnica */}
-      <TechLoadKPI load={kpis.techLoad} />
+      <TechLoadKPI load={kpis.techLoad} showCapacity={canViewTechCapacity} />
     </section>
   );
 }

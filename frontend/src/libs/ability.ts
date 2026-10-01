@@ -64,15 +64,15 @@ export function defineAbilityFor(roles: string[], _userId: string): AppAbility {
     can('changeState', 'Event');
     can('approveCeremonial', 'Event');
     can('internal:toggle', 'Event');
+    can('read', 'Priority');
     can('resolvePriority', 'Priority');
+    can('viewTechCapacity', 'TechCapacity');
     can(['comment:create', 'comment:update', 'comment:delete'], 'Comment');
     can('manageCatalogs', ['Space', 'Department']);
     can('audit:view', 'AuditLog');
     can('availability:check', 'Availability');
+    can('request:create', 'EventRequest');
     can('read', ['Space', 'Department', 'PublicRequest']);
-    
-    // Bloqueado
-    cannot('viewTechCapacity', 'TechCapacity');
   }
 
   // ROLE_ADMIN_TECNICA 🔧
@@ -81,45 +81,31 @@ export function defineAbilityFor(roles: string[], _userId: string): AppAbility {
     can('changeState', 'Event');
     can('approveTechnical', 'Event');
     can('internal:toggle', 'Event');
+    can('read', 'Priority');
     can('viewTechCapacity', 'TechCapacity');
     can(['comment:create', 'comment:update', 'comment:delete'], 'Comment');
     can('manageCatalogs', ['Space', 'Department']);
     can('audit:view', 'AuditLog');
     can('availability:check', 'Availability');
+    can('request:create', 'EventRequest');
     can('read', ['Space', 'Department', 'PublicRequest']);
     
-    // Bloqueado
+    // Bloqueado: las decisiones de prioridad son solo AF/AC
     cannot('resolvePriority', 'Priority');
   }
 
-  // ROLE_USUARIO 👤
+  // ROLE_USUARIO 👤 (docs/permisos.md: ver eventos, pedir solicitudes, chequear disponibilidad, ver catálogos)
   if (roles.includes('ROLE_USUARIO')) {
-    // Eventos: solo lectura
     can('read', 'Event');
-    
-    // Actualizar/eliminar solo si es creador (en validación manual en componentes)
-    can('update', 'Event');
-    can('delete', 'Event');
-    
-    // Solicitudes públicas
     can('request:create', 'EventRequest');
-    can('read', 'PublicRequest');
-    
-    // Comentarios
-    can('comment:create', 'Comment');
-    can('comment:update', 'Comment');
-    can('comment:delete', 'Comment');
-    
-    // Auditoría
-    can('audit:view', 'AuditLog');
-    
-    // Disponibilidad y catálogos (lectura)
     can('availability:check', 'Availability');
     can('read', ['Space', 'Department']);
-    
-    // Bloqueado
-    cannot(['create', 'changeState', 'internal:toggle'], 'Event');
-    cannot(['manageCatalogs', 'resolvePriority', 'viewTechCapacity'], 'all');
+
+    // Bloqueado (explícito): no crea/edita/da de baja eventos, no ve la bandeja,
+    // ni comentarios, auditoría, prioridad o capacidad técnica.
+    cannot(['create', 'update', 'delete', 'changeState', 'internal:toggle'], 'Event');
+    cannot('read', ['PublicRequest', 'Priority']);
+    cannot(['manageCatalogs', 'resolvePriority', 'viewTechCapacity', 'audit:view', 'comment:create', 'comment:update', 'comment:delete'], 'all');
   }
 
   return build();

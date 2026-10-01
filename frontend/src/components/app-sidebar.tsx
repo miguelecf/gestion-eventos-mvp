@@ -7,6 +7,7 @@ import {
   ListChecks,
   MapPinned,
   PlusCircle,
+  Send,
   Users2,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
@@ -15,39 +16,54 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import logo from "@/assets/unla-logo.svg";
-import { useRole } from "@/hooks/useRole";
+import { useCan } from "@/hooks/useCan";
+import type { Action, Subject } from "@/libs/ability";
 
 interface NavigationItem {
   label: string;
   to: string;
   icon: LucideIcon;
   badge?: string;
+  /** Mismo chequeo CASL que la ruta (app/routes.tsx); sin él, el ítem es visible para todos */
+  requires?: [Action, Subject];
+  /** Oculta el ítem si el usuario sí tiene este permiso */
+  hiddenIf?: [Action, Subject];
 }
 
 const primaryNavigation: NavigationItem[] = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
-  { label: "Calendario", to: "/calendar", icon: Calendar },
-  { label: "Eventos", to: "/events", icon: ListChecks },
+  { label: "Calendario", to: "/calendar", icon: Calendar, requires: ["read", "Event"] },
+  { label: "Eventos", to: "/events", icon: ListChecks, requires: ["read", "Event"] },
   {
     label: "Nuevo evento",
     to: "/events/new",
     icon: PlusCircle,
     badge: "NEW",
+    requires: ["create", "Event"],
+  },
+  {
+    // USUARIO no crea eventos: pide una solicitud por el formulario público
+    label: "Solicitar evento",
+    to: "/solicitud",
+    icon: Send,
+    requires: ["request:create", "EventRequest"],
+    hiddenIf: ["create", "Event"],
   },
   {
     label: "Solicitudes",
     to: "/solicitudes",
     icon: ClipboardList,
+    requires: ["read", "PublicRequest"],
   },
 ];
 
 const catalogsNavigation: NavigationItem[] = [
-  { label: "Espacios", to: "/catalog/spaces", icon: Building2 },
-  { label: "Departamentos", to: "/catalog/departments", icon: MapPinned },
+  { label: "Espacios", to: "/catalog/spaces", icon: Building2, requires: ["manageCatalogs", "Space"] },
+  { label: "Departamentos", to: "/catalog/departments", icon: MapPinned, requires: ["manageCatalogs", "Space"] },
 ];
 
 const adminNavigation: NavigationItem[] = [
-  { label: "Usuarios & Roles", to: "/admin/users", icon: Users2 },
+  { label: "Usuarios & Roles", to: "/admin/users", icon: Users2, requires: ["manage", "all"] },
 ];
 
 interface AppSidebarProps {
@@ -59,8 +75,16 @@ export default function AppSidebar({
   variant = "desktop",
   className,
 }: AppSidebarProps) {
-  const { isAdminFull } = useRole();
-  const showAdminSection = isAdminFull();
+  const can = useCan();
+  const visible = (items: NavigationItem[]) =>
+    items.filter(
+      (item) =>
+        (!item.requires || can(...item.requires)) &&
+        !(item.hiddenIf && can(...item.hiddenIf)),
+    );
+  const primaryItems = visible(primaryNavigation);
+  const catalogItems = visible(catalogsNavigation);
+  const adminItems = visible(adminNavigation);
   const year = new Date().getFullYear();
 
   return (
@@ -89,9 +113,9 @@ export default function AppSidebar({
 
       <ScrollArea className="flex-1 px-4">
         <div className="space-y-8 pb-8">
-          <SidebarSection title="Menu" items={primaryNavigation} />
-          <SidebarSection title="Catálogos" items={catalogsNavigation} />
-          {showAdminSection ? <SidebarSection title="Administración" items={adminNavigation} /> : null}
+          <SidebarSection title="Menu" items={primaryItems} />
+          {catalogItems.length > 0 ? <SidebarSection title="Catálogos" items={catalogItems} /> : null}
+          {adminItems.length > 0 ? <SidebarSection title="Administración" items={adminItems} /> : null}
         </div>
       </ScrollArea>
 

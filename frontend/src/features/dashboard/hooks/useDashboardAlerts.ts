@@ -11,6 +11,7 @@
 import { useTodayEvents } from './useTodayEvents';
 import { usePriorityConflicts } from './usePriorityConflicts';
 import { useTechCapacity } from './useTechCapacity';
+import { useCan } from '@/hooks/useCan';
 import { eventRules } from '../utils/event-rules';
 import { parseISO, differenceInHours, isToday } from 'date-fns';
 
@@ -49,6 +50,9 @@ export function useDashboardAlerts(): DashboardAlert[] {
   const { data: events } = useTodayEvents();
   const { data: conflicts } = usePriorityConflicts();
   const { data: techCapacity } = useTechCapacity();
+  // Conflictos y capacidad técnica llegan undefined si el rol no puede verlos
+  // (queries deshabilitadas): esas alertas simplemente no se generan.
+  const canResolvePriority = useCan()('resolvePriority', 'Priority');
 
   const alerts: DashboardAlert[] = [];
 
@@ -75,7 +79,7 @@ export function useDashboardAlerts(): DashboardAlert[] {
           todayConflicts.length > 1 ? 's' : ''
         } requiere${todayConflicts.length > 1 ? 'n' : ''} resolución`,
         count: todayConflicts.length,
-        actionLabel: 'Resolver conflictos',
+        actionLabel: canResolvePriority ? 'Resolver conflictos' : 'Ver eventos',
         actionHref: '/events',
         items: todayConflicts.slice(0, 3).map((c) => {
           // Buscar nombres de eventos en la lista de eventos del día

@@ -21,6 +21,8 @@ interface TechLoadKPIProps {
     /** Porcentaje máximo de capacidad usada (0-100) */
     maxCapacityUsed: number;
   };
+  /** Mostrar la capacidad de franjas (requiere permiso viewTechCapacity) */
+  showCapacity?: boolean;
 }
 
 /**
@@ -33,7 +35,7 @@ interface TechLoadKPIProps {
  * />
  * ```
  */
-export function TechLoadKPI({ load }: TechLoadKPIProps) {
+export function TechLoadKPI({ load, showCapacity = true }: TechLoadKPIProps) {
   const isHigh = load.maxCapacityUsed >= 90;
   const isMedium = load.maxCapacityUsed >= 70;
 
@@ -74,27 +76,29 @@ export function TechLoadKPI({ load }: TechLoadKPIProps) {
           </span>
         </div>
 
-        {/* Capacidad técnica */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">Capacidad máxima:</span>
-            <span className={cn('font-semibold', getCapacityColor())}>
-              {Math.round(load.maxCapacityUsed)}%
-            </span>
-          </div>
-          
-          <Progress 
-            value={load.maxCapacityUsed} 
-            className={cn('h-2', getProgressColor())}
-          />
+        {/* Capacidad técnica (solo roles que pueden verla) */}
+        {showCapacity ? (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Capacidad máxima:</span>
+              <span className={cn('font-semibold', getCapacityColor())}>
+                {Math.round(load.maxCapacityUsed)}%
+              </span>
+            </div>
+            
+            <Progress 
+              value={load.maxCapacityUsed} 
+              className={cn('h-2', getProgressColor())}
+            />
 
-          {/* Alerta si >= 90% */}
-          {isHigh && (
-            <p className="text-xs font-medium text-red-700">
-              ⚠️ Capacidad casi completa
-            </p>
-          )}
-        </div>
+            {/* Alerta si >= 90% */}
+            {isHigh && (
+              <p className="text-xs font-medium text-red-700">
+                ⚠️ Capacidad casi completa
+              </p>
+            )}
+          </div>
+        ) : null}
       </div>
     </KPICard>
   );

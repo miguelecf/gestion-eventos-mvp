@@ -139,7 +139,7 @@ export function DetailPage() {
     event?.date ?? null,
     event?.scheduleFrom ?? null,
     event?.scheduleTo ?? null,
-    Boolean(event?.requiresTech) && permissions.isOperativeRole
+    Boolean(event?.requiresTech) && permissions.canViewTechCapacity
   );
 
   const displayStatus = currentStatus ?? event?.status ?? null;
@@ -733,7 +733,7 @@ export function DetailPage() {
             saturatedBlocks={saturatedBlocks}
           />
 
-          {techCapacityError && permissions.isOperativeRole ? (
+          {techCapacityError && permissions.canViewTechCapacity ? (
             <EventSectionErrorState
               title="No se pudo cargar la capacidad tecnica"
               message={techCapacityError}
@@ -753,7 +753,7 @@ export function DetailPage() {
               {event.lastModifiedBy ? (
                 <InfoField label="Ultima modificacion por" value={formatUserName(event.lastModifiedBy)} />
               ) : null}
-              {loadingTechCapacity && event.requiresTech && permissions.isOperativeRole ? (
+              {loadingTechCapacity && event.requiresTech && permissions.canViewTechCapacity ? (
                 <p className="text-xs text-muted-foreground">Actualizando capacidad tecnica...</p>
               ) : null}
             </CardContent>

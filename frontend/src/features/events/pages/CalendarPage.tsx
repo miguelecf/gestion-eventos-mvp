@@ -7,6 +7,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import type { EventInput, DateSelectArg, EventClickArg } from '@fullcalendar/core';
 import { eventsApi } from '@/services/api';
 import type { Event } from '@/models/event';
+import { useCan } from '@/hooks/useCan';
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -66,6 +67,8 @@ export function CalendarPage() {
     navigate(`/events/${eventId}`);
   }, [navigate]);
 
+  const canCreateEvent = useCan()('create', 'Event');
+
   const handleDateSelect = useCallback((selectInfo: DateSelectArg) => {
     const dateStr = selectInfo.startStr;
     navigate(`/events/new?date=${dateStr}`);
@@ -124,7 +127,7 @@ export function CalendarPage() {
               locale="es"
               firstDay={1}
               events={events}
-              selectable={true}
+              selectable={canCreateEvent}
               select={handleDateSelect}
               eventClick={handleEventClick}
               eventContent={renderEventContent}

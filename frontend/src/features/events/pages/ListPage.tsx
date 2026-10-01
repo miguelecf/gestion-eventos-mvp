@@ -48,6 +48,7 @@ import {
 } from '@/features/events/utils/list-sorting';
 import { getEditBlockReason } from '@/features/events/utils/edit-event';
 import { useEventPermissions } from '@/features/events/hooks/useEventPermissions';
+import { useCan } from '@/hooks/useCan';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { Event, EventFilters } from '@/models/event';
@@ -220,7 +221,9 @@ export function ListPage() {
   const [pageSize, setPageSize] = useState<10 | 20 | 50>(20);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   // Baja lógica permitida en cualquier estado; solo depende del rol (sin evento => sin ownership)
-  const { canDeleteEvent } = useEventPermissions(null);
+  const { canDeleteEvent, canUpdateEvent } = useEventPermissions(null);
+  const can = useCan();
+  const canCreateEvent = can('create', 'Event');
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
   const loadEvents = useCallback(async () => {
@@ -419,10 +422,12 @@ export function ListPage() {
             </p>
           </div>
           
-          <Button onClick={() => navigate('/events/new')}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo evento
-          </Button>
+          {canCreateEvent ? (
+            <Button onClick={() => navigate('/events/new')}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo evento
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -728,23 +733,26 @@ export function ListPage() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => handleEditClick(event, e)}
-                              title={canEditEvent(event.status) ? 'Editar evento' : 'Ver motivo de bloqueo'}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => handleDeleteClick(event, e)}
-                              disabled={!canDeleteEvent}
-                              title={canDeleteEvent ? 'Eliminar evento' : 'No tenés permiso para eliminar eventos'}
-                            >
-                              <Trash className="w-4 h-4" />
-                            </Button>
+                            {canUpdateEvent ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => handleEditClick(event, e)}
+                                title={canEditEvent(event.status) ? 'Editar evento' : 'Ver motivo de bloqueo'}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            ) : null}
+                            {canDeleteEvent ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => handleDeleteClick(event, e)}
+                                title="Eliminar evento"
+                              >
+                                <Trash className="w-4 h-4" />
+                              </Button>
+                            ) : null}
                           </div>
                         </td>
                       </tr>
@@ -847,14 +855,16 @@ export function ListPage() {
                           <Eye className="w-4 h-4 mr-2" />
                           Ver
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => handleEditClick(event, e)}
-                          title={canEditEvent(event.status) ? 'Editar evento' : 'Ver motivo de bloqueo'}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        {canUpdateEvent ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => handleEditClick(event, e)}
+                            title={canEditEvent(event.status) ? 'Editar evento' : 'Ver motivo de bloqueo'}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        ) : null}
                         {canDeleteEvent && (
                           <Button
                             variant="outline"
