@@ -172,6 +172,8 @@ public class EventService {
         boolean previousInternal = event.isInternal();
         Long previousSpaceId = event.getSpace() != null ? event.getSpace().getId() : null;
         String previousFreeLocation = event.getFreeLocation();
+        int previousBufferBefore = event.getBufferBeforeMin();
+        int previousBufferAfter = event.getBufferAfterMin();
 
         Space newSpace = resolveSpace(req.spaceId());
 
@@ -181,9 +183,14 @@ public class EventService {
                     .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Department not found"));
         }
 
-        Space effectiveSpace = req.spaceId() != null ? newSpace : event.getSpace();
-        String effectiveFreeLocation = req.freeLocation() != null ? trimToNull(req.freeLocation())
-                : event.getFreeLocation();
+        // spaceId y freeLocation son mutuamente excluyentes: enviar uno en el PATCH reemplaza al otro
+        // (hallazgo 2.9). Enviar ambos sigue siendo inválido.
+        boolean switchingToFreeLocation = req.spaceId() == null && StringUtils.hasText(req.freeLocation());
+        boolean switchingToSpace = req.spaceId() != null && req.freeLocation() == null;
+        Space effectiveSpace = req.spaceId() != null ? newSpace
+                : (switchingToFreeLocation ? null : event.getSpace());
+        String effectiveFreeLocation = switchingToSpace ? null
+                : (req.freeLocation() != null ? trimToNull(req.freeLocation()) : event.getFreeLocation());
         boolean hasSpace = effectiveSpace != null;
         boolean hasFreeLocation = StringUtils.hasText(effectiveFreeLocation);
 
@@ -253,11 +260,18 @@ public class EventService {
         }
 
         // asignar los cambios
+        boolean freeLocationChanged = !Objects.equals(trimToNull(previousFreeLocation),
+                hasSpace ? null : effectiveFreeLocation);
         boolean agendaChanged = !Objects.equals(previousDate, effectiveDate)
                 || !Objects.equals(previousFrom, effectiveFrom)
                 || !Objects.equals(previousTo, effectiveTo)
-                || spaceChanged;
-        boolean requiresReprogram = agendaChanged && isBlockingStatus(previousStatus);
+                || spaceChanged
+                || freeLocationChanged;
+        // Los buffers cambian la ocupación operativa: invalidan la revisión previa (hallazgo 3.7),
+        // pero no se notifican al solicitante como reprogramación.
+        boolean buffersChanged = previousBufferBefore != effectiveBufferBefore
+                || previousBufferAfter != effectiveBufferAfter;
+        boolean requiresReprogram = (agendaChanged || buffersChanged) && isBlockingStatus(previousStatus);
 
         if (req.date() != null)
             event.setDate(req.date());
@@ -325,6 +339,11 @@ public class EventService {
         if (agendaChanged) {
             auditService.recordScheduleChange(saved, currentUser, saved.getDate(), saved.getScheduleFrom(),
                     saved.getScheduleTo());
+        }
+        if (buffersChanged) {
+            auditService.recordFieldUpdate(saved, currentUser, "buffers",
+                    previousBufferBefore + "/" + previousBufferAfter,
+                    effectiveBufferBefore + "/" + effectiveBufferAfter, null, null);
         }
 
         // agregar las otificaciones de si se movió agenda/espacio

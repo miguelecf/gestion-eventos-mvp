@@ -123,10 +123,6 @@ export function EditPage() {
   }, [eventId, navigate, reset]);
 
   const handleLocationTypeChange = (type: 'space' | 'free') => {
-    if (event?.spaceId && type === 'free') {
-      return;
-    }
-
     setLocationType(type);
 
     if (type === 'space') {
@@ -268,7 +264,6 @@ export function EditPage() {
     );
   }
 
-  const blockSpaceToFreeSwitch = locationType === 'space' && Boolean(event.spaceId ?? event.space?.id);
   const allowAudienceTypeClear = !event.audienceType;
   const allowTechnicalScheduleClear = !event.technicalSchedule;
 
@@ -316,7 +311,6 @@ export function EditPage() {
           mode="edit"
           locationType={locationType}
           onLocationTypeChange={handleLocationTypeChange}
-          lockFreeLocationOption={blockSpaceToFreeSwitch}
           allowAudienceTypeClear={allowAudienceTypeClear}
           allowTechnicalScheduleClear={allowTechnicalScheduleClear}
           syncPriorityWithRequestingArea={true}
