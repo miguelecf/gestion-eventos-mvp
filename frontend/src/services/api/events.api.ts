@@ -311,9 +311,9 @@ export async function updateEvent(
 }
 
 /**
- * Elimina un evento
+ * Da de baja (soft-delete) un evento: PATCH /api/events/{id}/soft-delete
  * 
- * @param eventId - ID del evento a eliminar
+ * @param eventId - ID del evento a dar de baja
  * 
  * @throws {ApiError} Si el evento no existe (404) o no puede eliminarse (400)
  * 
@@ -321,7 +321,7 @@ export async function updateEvent(
  * await eventsApi.deleteEvent(123);
  */
 export async function deleteEvent(eventId: number): Promise<void> {
-  await httpClient.delete(ENDPOINTS.EVENT_BY_ID(eventId));
+  await httpClient.patch(ENDPOINTS.EVENT_SOFT_DELETE(eventId));
 }
 
 /**
