@@ -30,4 +30,12 @@ class PriorityConflictAccessIntegrationTest extends IntegrationTestBase {
         // Autorizado: llega al servicio y responde 404 porque el conflicto no existe.
         mockMvc.perform(as(Role.ADMIN_CEREMONIAL, json(post("/api/priority/decisions"), DECISION))).andExpect(status().isNotFound());
     }
+
+    /** Hallazgo 3.4: CANCELLED no tenía efecto real y se eliminó del contrato. */
+    @Test
+    void decisionCancelledYaNoExiste() throws Exception {
+        Map<String, Object> cancelled = Map.of("conflictId", "NO-EXISTE", "deciderUserId", 1, "decision", "CANCELLED");
+        mockMvc.perform(as(Role.ADMIN_FULL, json(post("/api/priority/decisions"), cancelled)))
+                .andExpect(status().isBadRequest());
+    }
 }
