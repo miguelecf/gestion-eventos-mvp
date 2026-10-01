@@ -98,8 +98,8 @@ public class AuditService {
         repository.save(baseBuilder(event, actor)
                 .type(HistoryType.FIELD_UPDATE)
                 .field(field)
-                .fromValue(from)
-                .toValue(to)
+                .fromValue(abbreviate(from))
+                .toValue(abbreviate(to))
                 .reason(trimToNull(reason))
                 .note(trimToNull(note))
                 .build());
@@ -274,5 +274,13 @@ public class AuditService {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize audit payload", e);
         }
+    }
+
+    /** from_value/to_value son VARCHAR(256): textos largos (observaciones, requerimientos) se recortan. */
+    private String abbreviate(String value) {
+        if (value == null || value.length() <= 256) {
+            return value;
+        }
+        return value.substring(0, 253) + "...";
     }
 }

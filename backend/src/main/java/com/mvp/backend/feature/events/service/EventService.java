@@ -42,6 +42,8 @@ import org.springframework.util.StringUtils;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.time.LocalTime;
 import java.util.Objects;
 
@@ -273,6 +275,8 @@ public class EventService {
                 || previousBufferAfter != effectiveBufferAfter;
         boolean requiresReprogram = (agendaChanged || buffersChanged) && isBlockingStatus(previousStatus);
 
+        Map<String, String> auditableBefore = auditableFields(event);
+
         if (req.date() != null)
             event.setDate(req.date());
         if (req.technicalSchedule() != null)
@@ -363,6 +367,15 @@ public class EventService {
         if (previousInternal != saved.isInternal()) {
             auditService.recordInternalToggle(saved, currentUser, previousInternal, saved.isInternal());
         }
+
+        // Resto de campos editables: una entrada FIELD_UPDATE por cada cambio (hallazgo 4.4).
+        Map<String, String> auditableAfter = auditableFields(saved);
+        auditableBefore.forEach((field, before) -> {
+            String after = auditableAfter.get(field);
+            if (!Objects.equals(before, after)) {
+                auditService.recordFieldUpdate(saved, currentUser, field, before, after, null, null);
+            }
+        });
 
         return new EventUpdateResult(saved.getId(), saved.getPriority(), saved.getStatus(), conflictSummaries);
     }
@@ -486,6 +499,29 @@ public class EventService {
         return spaceRepository.findById(spaceId)
                 .filter(Space::isActive)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Space not found"));
+    }
+
+    /**
+     * Campos de negocio auditables campo a campo. Agenda, ubicación, buffers e internal tienen
+     * su propia auditoría (SCHEDULE_CHANGE / FIELD_UPDATE buffers / INTERNAL_TOGGLED).
+     */
+    private Map<String, String> auditableFields(Event event) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("name", event.getName());
+        fields.put("requestingArea", event.getRequestingArea());
+        fields.put("department", event.getDepartment() != null ? event.getDepartment().getName() : null);
+        fields.put("requirements", event.getRequirements());
+        fields.put("coverage", event.getCoverage());
+        fields.put("observations", event.getObservations());
+        fields.put("priority", event.getPriority() != null ? event.getPriority().name() : null);
+        fields.put("audienceType", event.getAudienceType() != null ? event.getAudienceType().name() : null);
+        fields.put("requiresTech", String.valueOf(event.isRequiresTech()));
+        fields.put("techSupportMode", event.getTechSupportMode() != null ? event.getTechSupportMode().name() : null);
+        fields.put("technicalSchedule", event.getTechnicalSchedule() != null ? event.getTechnicalSchedule().toString() : null);
+        fields.put("contactName", event.getContactName());
+        fields.put("contactEmail", event.getContactEmail());
+        fields.put("contactPhone", event.getContactPhone());
+        return fields;
     }
 
     private TechSupportMode resolveTechSupportMode(boolean requiresTech, TechSupportMode requested) {

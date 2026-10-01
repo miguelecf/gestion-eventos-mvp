@@ -129,8 +129,31 @@ function describeFieldUpdate(entry: BackendAuditEntryDTO): string {
       : 'revocó conformidad técnica';
   }
 
-  return `actualizó ${field}`;
+  const label = FIELD_LABELS[field] ?? field;
+  if (entry.fromValue != null || entry.toValue != null) {
+    return `actualizó ${label}: "${entry.fromValue ?? '—'}" → "${entry.toValue ?? '—'}"`;
+  }
+  return `actualizó ${label}`;
 }
+
+/** Etiquetas legibles de los campos auditados por el backend (EventService.auditableFields y buffers). */
+const FIELD_LABELS: Record<string, string> = {
+  name: 'el nombre',
+  requestingArea: 'el área solicitante',
+  department: 'el departamento',
+  requirements: 'los requerimientos',
+  coverage: 'la cobertura',
+  observations: 'las observaciones',
+  priority: 'la prioridad',
+  audienceType: 'el tipo de audiencia',
+  requiresTech: 'el requerimiento técnico',
+  techSupportMode: 'la modalidad de soporte técnico',
+  technicalSchedule: 'el horario técnico',
+  contactName: 'el contacto',
+  contactEmail: 'el email de contacto',
+  contactPhone: 'el teléfono de contacto',
+  buffers: 'los márgenes de montaje/desmontaje (antes/después)',
+};
 
 function describeComment(entry: BackendAuditEntryDTO, actionType: AuditActionType): string {
   const payload = parseJsonDetails(entry.details);
