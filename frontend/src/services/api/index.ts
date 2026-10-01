@@ -172,6 +172,7 @@ export type {
   PublicSpacesFilters,
   RequestConversionResult,
   RequestConversionOptions,
+  RequestHistoryEntry,
 } from './publicRequests.api';
 export type {
   PublicEventRequestPayload,

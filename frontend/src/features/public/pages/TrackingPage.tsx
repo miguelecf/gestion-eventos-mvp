@@ -202,6 +202,9 @@ export function TrackingPage() {
           <Alert variant="destructive">
             <AlertDescription>
               <p className="font-semibold mb-1">Solicitud rechazada</p>
+              {data.rejectionReason ? (
+                <p className="text-sm">Motivo: {data.rejectionReason}</p>
+              ) : null}
               <p className="text-sm">Ante cualquier consulta, comuníquese con la institución.</p>
             </AlertDescription>
           </Alert>

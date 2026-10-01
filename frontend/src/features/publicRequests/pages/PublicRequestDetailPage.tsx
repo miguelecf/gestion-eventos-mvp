@@ -22,7 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { eventsApi } from '@/services/api';
+import { eventsApi, publicRequestsApi } from '@/services/api';
+import type { RequestHistoryEntry } from '@/services/api';
 import { PublicRequestStatusBadge } from '@/features/publicRequests/components';
 import { usePublicRequestsStore } from '@/store/publicRequests.store';
 import {
@@ -61,6 +62,8 @@ export function PublicRequestDetailPage() {
   } = usePublicRequestsStore();
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [history, setHistory] = useState<RequestHistoryEntry[]>([]);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [convertRequiresTech, setConvertRequiresTech] = useState(false);
   const [convertTechMode, setConvertTechMode] = useState<'SETUP_ONLY' | 'ATTENDED'>('SETUP_ONLY');
@@ -78,6 +81,15 @@ export function PublicRequestDetailPage() {
       toast.error('No se pudo cargar la solicitud');
     }
   }, [fetchRequestById, invalidRequestId, requestId]);
+
+  // Historial con actor y motivo; se recarga cuando cambia el estado de la solicitud.
+  useEffect(() => {
+    if (!requestId) return;
+    publicRequestsApi
+      .getAdminRequestHistory(requestId)
+      .then(setHistory)
+      .catch(() => setHistory([]));
+  }, [requestId, selectedRequest?.status]);
 
   useEffect(() => {
     if (invalidRequestId) {
@@ -149,7 +161,12 @@ export function PublicRequestDetailPage() {
   };
 
   const handleReject = async () => {
-    const updatedRequest = await changeRequestStatus(requestId, 'RECHAZADO');
+    const reason = rejectReason.trim();
+    if (!reason) {
+      toast.error('Indicá el motivo del rechazo');
+      return;
+    }
+    const updatedRequest = await changeRequestStatus(requestId, 'RECHAZADO', reason);
 
     if (!updatedRequest) {
       toast.error('No se pudo rechazar la solicitud', {
@@ -330,6 +347,35 @@ export function PublicRequestDetailPage() {
               />
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Historial</CardTitle>
+              <CardDescription>Quién tomó cada decisión sobre esta solicitud y por qué.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {history.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sin movimientos registrados.</p>
+              ) : (
+                <ol className="space-y-3">
+                  {history.map((entry) => (
+                    <li key={entry.id} className="border-l-2 pl-3 text-sm">
+                      <div className="font-medium">
+                        {entry.fromValue ? `${entry.fromValue} → ${entry.toValue}` : entry.toValue}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {formatDateTime(entry.at)} ·{' '}
+                        {entry.actor
+                          ? `${entry.actor.name} ${entry.actor.lastName} (${entry.actor.username})`
+                          : 'Solicitante (formulario público)'}
+                      </div>
+                      {entry.reason ? <div className="mt-1">Motivo: {entry.reason}</div> : null}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="space-y-6">
@@ -481,9 +527,24 @@ export function PublicRequestDetailPage() {
           <DialogHeader>
             <DialogTitle>Rechazar solicitud</DialogTitle>
             <DialogDescription>
-              La solicitud quedará rechazada y ya no podrá convertirse a evento.
+              La solicitud quedará rechazada y ya no podrá convertirse a evento. El motivo se
+              comunica al solicitante por correo y en la página de seguimiento.
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-1">
+            <label htmlFor="reject-reason" className="text-sm font-medium">
+              Motivo del rechazo <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              id="reject-reason"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              maxLength={500}
+              rows={4}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              placeholder="Ej.: el espacio solicitado está reservado para un acto institucional."
+            />
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -492,7 +553,7 @@ export function PublicRequestDetailPage() {
             >
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleReject} disabled={loading.action}>
+            <Button variant="destructive" onClick={handleReject} disabled={loading.action || !rejectReason.trim()}>
               {loading.action ? 'Procesando...' : 'Confirmar rechazo'}
             </Button>
           </DialogFooter>

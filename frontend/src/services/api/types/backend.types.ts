@@ -614,6 +614,8 @@ export interface EventRequestCreatedResponse {
 export interface EventRequestStatusResponse {
   trackingUuid: string;
   name: string;
+  /** Motivo comunicado al rechazar la solicitud; null si no está rechazada. */
+  rejectionReason: string | null;
   request: {
     status: 'RECIBIDO' | 'EN_REVISION' | 'CONVERTIDO' | 'RECHAZADO';
     submittedAt: string;          // ISO 8601

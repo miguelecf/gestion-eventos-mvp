@@ -343,6 +343,22 @@ export interface RequestConversionOptions {
   techSupportMode?: 'SETUP_ONLY' | 'ATTENDED';
 }
 
+/** Entrada del historial de una solicitud (GET /admin/event-requests/{id}/history). */
+export interface RequestHistoryEntry {
+  id: number;
+  at: string;
+  type: string;
+  fromValue: string | null;
+  toValue: string | null;
+  reason: string | null;
+  /** null cuando la acción la originó el solicitante (alta pública). */
+  actor: { id: number; username: string; name: string; lastName: string } | null;
+}
+
+export async function getAdminRequestHistory(id: number): Promise<RequestHistoryEntry[]> {
+  return httpClient.get<RequestHistoryEntry[]>(`${ENDPOINTS.ADMIN_EVENT_REQUEST_BY_ID(id)}/history`);
+}
+
 export async function convertAdminRequestToEvent(
   id: number,
   options: RequestConversionOptions = { requiresTech: false }
@@ -424,6 +440,7 @@ export const publicRequestsApi = {
   getAdminRequestById,
   changeAdminRequestStatus,
   convertAdminRequestToEvent,
+  getAdminRequestHistory,
   getPublicRequests,
   getPublicRequestById,
   createPublicEventRequest,
