@@ -44,9 +44,9 @@ export default function PublicAccessPanel({
   const trackingErrorId = useId();
   const isDesktop = variant === "desktop";
   const desktopSecondaryButtonClassName =
-    "h-12 w-full rounded-xl border border-white/20 bg-white/5 px-6 !text-white no-underline hover:bg-white/10 hover:!text-white hover:no-underline";
+    "h-auto min-h-12 w-full rounded-xl border border-white/20 bg-white/5 px-6 py-2.5 text-center whitespace-normal leading-tight !text-white no-underline hover:bg-white/10 hover:!text-white hover:no-underline";
   const mobileSecondaryButtonClassName =
-    "h-11 w-full rounded-xl border-[#6f1717]/15 bg-white/80 !text-[#6f1717] no-underline hover:bg-[#f7eded] hover:!text-[#6f1717] hover:no-underline dark:border-white/15 dark:bg-white/10 dark:!text-white dark:hover:bg-white/15 dark:hover:!text-white";
+    "h-auto min-h-11 w-full rounded-xl border-[#6f1717]/15 bg-white/80 py-2.5 text-center whitespace-normal leading-tight !text-[#6f1717] no-underline hover:bg-[#f7eded] hover:!text-[#6f1717] hover:no-underline dark:border-white/15 dark:bg-white/10 dark:!text-white dark:hover:bg-white/15 dark:hover:!text-white";
   const desktopPrimaryButtonClassName =
     "h-12 w-full rounded-xl bg-white px-6 !text-[#6f1717] no-underline shadow-lg shadow-black/10 hover:bg-white/90 hover:no-underline";
   const mobilePrimaryButtonClassName =
