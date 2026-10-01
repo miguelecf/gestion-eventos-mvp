@@ -523,31 +523,6 @@ export interface BackendSubmitPublicRequestResponse {
 }
 
 /**
- * Respuesta de tracking de solicitud pública
- * Endpoint: GET /public/track/{trackingUuid}
- */
-export interface BackendPublicTrackingResponse {
-  trackingUuid: string;
-  requestStatus: PublicRequestStatus;
-  submittedAt: string;           // ISO 8601
-  eventId: number | null;
-  eventStatus: EventStatus | null;
-  eventDetails: {
-    name: string;
-    date: string;                // yyyy-MM-dd
-    from: string;                // HH:mm
-    to: string;                  // HH:mm
-    spaceName: string | null;
-    departmentName: string | null;
-  } | null;
-  statusHistory: Array<{
-    status: PublicRequestStatus | EventStatus;
-    timestamp: string;           // ISO 8601
-    description: string;
-  }>;
-}
-
-/**
  * DTO de usuario autenticado
  * Endpoint: GET /auth/me
  */

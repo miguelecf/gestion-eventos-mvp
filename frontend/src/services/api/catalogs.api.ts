@@ -18,7 +18,6 @@ import type {
   BackendDepartmentDTO,
   BackendSubmitPublicRequestDTO,
   BackendSubmitPublicRequestResponse,
-  BackendPublicTrackingResponse,
   PriorityConflictStatus,
   ConflictDecision,
   BackendPageResponse
@@ -117,24 +116,6 @@ export interface PublicRequestResult {
   trackingUuid: string;
   message: string;
   nextSteps: string[];
-}
-
-/**
- * Estado de seguimiento público
- */
-export interface PublicTrackingResult {
-  trackingUuid: string;
-  eventName: string;
-  status: string;
-  submittedAt: Date;
-  lastUpdate: Date;
-  statusHistory: Array<{
-    status: string;
-    timestamp: Date;
-    note?: string;
-  }>;
-  canEdit: boolean;
-  canCancel: boolean;
 }
 
 // ==================== FUNCIONES DE CONFLICTOS DE PRIORIDAD ====================
@@ -747,58 +728,6 @@ export async function submitPublicRequest(
   };
 }
 
-/**
- * Consulta el estado de una solicitud pública
- * Endpoint público (sin autenticación)
- * 
- * @param trackingUuid - UUID de seguimiento
- * @returns Estado de la solicitud
- * 
- * @example
- * const status = await catalogsApi.trackPublicRequest(
- *   'uuid-abc-123'
- * );
- * 
- * console.log(`Estado: ${status.status}`);
- * console.log(`Última actualización: ${status.lastUpdate}`);
- */
-export async function trackPublicRequest(
-  trackingUuid: string
-): Promise<PublicTrackingResult> {
-  const response = await httpClient.get<BackendPublicTrackingResponse>(
-    ENDPOINTS.PUBLIC_TRACK(trackingUuid)
-  );
-
-  // Adaptamos la respuesta del backend
-  const eventName = response.eventDetails?.name || 'Solicitud de evento';
-  const status = response.requestStatus;
-  
-  // Última actualización es el último registro del historial
-  const lastHistoryEntry = response.statusHistory[response.statusHistory.length - 1];
-  const lastUpdate = lastHistoryEntry 
-    ? new Date(lastHistoryEntry.timestamp)
-    : new Date(response.submittedAt);
-
-  // Determinar si se puede editar o cancelar basado en el estado
-  const canEdit = response.requestStatus === 'RECEIVED';
-  const canCancel = response.requestStatus === 'RECEIVED';
-
-  return {
-    trackingUuid: response.trackingUuid,
-    eventName,
-    status,
-    submittedAt: new Date(response.submittedAt),
-    lastUpdate,
-    statusHistory: response.statusHistory.map(h => ({
-      status: h.status,
-      timestamp: new Date(h.timestamp),
-      note: h.description
-    })),
-    canEdit,
-    canCancel
-  };
-}
-
 // ==================== HELPERS Y UTILIDADES ====================
 
 /**
@@ -885,8 +814,7 @@ export const catalogsApi = {
   updateDepartment,  // ✅ NUEVO - CRUD
   
   // Solicitudes públicas
-  submitPublicRequest,
-  trackPublicRequest
+  submitPublicRequest
 };
 
 export default catalogsApi;

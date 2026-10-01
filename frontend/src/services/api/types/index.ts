@@ -61,6 +61,5 @@ export type {
   BackendPriorityDecisionResult,
   BackendSubmitPublicRequestDTO,
   BackendSubmitPublicRequestResponse,
-  BackendPublicTrackingResponse,
   BackendMeDTO
 } from './backend.types';

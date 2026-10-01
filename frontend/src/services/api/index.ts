@@ -65,7 +65,6 @@ export type {
   BackendPriorityDecisionResult,
   BackendSubmitPublicRequestDTO,
   BackendSubmitPublicRequestResponse,
-  BackendPublicTrackingResponse,
   BackendMeDTO
 } from './types';
 
@@ -163,8 +162,7 @@ export type {
   MakeDecisionParams,
   DecisionResult,
   PublicEventRequestInput,
-  PublicRequestResult,
-  PublicTrackingResult
+  PublicRequestResult
 } from './catalogs.api';
 
 // SDK de Solicitudes Públicas
