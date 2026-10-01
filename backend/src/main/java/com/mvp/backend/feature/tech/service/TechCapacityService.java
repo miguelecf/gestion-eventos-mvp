@@ -157,7 +157,7 @@ public class TechCapacityService {
     }
 
     private TechCapacityConfig getActiveConfig() {
-        return configRepository.findFirstByActiveTrue()
+        return configRepository.findFirstByActiveTrueOrderByIdDesc()
                 .orElseGet(() -> TechCapacityConfig.builder()
                         .blockMinutes(30)
                         .defaultSlotsPerBlock(10)

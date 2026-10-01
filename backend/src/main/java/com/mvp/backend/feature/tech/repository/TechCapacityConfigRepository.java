@@ -9,5 +9,9 @@ import java.util.Optional;
 @Repository
 public interface TechCapacityConfigRepository extends JpaRepository<TechCapacityConfig, Long> {
 
-    Optional<TechCapacityConfig> findFirstByActiveTrue();
+    /**
+     * Configuración vigente: si por error hubiera varias activas, gana la más reciente (mayor id),
+     * de forma determinística. La configuración se gestiona por migración Flyway (ver docs/hallazgos-estado.md, 3.5).
+     */
+    Optional<TechCapacityConfig> findFirstByActiveTrueOrderByIdDesc();
 }
