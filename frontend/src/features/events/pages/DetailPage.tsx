@@ -107,6 +107,7 @@ export function DetailPage() {
     error: commentsError,
     submitting: submittingComment,
     addComment,
+    updateComment,
     deleteComment,
     hasMore: hasMoreComments,
     loadMoreComments,
@@ -322,6 +323,15 @@ export function DetailPage() {
     toast.success('Comentario eliminado.');
     await refreshAuditIfVisible();
   }, [deleteComment, refreshAuditIfVisible]);
+
+  const handleCommentUpdate = useCallback(async (commentId: number, body: string) => {
+    const success = await updateComment(commentId, body);
+    if (success) {
+      toast.success('Comentario actualizado.');
+      await refreshAuditIfVisible();
+    }
+    return success;
+  }, [updateComment, refreshAuditIfVisible]);
 
   const handleCommentRetry = useCallback(async () => {
     clearCommentsError();
@@ -583,9 +593,10 @@ export function DetailPage() {
                       <CommentItem
                         key={comment.id}
                         comment={comment}
-                        canDelete={permissions.canManageComment(comment)}
-                        deleting={submittingComment}
+                        canManage={permissions.canManageComment(comment)}
+                        busy={submittingComment}
                         onDelete={() => handleCommentDelete(comment.id)}
+                        onSave={(body) => handleCommentUpdate(comment.id, body)}
                       />
                     ))}
                   </div>
@@ -885,12 +896,28 @@ function CommentForm({ onSubmit, submitting }: CommentFormProps) {
 
 interface CommentItemProps {
   comment: Comment;
-  canDelete: boolean;
-  deleting: boolean;
+  /** Autor o rol privilegiado: misma regla que el backend para editar/eliminar. */
+  canManage: boolean;
+  busy: boolean;
   onDelete: () => void;
+  onSave: (body: string) => Promise<boolean>;
 }
 
-function CommentItem({ comment, canDelete, deleting, onDelete }: CommentItemProps) {
+function CommentItem({ comment, canManage, busy, onDelete, onSave }: CommentItemProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(comment.body);
+
+  const handleSave = async () => {
+    const body = draft.trim();
+    if (!body || body === comment.body) {
+      setEditing(false);
+      return;
+    }
+    if (await onSave(body)) {
+      setEditing(false);
+    }
+  };
+
   return (
     <div className="space-y-3 rounded-lg border p-4">
       <div className="flex items-start justify-between gap-3">
@@ -913,21 +940,55 @@ function CommentItem({ comment, canDelete, deleting, onDelete }: CommentItemProp
           </p>
         </div>
 
-        {canDelete ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={deleting}
-            onClick={onDelete}
-            className="text-muted-foreground hover:text-destructive"
-          >
-            Eliminar
-          </Button>
+        {canManage && !editing ? (
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={busy}
+              onClick={() => {
+                setDraft(comment.body);
+                setEditing(true);
+              }}
+            >
+              Editar
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={busy}
+              onClick={onDelete}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              Eliminar
+            </Button>
+          </div>
         ) : null}
       </div>
 
-      <p className="whitespace-pre-wrap text-sm text-muted-foreground">{comment.body}</p>
+      {editing ? (
+        <div className="space-y-2">
+          <textarea
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            maxLength={2500}
+            disabled={busy}
+            className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => setEditing(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" size="sm" disabled={busy || !draft.trim()} onClick={() => void handleSave()}>
+              {busy ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <p className="whitespace-pre-wrap text-sm text-muted-foreground">{comment.body}</p>
+      )}
     </div>
   );
 }
