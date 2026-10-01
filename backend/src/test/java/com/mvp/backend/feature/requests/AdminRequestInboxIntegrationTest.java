@@ -34,4 +34,11 @@ class AdminRequestInboxIntegrationTest extends IntegrationTestBase {
         mockMvc.perform(as(Role.USUARIO, get("/admin/event-requests"))).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/event-requests")).andExpect(status().is4xxClientError());
     }
+
+    /** Hallazgo 1.2: el listado de solicitudes (con datos personales) ya no es público. */
+    @Test
+    void listadoPublicoDeSolicitudesYaNoExiste() throws Exception {
+        createPublicRequest();
+        mockMvc.perform(get("/public/event-requests")).andExpect(status().is4xxClientError());
+    }
 }

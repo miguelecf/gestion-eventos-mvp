@@ -48,8 +48,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,10 +56,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -78,10 +74,6 @@ public class EventRequestService {
     private final EventRepository eventRepository;
     private final UserService userService;
     private final TechCapacityService techCapacityService;
-
-    private static final Set<RequestStatus> PUBLIC_REQUEST_STATUSES = EnumSet.of(
-            RequestStatus.RECIBIDO,
-            RequestStatus.EN_REVISION);
 
     @Transactional
     public EventRequestCreatedDto create(CreateEventRequestDto dto) {
@@ -192,22 +184,6 @@ public class EventRequestService {
                 scheduleData,
                 locationData,
                 buildTimeline(request, event));
-    }
-
-    @Transactional(readOnly = true)
-    public List<EventRequestResponseDto> listPublicActive() {
-        List<RequestStatus> allowedStatuses = List.copyOf(PUBLIC_REQUEST_STATUSES);
-        return eventRequestRepository.findByActiveTrueAndStatusIn(allowedStatuses)
-                .stream()
-                .map(EventRequestMapper::toDto)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public Page<EventRequestResponseDto> listPublicActivePaged(Pageable pageable) {
-        List<RequestStatus> allowedStatuses = List.copyOf(PUBLIC_REQUEST_STATUSES);
-        return eventRequestRepository.findByActiveTrueAndStatusIn(allowedStatuses, pageable)
-                .map(EventRequestMapper::toDto);
     }
 
     private Integer resolveBufferBefore(CreateEventRequestDto dto, Space space) {
