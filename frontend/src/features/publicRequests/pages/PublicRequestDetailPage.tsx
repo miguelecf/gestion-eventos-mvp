@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -59,6 +62,8 @@ export function PublicRequestDetailPage() {
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [convertRequiresTech, setConvertRequiresTech] = useState(false);
+  const [convertTechMode, setConvertTechMode] = useState<'SETUP_ONLY' | 'ATTENDED'>('SETUP_ONLY');
   const [generatedEvent, setGeneratedEvent] = useState<GeneratedEventSummary | null>(null);
   const [loadingGeneratedEvent, setLoadingGeneratedEvent] = useState(false);
 
@@ -159,7 +164,10 @@ export function PublicRequestDetailPage() {
   };
 
   const handleConvert = async () => {
-    const result = await convertRequestToEvent(requestId);
+    const result = await convertRequestToEvent(requestId, {
+      requiresTech: convertRequiresTech,
+      techSupportMode: convertRequiresTech ? convertTechMode : undefined,
+    });
 
     if (!result) {
       toast.error('No se pudo convertir la solicitud', {
@@ -501,6 +509,36 @@ export function PublicRequestDetailPage() {
               ajuste posterior se hará desde el módulo de Eventos.
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="convert-requires-tech"
+                checked={convertRequiresTech}
+                onCheckedChange={(checked) => setConvertRequiresTech(checked === true)}
+              />
+              <Label htmlFor="convert-requires-tech">Requiere soporte técnico</Label>
+            </div>
+            {convertRequiresTech ? (
+              <div className="space-y-1">
+                <Label>Modalidad de soporte</Label>
+                <Select
+                  value={convertTechMode}
+                  onValueChange={(value) => setConvertTechMode(value as 'SETUP_ONLY' | 'ATTENDED')}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SETUP_ONLY">Sólo montaje</SelectItem>
+                    <SelectItem value="ATTENDED">Asistencia durante el evento</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+            <p className="text-xs text-muted-foreground">
+              Requerimientos indicados por el solicitante: {request.requirements || 'ninguno'}
+            </p>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"

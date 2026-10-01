@@ -171,6 +171,7 @@ export type {
   ChangeAdminRequestStatusInput,
   PublicSpacesFilters,
   RequestConversionResult,
+  RequestConversionOptions,
 } from './publicRequests.api';
 export type {
   PublicEventRequestPayload,

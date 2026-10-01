@@ -1,5 +1,6 @@
 package com.mvp.backend.feature.requests.controller;
 
+import com.mvp.backend.feature.requests.dto.ConvertRequestToEventDto;
 import com.mvp.backend.feature.events.dto.EventResponseDto;
 import com.mvp.backend.feature.requests.dto.ChangeRequestStatusDto;
 import com.mvp.backend.feature.requests.dto.EventRequestResponseDto;
@@ -37,10 +38,13 @@ public class AdminEventRequestController {
 
     /**
      * Convierte la solicitud en un Event con estado EN_REVISION.
-     * No requiere body.
+     * Body opcional: {@code {requiresTech, techSupportMode}}; sin body el evento no requiere soporte técnico.
      */
     @PostMapping("/{id}/convert-to-event")
-    public ResponseEntity<EventResponseDto> convertToEvent(@PathVariable Long id) {
-        return ResponseEntity.ok(eventRequestService.convertToEvent(id));
+    public ResponseEntity<EventResponseDto> convertToEvent(
+            @PathVariable Long id,
+            @RequestBody(required = false) ConvertRequestToEventDto body) {
+        return ResponseEntity.ok(eventRequestService.convertToEvent(id,
+                body != null ? body : ConvertRequestToEventDto.NONE));
     }
 }

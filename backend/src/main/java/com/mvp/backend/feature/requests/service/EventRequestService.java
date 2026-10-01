@@ -22,6 +22,10 @@ import com.mvp.backend.feature.requests.dto.CreateEventRequestDto;
 import com.mvp.backend.feature.requests.dto.EventRequestCreatedDto;
 import com.mvp.backend.feature.requests.dto.EventRequestResponseDto;
 import com.mvp.backend.feature.requests.dto.TrackingResponse;
+import com.mvp.backend.feature.requests.dto.ConvertRequestToEventDto;
+import com.mvp.backend.feature.events.model.TechSupportMode;
+import com.mvp.backend.feature.tech.service.TechCapacityService;
+import com.mvp.backend.feature.tech.exception.TechCapacityExceededException;
 import com.mvp.backend.feature.requests.dto.TrackingResponse.EventData;
 import com.mvp.backend.feature.requests.dto.TrackingResponse.LocationData;
 import com.mvp.backend.feature.requests.dto.TrackingResponse.LocationData.LocationType;
@@ -73,6 +77,7 @@ public class EventRequestService {
     private final ApplicationEventPublisher eventPublisher;
     private final EventRepository eventRepository;
     private final UserService userService;
+    private final TechCapacityService techCapacityService;
 
     private static final Set<RequestStatus> PUBLIC_REQUEST_STATUSES = EnumSet.of(
             RequestStatus.RECIBIDO,
@@ -370,7 +375,7 @@ public class EventRequestService {
     }
 
     @Transactional
-    public EventResponseDto convertToEvent(Long id) {
+    public EventResponseDto convertToEvent(Long id, ConvertRequestToEventDto options) {
         EventRequest request = eventRequestRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("EventRequest not found with id: " + id));
 
@@ -431,6 +436,16 @@ public class EventRequestService {
             }
         }
 
+        // E. Soporte técnico definido por el área al convertir (hallazgo 3.2)
+        boolean requiresTech = Boolean.TRUE.equals(options.requiresTech());
+        TechSupportMode techSupportMode = requiresTech && options.techSupportMode() != null
+                ? options.techSupportMode() : TechSupportMode.SETUP_ONLY;
+        if (requiresTech && !techCapacityService.hasCapacity(request.getDate(), request.getScheduleFrom(),
+                request.getScheduleTo(), request.getBufferBeforeMin(), request.getBufferAfterMin(),
+                techSupportMode, null)) {
+            throw new TechCapacityExceededException("No hay capacidad técnica disponible para el rango solicitado.");
+        }
+
         User actor = getCurrentUser();
         Instant now = Instant.now();
 
@@ -455,6 +470,8 @@ public class EventRequestService {
                 .contactEmail(request.getContactEmail())
                 .contactPhone(request.getContactPhone())
                 .internal(false)
+                .requiresTech(requiresTech)
+                .techSupportMode(techSupportMode)
                 .createdBy(actor)
                 .build();
 

@@ -5,6 +5,7 @@ import { handleApiError, logError } from '@/services/api';
 import {
   publicRequestsApi,
   type RequestConversionResult,
+  type RequestConversionOptions,
 } from '@/services/api/publicRequests.api';
 import { getDefaultPublicRequestSort } from '@/features/publicRequests/utils/list-sorting';
 import type {
@@ -45,7 +46,7 @@ export interface PublicRequestsStore {
     to: Extract<PublicRequestStatus, 'EN_REVISION' | 'RECHAZADO'>,
     reason?: string
   ) => Promise<PublicEventRequest | null>;
-  convertRequestToEvent: (id: number) => Promise<RequestConversionResult | null>;
+  convertRequestToEvent: (id: number, options?: RequestConversionOptions) => Promise<RequestConversionResult | null>;
   setFilters: (filters: Partial<PublicRequestFilters>) => void;
   setPagination: (pagination: Partial<Pick<PaginationState, 'page' | 'pageSize'>>) => void;
   setSort: (sort: string) => void;
@@ -256,14 +257,14 @@ const createPublicRequestsStore: StateCreator<PublicRequestsStore> = (set, get) 
     }
   },
 
-  convertRequestToEvent: async (id) => {
+  convertRequestToEvent: async (id, options) => {
     set((state) => ({
       loading: { ...state.loading, action: true },
       errors: { ...state.errors, action: null },
     }));
 
     try {
-      const result = await publicRequestsApi.convertAdminRequestToEvent(id);
+      const result = await publicRequestsApi.convertAdminRequestToEvent(id, options);
 
       set((state) => ({
         selectedRequest: state.selectedRequest?.id === id

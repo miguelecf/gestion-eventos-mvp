@@ -338,11 +338,19 @@ export async function changeAdminRequestStatus(
   return adaptRequestFromBackend(request);
 }
 
+/** Soporte técnico que define el área al convertir (el formulario público no lo captura). */
+export interface RequestConversionOptions {
+  requiresTech: boolean;
+  techSupportMode?: 'SETUP_ONLY' | 'ATTENDED';
+}
+
 export async function convertAdminRequestToEvent(
-  id: number
+  id: number,
+  options: RequestConversionOptions = { requiresTech: false }
 ): Promise<RequestConversionResult> {
   const event = await httpClient.post<BackendConvertedEventResponseDto>(
-    ENDPOINTS.ADMIN_EVENT_REQUEST_CONVERT(id)
+    ENDPOINTS.ADMIN_EVENT_REQUEST_CONVERT(id),
+    options
   );
 
   return {
