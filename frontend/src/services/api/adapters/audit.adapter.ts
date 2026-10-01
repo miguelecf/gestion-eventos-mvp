@@ -209,6 +209,8 @@ function generateAuditDescription(entry: BackendAuditEntryDTO): string {
       return describeComment(entry, actionType);
     case 'INTERNAL_TOGGLED':
       return describeInternalToggle(entry);
+    case 'EVENT_DELETED':
+      return 'dio de baja el evento';
     default:
       return 'realizó una acción';
   }
@@ -227,6 +229,7 @@ function getAuditIcon(actionType: AuditActionType): string {
     COMMENT_UPDATED: 'message-square-more',
     COMMENT_DELETED: 'message-square-x',
     INTERNAL_TOGGLED: 'eye-off',
+    EVENT_DELETED: 'trash-2',
   };
 
   return iconMap[actionType] || 'circle';
@@ -245,6 +248,7 @@ function getAuditColor(actionType: AuditActionType): string {
     COMMENT_UPDATED: 'bg-emerald-100 text-emerald-800',
     COMMENT_DELETED: 'bg-neutral-100 text-neutral-800',
     INTERNAL_TOGGLED: 'bg-slate-100 text-slate-800',
+    EVENT_DELETED: 'bg-red-100 text-red-800',
   };
 
   return colorMap[actionType] || 'bg-gray-100 text-gray-800';
@@ -419,6 +423,7 @@ export function getAuditSummary(entries: AuditEntry[]): {
     COMMENT_UPDATED: 'COMMENT_UPDATED',
     COMMENT_DELETED: 'COMMENT_DELETED',
     INTERNAL_TOGGLED: 'INTERNAL_TOGGLED',
+    EVENT_DELETED: 'EVENT_DELETED',
   }).reduce((acc, value) => {
     acc[value as AuditActionType] = 0;
     return acc;
@@ -467,6 +472,7 @@ export function getActionTypeLabel(actionType: AuditActionType): string {
     COMMENT_UPDATED: 'Comentario editado',
     COMMENT_DELETED: 'Comentario eliminado',
     INTERNAL_TOGGLED: 'Visibilidad interna',
+    EVENT_DELETED: 'Baja del evento',
   };
 
   return labelMap[actionType] || actionType;

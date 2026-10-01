@@ -352,9 +352,16 @@ public class EventService {
         Event ev = eventRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Event not found"));
 
+        if (!ev.isActive()) {
+            return; // ya dado de baja: idempotente, sin duplicar auditoría
+        }
+
+        User currentUser = getCurrentUser();
         ev.setActive(false);
         ev.setDeletedAt(Instant.now());
-        eventRepository.save(ev);
+        ev.setLastModifiedBy(currentUser);
+        Event saved = eventRepository.save(ev);
+        auditService.recordDeleted(saved, currentUser);
     }
 
     /* ----------------- Queries ------------- */

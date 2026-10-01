@@ -89,6 +89,7 @@ export const AuditActionType = {
   COMMENT_UPDATED: 'COMMENT_UPDATED',
   COMMENT_DELETED: 'COMMENT_DELETED',
   INTERNAL_TOGGLED: 'INTERNAL_TOGGLED',
+  EVENT_DELETED: 'EVENT_DELETED',
 } as const;
 export type AuditActionType = typeof AuditActionType[keyof typeof AuditActionType];
 

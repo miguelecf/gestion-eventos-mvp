@@ -78,6 +78,16 @@ public class AuditService {
                 .build());
     }
 
+    /** Baja lógica del evento (soft-delete): queda registrado quién y cuándo lo desactivó. */
+    public void recordDeleted(Event event, User actor) {
+        repository.save(baseBuilder(event, actor)
+                .type(HistoryType.EVENT_DELETED)
+                .field("active")
+                .fromValue("true")
+                .toValue("false")
+                .build());
+    }
+
     public void recordFieldUpdate(Event event,
                                   User actor,
                                   String field,
