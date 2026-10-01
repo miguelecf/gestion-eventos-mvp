@@ -26,18 +26,21 @@ public class TimeWindow {
     }
 
     public TimeWindow withBuffers(int bufferBeforeMin, int bufferAfterMin) {
-        LocalDateTime adjustedStart = start.minusMinutes(bufferBeforeMin);
-        LocalDateTime adjustedEnd = end.plusMinutes(bufferAfterMin);
-        LocalDateTime dayStart = date.atStartOfDay();
-        LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+        // Sin recortar al día: un montaje/desmontaje que cruza medianoche ocupa el día adyacente
+        // y debe poder solaparse con eventos de ese día (hallazgo 3.8).
+        return new TimeWindow(date, start.minusMinutes(bufferBeforeMin), end.plusMinutes(bufferAfterMin));
+    }
 
-        if (adjustedStart.isBefore(dayStart)) {
-            adjustedStart = dayStart;
-        }
-        if (adjustedEnd.isAfter(dayEnd)) {
-            adjustedEnd = dayEnd;
-        }
-        return new TimeWindow(date, adjustedStart, adjustedEnd);
+    /**
+     * Porción de la ventana que cae dentro de {@code day} (00:00–24:00), para mostrar ocupación diaria.
+     * Devuelve null si no la intersecta.
+     */
+    public TimeWindow clampToDay(LocalDate day) {
+        LocalDateTime dayStart = day.atStartOfDay();
+        LocalDateTime dayEnd = day.plusDays(1).atStartOfDay();
+        LocalDateTime clampedStart = start.isBefore(dayStart) ? dayStart : start;
+        LocalDateTime clampedEnd = end.isAfter(dayEnd) ? dayEnd : end;
+        return clampedStart.isBefore(clampedEnd) ? new TimeWindow(day, clampedStart, clampedEnd) : null;
     }
 
     public boolean overlaps(TimeWindow other) {

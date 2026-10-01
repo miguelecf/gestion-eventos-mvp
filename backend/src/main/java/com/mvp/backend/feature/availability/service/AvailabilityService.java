@@ -44,8 +44,10 @@ public class AvailabilityService {
         List<Status> blockingStatuses  = List.of(Status.RESERVADO, Status.APROBADO);
 
 
-        List<Event> potentialConflicts = eventRepository.findConflictingEvents(
-                params.date(),
+        // Se incluyen el día anterior y el siguiente: sus buffers pueden cruzar medianoche (hallazgo 3.8).
+        List<Event> potentialConflicts = eventRepository.findConflictingEventsBetween(
+                params.date().minusDays(1),
+                params.date().plusDays(1),
                 params.spaceId(),
                 blockingStatuses,
                 params.ignoreEventId()
@@ -90,18 +92,25 @@ public class AvailabilityService {
 
         List<Status> blockingStatuses  = List.of(Status.RESERVADO, Status.APROBADO);
 
-        List<SpaceOccupancy.SpaceOccupancyBlock> blocks = eventRepository.findConflictingEvents(date, spaceId, blockingStatuses, null)
+        // Incluye eventos de días adyacentes cuyos buffers caen en este día (hallazgo 3.8).
+        List<SpaceOccupancy.SpaceOccupancyBlock> blocks = eventRepository
+                .findConflictingEventsBetween(date.minusDays(1), date.plusDays(1), spaceId, blockingStatuses, null)
                 .stream()
                 .filter(event -> event.getScheduleFrom() != null && event.getScheduleTo() != null)
                 .map(event -> {
                     TimeWindow window = TimeWindow.of(event.getDate(), event.getScheduleFrom(), event.getScheduleTo())
-                            .withBuffers(event.getBufferBeforeMin(), event.getBufferAfterMin());
+                            .withBuffers(event.getBufferBeforeMin(), event.getBufferAfterMin())
+                            .clampToDay(date);
+                    if (window == null) {
+                        return null;
+                    }
                     return SpaceOccupancy.SpaceOccupancyBlock.builder()
                             .from(window.formattedStart())
                             .to(window.formattedEnd())
                             .status(event.isInternal() ? null : event.getStatus())
                             .build();
                 })
+                .filter(java.util.Objects::nonNull)
                 .sorted(Comparator.comparing(SpaceOccupancy.SpaceOccupancyBlock::from))
                 .toList();
 

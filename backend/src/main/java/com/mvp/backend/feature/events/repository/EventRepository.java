@@ -46,18 +46,20 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
   List<Event> findByActiveTrueAndInternalFalseAndStatus(Status status);
 
+  /** Eventos que pueden solaparse en un espacio entre dos fechas (incluye días adyacentes por buffers). */
   @Query("""
       select e from Event e
       where e.active = true
-        and e.date = :date
+        and e.date between :fromDate and :toDate
         and e.space.id = :spaceId
         and e.status in :statuses
         and (:ignoreEventId is null or e.id <> :ignoreEventId)
       """)
-  List<Event> findConflictingEvents(@Param("date") LocalDate date,
-      @Param("spaceId") Long spaceId,
-      @Param("statuses") List<Status> statuses,
-      @Param("ignoreEventId") Long ignoreEventId);
+  List<Event> findConflictingEventsBetween(@Param("fromDate") LocalDate fromDate,
+                                           @Param("toDate") LocalDate toDate,
+                                           @Param("spaceId") Long spaceId,
+                                           @Param("statuses") List<Status> statuses,
+                                           @Param("ignoreEventId") Long ignoreEventId);
 
   @Query("""
       select e from Event e
