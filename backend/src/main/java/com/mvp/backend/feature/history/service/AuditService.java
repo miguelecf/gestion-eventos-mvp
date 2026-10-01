@@ -105,29 +105,24 @@ public class AuditService {
                 .build());
     }
 
-    public void recordSpaceConflict(Event event,
-                                    User actor,
-                                    String details,
-                                    String reason,
-                                    String note) {
-        repository.save(baseBuilder(event, actor)
-                .type(HistoryType.SPACE_CONFLICT)
+    /**
+     * Conflicto de prioridad sobre el evento DESPLAZADO (hallazgo 4.6): se registra al abrirse
+     * (OPEN) y al resolverse (CLOSED, con la decisión y su motivo).
+     */
+    public void recordPriorityConflict(Event displaced,
+                                       User actor,
+                                       String conflictCode,
+                                       String fromState,
+                                       String toState,
+                                       String details,
+                                       String reason) {
+        repository.save(baseBuilder(displaced, actor)
+                .type(HistoryType.PRIORITY_CONFLICT)
+                .field(conflictCode)
+                .fromValue(fromState)
+                .toValue(toState)
                 .details(trimToNull(details))
                 .reason(trimToNull(reason))
-                .note(trimToNull(note))
-                .build());
-    }
-
-    public void recordTechCapacityReject(Event event,
-                                         User actor,
-                                         String details,
-                                         String reason,
-                                         String note) {
-        repository.save(baseBuilder(event, actor)
-                .type(HistoryType.TECH_CAPACITY_REJECT)
-                .details(trimToNull(details))
-                .reason(trimToNull(reason))
-                .note(trimToNull(note))
                 .build());
     }
 

@@ -197,12 +197,10 @@ function generateAuditDescription(entry: BackendAuditEntryDTO): string {
       return describeFieldUpdate(entry);
     case 'REPROGRAM':
       return 'reprogramó el evento';
-    case 'TECH_CAPACITY_REJECT':
-      return 'registró rechazo por capacidad técnica';
-    case 'SPACE_CONFLICT':
-      return 'registró conflicto de espacio';
     case 'PRIORITY_CONFLICT':
-      return 'registró conflicto de prioridad';
+      return entry.toValue === 'CLOSED'
+        ? 'resolvió el conflicto de prioridad'
+        : 'registró que el evento fue desplazado por un conflicto de prioridad';
     case 'COMMENT_CREATED':
     case 'COMMENT_UPDATED':
     case 'COMMENT_DELETED':
@@ -222,8 +220,6 @@ function getAuditIcon(actionType: AuditActionType): string {
     SCHEDULE_CHANGE: 'calendar-range',
     FIELD_UPDATE: 'edit',
     REPROGRAM: 'refresh-cw',
-    TECH_CAPACITY_REJECT: 'cpu',
-    SPACE_CONFLICT: 'map-pin-off',
     PRIORITY_CONFLICT: 'alert-triangle',
     COMMENT_CREATED: 'message-square-plus',
     COMMENT_UPDATED: 'message-square-more',
@@ -241,8 +237,6 @@ function getAuditColor(actionType: AuditActionType): string {
     SCHEDULE_CHANGE: 'bg-sky-100 text-sky-800',
     FIELD_UPDATE: 'bg-amber-100 text-amber-800',
     REPROGRAM: 'bg-orange-100 text-orange-800',
-    TECH_CAPACITY_REJECT: 'bg-red-100 text-red-800',
-    SPACE_CONFLICT: 'bg-rose-100 text-rose-800',
     PRIORITY_CONFLICT: 'bg-fuchsia-100 text-fuchsia-800',
     COMMENT_CREATED: 'bg-emerald-100 text-emerald-800',
     COMMENT_UPDATED: 'bg-emerald-100 text-emerald-800',
@@ -416,8 +410,6 @@ export function getAuditSummary(entries: AuditEntry[]): {
     SCHEDULE_CHANGE: 'SCHEDULE_CHANGE',
     FIELD_UPDATE: 'FIELD_UPDATE',
     REPROGRAM: 'REPROGRAM',
-    TECH_CAPACITY_REJECT: 'TECH_CAPACITY_REJECT',
-    SPACE_CONFLICT: 'SPACE_CONFLICT',
     PRIORITY_CONFLICT: 'PRIORITY_CONFLICT',
     COMMENT_CREATED: 'COMMENT_CREATED',
     COMMENT_UPDATED: 'COMMENT_UPDATED',
@@ -465,8 +457,6 @@ export function getActionTypeLabel(actionType: AuditActionType): string {
     SCHEDULE_CHANGE: 'Cambio de agenda',
     FIELD_UPDATE: 'Actualización de campo',
     REPROGRAM: 'Reprogramación',
-    TECH_CAPACITY_REJECT: 'Rechazo por capacidad técnica',
-    SPACE_CONFLICT: 'Conflicto de espacio',
     PRIORITY_CONFLICT: 'Conflicto de prioridad',
     COMMENT_CREATED: 'Comentario creado',
     COMMENT_UPDATED: 'Comentario editado',

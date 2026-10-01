@@ -106,6 +106,9 @@ public class PriorityConflictService {
 
             PriorityConflict saved = repository.save(conflict);
             openConflicts.add(saved);
+            auditService.recordPriorityConflict(displaced, initiatedBy, saved.getConflictCode(), null, "OPEN",
+                    "Desplazado por el evento de prioridad alta \"" + highEvent.getName() + "\" (#" + highEvent.getId() + ")",
+                    null);
             if (displaced.getId() != null) {
                 alreadyRegistered.add(displaced.getId());
             }
@@ -160,6 +163,8 @@ public class PriorityConflictService {
         conflict.setReason(trimToNull(request.reason()));
 
         repository.save(conflict);
+        auditService.recordPriorityConflict(displaced, decider, conflict.getConflictCode(), "OPEN", "CLOSED",
+                "Decisión: " + request.decision(), request.reason());
 
         return conflict;
     }
