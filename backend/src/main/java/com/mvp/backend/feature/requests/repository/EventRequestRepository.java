@@ -18,6 +18,10 @@ public interface EventRequestRepository extends JpaRepository<EventRequest, Long
 
     List<EventRequest> findByActiveTrue();
 
+    List<EventRequest> findByActiveTrueOrderByRequestDateDesc();
+
+    List<EventRequest> findByActiveTrueAndStatusInOrderByRequestDateDesc(List<RequestStatus> statuses);
+
     List<EventRequest> findByActiveTrueAndStatusIn(List<RequestStatus> statuses);
 
     Page<EventRequest> findByActiveTrueAndStatusIn(List<RequestStatus> statuses, Pageable pageable);

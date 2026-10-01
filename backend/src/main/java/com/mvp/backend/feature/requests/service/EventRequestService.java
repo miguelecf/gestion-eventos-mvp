@@ -320,6 +320,15 @@ public class EventRequestService {
 
     /* ---------- Admin ---------- */
 
+    /** Bandeja administrativa: todas las solicitudes activas (cualquier estado), más recientes primero. */
+    @Transactional(readOnly = true)
+    public List<EventRequestResponseDto> listAdmin(List<RequestStatus> statuses) {
+        List<EventRequest> requests = statuses == null || statuses.isEmpty()
+                ? eventRequestRepository.findByActiveTrueOrderByRequestDateDesc()
+                : eventRequestRepository.findByActiveTrueAndStatusInOrderByRequestDateDesc(statuses);
+        return requests.stream().map(EventRequestMapper::toDto).toList();
+    }
+
     @Transactional(readOnly = true)
     public EventRequestResponseDto getAdminById(Long id) {
         EventRequest request = eventRequestRepository.findById(id)

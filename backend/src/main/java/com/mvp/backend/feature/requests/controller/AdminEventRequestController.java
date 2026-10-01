@@ -4,7 +4,10 @@ import com.mvp.backend.feature.requests.dto.ConvertRequestToEventDto;
 import com.mvp.backend.feature.events.dto.EventResponseDto;
 import com.mvp.backend.feature.requests.dto.ChangeRequestStatusDto;
 import com.mvp.backend.feature.requests.dto.EventRequestResponseDto;
+import com.mvp.backend.feature.requests.model.RequestStatus;
 import com.mvp.backend.feature.requests.service.EventRequestService;
+
+import java.util.List;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +23,15 @@ public class AdminEventRequestController {
     /**
      * Detalle completo de una solicitud para gestión interna.
      */
+    /**
+     * Bandeja administrativa de solicitudes (reemplaza al listado que estaba expuesto en /public).
+     * Filtro opcional por estado: {@code ?status=RECIBIDO&status=EN_REVISION}.
+     */
+    @GetMapping
+    public List<EventRequestResponseDto> list(@RequestParam(required = false) List<RequestStatus> status) {
+        return eventRequestService.listAdmin(status);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<EventRequestResponseDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(eventRequestService.getAdminById(id));

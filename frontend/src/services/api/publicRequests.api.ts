@@ -302,13 +302,12 @@ export async function listAdminRequests(
     endDate: params.endDate,
   };
 
-  // Technical debt:
-  // Until the backend exposes GET /admin/event-requests, the admin listing still
-  // depends on /public/event-requests and therefore only includes active requests.
+  // Bandeja administrativa (autenticada): todas las solicitudes en cualquier estado.
+  // El filtrado/orden/paginado se resuelve localmente sobre ese conjunto.
   const backendRequests = await httpClient.get<
     BackendEventRequestResponseDto[] | SpringPageResponse<BackendEventRequestResponseDto>
   >(
-    ENDPOINTS.PUBLIC_EVENT_REQUESTS
+    ENDPOINTS.ADMIN_EVENT_REQUESTS
   );
 
   const normalizedRequests = normalizeRequestCollection(backendRequests).map(adaptRequestFromBackend);
