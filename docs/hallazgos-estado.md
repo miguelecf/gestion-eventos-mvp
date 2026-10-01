@@ -3,11 +3,15 @@
 Fuente: el reporte "Errores Gestión de Eventos". Se atacan de **menor a mayor complejidad**. Un commit por ID.
 
 - **Estados:** `pendiente` · `en curso` · `corregido` · `documentado` (decisión sin cambio de código) · `descartado`.
-- **Próxima migración Flyway libre:** `V13`.
+- **Próxima migración Flyway libre:** `V14`.
 
 ## Hallazgos adicionales detectados durante la corrección
 - **2.7-bis:** al loguearse con contraseña temporal, el frontend ignoraba `mustChangePassword` y entraba con un token que sólo sirve para cambiar la contraseña, así que todas las pantallas daban 403. Además, `currentPassword` podía omitirse si la contraseña no era temporal. Corregido en el mismo commit que 2.7.
 - **2.1-bis:** el tracking esperaba el estado `SOLICITADO` en la solicitud, pero el backend usa `RECIBIDO`. Si un evento convertido terminaba `RECHAZADO`, la página igual decía "Aprobada". Corregido en 2.1.
+- **3.3-bis:** la UI sólo permitía dar de baja eventos en estado `SOLICITADO`, que nunca existe, así que la baja era imposible desde la interfaz. Ahora depende del permiso del rol. Corregido en 3.3. *Decisión asumida: la baja se permite en cualquier estado para roles admin.*
+- **1.7-bis (nuevo, pendiente de decisión):** no existe pantalla para resolver conflictos de prioridad. El cliente `catalogsApi.makeDecision`/`getConflicts` apunta a `/internal/priority/**`, que no existe, y usa decisiones inexistentes (`KEEP_NEW`/`KEEP_DISPLACED`); no tiene consumidores. Hoy la resolución sólo es posible por API.
+- **1.7-ter:** `getCurrentUser()` está duplicado en 5 servicios. Se creó `CurrentUserService`; migrar las copias restantes es limpieza opcional.
+- **Pendiente (1.5):** `ability.ts` da a USUARIO `update`/`delete` sobre `Event`, contra `docs/permisos.md`.
 - **Pendiente (1.5):** el dashboard de USUARIO consulta conflictos y capacidad técnica, que ahora le responden 403. Hay que condicionar esas consultas por rol.
 
 | Fase | ID | Hallazgo | Estado | Commit | Test |
@@ -20,15 +24,15 @@ Fuente: el reporte "Errores Gestión de Eventos". Se atacan de **menor a mayor c
 | 1 | 5.3 | Varias configs de capacidad activas | corregido | dd0415b | compilación |
 | 1 | 6.3 | Motivo de rechazo opcional en backend | corregido | 16c466e | EventRejectionIntegrationTest |
 | 1 | 2.10 | Promesa de sugerencias automáticas | corregido | ac157d9 | suite completa |
-| 2 | 1.1 | Tracking expone comentarios internos (P0) | pendiente | | |
-| 2 | 1.3 | Tracking expone datos internos | pendiente | | |
-| 2 | 1.7 | Decisor de conflicto informado por el cliente | pendiente | | |
-| 2 | 4.5 | Soft-delete sin auditoría | pendiente | | |
-| 2 | 3.7 | Cambio de buffers/freeLocation no vuelve a revisión | pendiente | | |
-| 2 | 2.9 | Cambio de espacio a ubicación libre | pendiente | | |
-| 2 | 3.3 | Estado SOLICITADO huérfano | pendiente | | |
-| 2 | 3.2 | requiresTech no se define en la conversión | pendiente | | |
-| 2 | 5.1 | expectedVersion/clientMutationId ficticios | pendiente | | |
+| 2 | 1.1 | Tracking expone comentarios internos (P0) | corregido | 2b509af | PublicTrackingIntegrationTest |
+| 2 | 1.3 | Tracking expone datos internos | corregido | 2b509af, 87127a4 | PublicTrackingIntegrationTest |
+| 2 | 1.7 | Decisor de conflicto informado por el cliente | corregido | 43b1093 | PriorityConflictDecisionIntegrationTest |
+| 2 | 4.5 | Soft-delete sin auditoría | corregido | 941727b | EventSoftDeleteIntegrationTest |
+| 2 | 3.7 | Cambio de buffers/freeLocation no vuelve a revisión | corregido | 8af6b08 | EventLocationAndReviewIntegrationTest |
+| 2 | 2.9 | Cambio de espacio a ubicación libre | corregido | 8af6b08 | EventLocationAndReviewIntegrationTest |
+| 2 | 3.3 | Estado SOLICITADO huérfano | corregido | d0db212 | suite completa + V13 (verificar en Docker) |
+| 2 | 3.2 | requiresTech no se define en la conversión | corregido | 226ca6a | RequestConversionIntegrationTest |
+| 2 | 5.1 | expectedVersion/clientMutationId ficticios | corregido | 68f00f2 | suite completa |
 | 3 | 2.4 | Bandeja admin sobre endpoint público | pendiente | | |
 | 3 | 1.2 | Listado público de solicitudes con datos personales (P0) | pendiente | | |
 | 3 | 1.4 | USUARIO con permisos excesivos (P0) | pendiente | | |
