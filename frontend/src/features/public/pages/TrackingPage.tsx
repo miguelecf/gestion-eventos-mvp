@@ -96,23 +96,64 @@ export function TrackingPage() {
   }
 
   // Render tracking data
-  const statusConfig: Record<
-    string,
-    { label: string; color: string; variant: 'default' | 'success' | 'outline' }
+  // La solicitud (RECIBIDO → EN_REVISION → CONVERTIDO/RECHAZADO) y el evento creado al convertirla
+  // tienen ciclos de vida distintos: convertir NO equivale a aprobar. Si existe evento, manda su estado.
+  type Stage = 'RECEIVED' | 'IN_REVIEW' | 'RESERVED' | 'APPROVED' | 'REJECTED';
+  const stage: Stage = (() => {
+    if (data.event) {
+      switch (data.event.status) {
+        case 'APROBADO': return 'APPROVED';
+        case 'RESERVADO': return 'RESERVED';
+        case 'RECHAZADO': return 'REJECTED';
+        default: return 'IN_REVIEW';
+      }
+    }
+    switch (data.request.status) {
+      case 'EN_REVISION': return 'IN_REVIEW';
+      case 'RECHAZADO': return 'REJECTED';
+      default: return 'RECEIVED';
+    }
+  })();
+
+  const stageConfig: Record<
+    Stage,
+    { label: string; color: string; variant: 'default' | 'success' | 'outline'; message: string }
   > = {
-    SOLICITADO: { label: 'Recibida', color: 'bg-blue-100 text-blue-800', variant: 'default' },
-    EN_REVISION: {
-      label: 'En Revisión',
+    RECEIVED: {
+      label: 'Recibida',
+      color: 'bg-blue-100 text-blue-800',
+      variant: 'default',
+      message: 'Su solicitud está pendiente de revisión. El equipo la evaluará pronto.',
+    },
+    IN_REVIEW: {
+      label: data.event ? 'Convertida a evento · En revisión' : 'En Revisión',
       color: 'bg-yellow-100 text-yellow-800',
       variant: 'outline',
+      message: data.event
+        ? 'Su solicitud fue convertida en evento y está pendiente de la conformidad de Ceremonial y Técnica. Aún no está aprobada.'
+        : 'Su solicitud está siendo revisada por el equipo.',
     },
-    CONVERTIDO: { label: 'Aprobada', color: 'bg-green-100 text-green-800', variant: 'success' },
-    APROBADO: { label: 'Aprobada', color: 'bg-green-100 text-green-800', variant: 'success' },
-    RESERVADO: { label: 'Reservada', color: 'bg-green-100 text-green-800', variant: 'success' },
-    RECHAZADO: { label: 'Rechazada', color: 'bg-red-100 text-red-800', variant: 'outline' },
+    RESERVED: {
+      label: 'Reservada',
+      color: 'bg-emerald-100 text-emerald-800',
+      variant: 'outline',
+      message: 'El espacio quedó reservado para su evento. Falta la aprobación final.',
+    },
+    APPROVED: {
+      label: 'Aprobada',
+      color: 'bg-green-100 text-green-800',
+      variant: 'success',
+      message: 'Su evento fue aprobado y figura en el calendario público.',
+    },
+    REJECTED: {
+      label: 'Rechazada',
+      color: 'bg-red-100 text-red-800',
+      variant: 'outline',
+      message: 'Su solicitud no pudo ser aprobada.',
+    },
   };
 
-  const currentStatus = statusConfig[data.request.status] || statusConfig.SOLICITADO;
+  const currentStatus = stageConfig[stage];
   const eventName = data.event?.id ? `Evento #${data.event.id}` : 'Solicitud de Evento';
   const locationDisplay = data.location.type === 'SPACE' 
     ? data.location.spaceName || 'Espacio no especificado'
@@ -143,14 +184,14 @@ export function TrackingPage() {
         </div>
 
         {/* Estado aprobado */}
-        {(data.request.status === 'CONVERTIDO' || data.event?.status === 'APROBADO' || data.event?.status === 'RESERVADO') && (
+        {stage === 'APPROVED' && (
           <Alert className="bg-green-50 dark:bg-green-950/20 border-green-200">
             <AlertDescription>
               <p className="font-semibold text-green-800 dark:text-green-200">
                 ✅ Solicitud aprobada
               </p>
               <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                Su evento ha sido aprobado y aparecerá en el calendario público próximamente.
+                Su evento fue aprobado y figura en el calendario público.
               </p>
             </AlertDescription>
           </Alert>
@@ -214,14 +255,7 @@ export function TrackingPage() {
             <strong>Estado actual:</strong> {currentStatus.label}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            {data.request.status === 'SOLICITADO' &&
-              'Su solicitud está pendiente de revisión. El equipo la evaluará pronto.'}
-            {data.request.status === 'EN_REVISION' &&
-              'Su solicitud está siendo revisada por el equipo de Ceremonial y Técnica.'}
-            {(data.request.status === 'CONVERTIDO' || data.event?.status === 'APROBADO' || data.event?.status === 'RESERVADO') &&
-              'Su solicitud ha sido aprobada. Recibirá más detalles por email.'}
-            {data.request.status === 'RECHAZADO' &&
-              'Su solicitud no pudo ser aprobada. Consulte los comentarios arriba para más información.'}
+            {currentStatus.message}
           </p>
         </AlertDescription>
       </Alert>
