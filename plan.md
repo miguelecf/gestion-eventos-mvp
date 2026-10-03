@@ -118,7 +118,7 @@ Gestión de Eventos (TFI UNLa). Hay dos tipos de usuarios:
 ## 3. Fases
 
 ### Fase A — Bugs y seguridad
-- [ ] **A1 · Consola H2 fuera de producción.**
+- [x] **A1 · Consola H2 fuera de producción.**
   - **Evidencia:** `backend/pom.xml` (h2 `scope runtime`); `application.yml` (`spring.h2.console.enabled: true` para todos los perfiles) y `spring.security.user` `admin/admin123`, que no se usa.
   - **Cambio:** h2 pasa a `<scope>test</scope>`. Se borran `spring.h2.console.*` y `spring.security.user` de `application.yml`. Si un test necesita consola, va en `application-test.yml`.
   - **Hecho cuando:** `./mvnw test` está en verde y `jar tf target/*.jar | grep -c h2` da 0 después de `./mvnw -q -DskipTests package`.
@@ -126,17 +126,17 @@ Gestión de Eventos (TFI UNLa). Hay dos tipos de usuarios:
   - **Evidencia:** `frontend/src/features/public/components/PublicEventForm.tsx:176` llama a `availabilityApi.checkAvailability` (`/api/availability/check`, que requiere login). Existe `checkPublicAvailability` (`services/api/availability.api.ts:228`).
   - **Cambio:** usar `checkPublicAvailability` y adaptar el render si la respuesta pública trae menos campos (los conflictos no traen título).
   - **Hecho cuando:** sin sesión, el chequeo responde 200. Se verifica en E1.
-- [ ] **A3 · `AudienceType` del frontend igual al enum Java.**
+- [x] **A3 · `AudienceType` del frontend igual al enum Java.**
   - **Evidencia:** Java `shared/AudienceType` = `ESTUDIANTES, DOCENTES, AUTORIDADES, COMUNIDAD, TERCERA_EDAD`. El frontend tiene `MIXTO` y le falta `TERCERA_EDAD` (`services/api/types/backend.types.ts:47-53`, `features/public/components/PublicAudienceTypeSelect.tsx:17`, labels y schemas zod).
   - **Cambio:** alinear en todos los usos (`grep -rn "MIXTO\|AudienceType" frontend/src`).
   - **Hecho cuando:** no hay ningún `MIXTO` y el formulario ofrece "Tercera edad".
-- [ ] **A4 · La bandeja no oculta solicitudes rechazadas o convertidas.**
+- [x] **A4 · La bandeja no oculta solicitudes rechazadas o convertidas.**
   - **Evidencia:** `frontend/src/store/publicRequests.store.ts` (≈l.233 y ≈l.277) filtra el ítem tras rechazar o convertir, con un comentario "Technical debt" que ya no aplica (existe `GET /admin/event-requests`).
   - **Cambio:** actualizar el ítem en su lugar (status, `convertedEventId`) y borrar los comentarios de deuda.
-- [ ] **A5 · Regla de edición: RECHAZADO no se edita.**
+- [x] **A5 · Regla de edición: RECHAZADO no se edita.**
   - **Backend:** `feature/events/service/EventService.update` lanza `DomainValidationException("No se puede editar un evento rechazado")` si `status == RECHAZADO`. Test nuevo `EventEditRuleIntegrationTest`: RECHAZADO → 400; APROBADO → 200 y vuelve a EN_REVISION si cambia la fecha.
   - **Frontend:** `features/events/utils/edit-event.ts` (`getEditBlockReason`) y `status-helpers.ts` (`canEditEvent`, ≈l.103-104, 120, 150) permiten editar APROBADO y bloquean RECHAZADO. Se corrigen los comentarios que llaman "final" a APROBADO (el backend permite APROBADO→EN_REVISION).
-- [ ] **A6 · Entorno de desarrollo y Docker sin trampas.**
+- [x] **A6 · Entorno de desarrollo y Docker sin trampas.**
   - `frontend/vite.config.ts`: `server.proxy` para `/api`, `/auth`, `/public` y `/admin` → `http://localhost:9090`. Así `VITE_API_BASE_URL` vacío funciona igual en dev y en Docker.
   - `frontend/.env.example`: aclarar que vacío es lo correcto en dev (proxy) y en Docker (nginx).
   - `.env.example`:
@@ -144,7 +144,7 @@ Gestión de Eventos (TFI UNLa). Hay dos tipos de usuarios:
     - Agregar `APP_PUBLIC_BASE_URL=http://127.0.0.1:8080`, con un comentario: "debe coincidir con `FRONTEND_HOST:FRONTEND_PORT`".
   - `docker-compose.yml`: pasar `APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-http://127.0.0.1:${FRONTEND_PORT:-8080}}` al backend.
   - Nuevo `docker-compose.mail-access.yml` que publica `mailhog` (imagen Mailpit) en `${MAILPIT_HOST_PORT:-8025}:8025` sobre `127.0.0.1`.
-- [ ] **A7 · Detalles que confunden.**
+- [x] **A7 · Detalles que confunden.**
   - `feature/requests/controller/AdminEventRequestController.java`: los Javadoc están cruzados (≈l.24-26 describe "Detalle" sobre `list()`; ≈l.41-44 describe `changeStatus` sobre `history()`). Ponerlos en el método correcto.
   - `src/test/.../priority/PriorityConflictAccessIntegrationTest.java:16`: quitar `deciderUserId` del mapa `DECISION`. Se mantiene a propósito en `PriorityConflictDecisionIntegrationTest`.
   - `frontend/src/utils/catalog-filters.ts:6` dice "backend no soporta ?q=", pero los controllers de catálogos sí lo aceptan. Corregir el comentario, o usar `q` si es trivial.
@@ -380,4 +380,12 @@ Para cada grupo, antes de borrar o mover, correr `grep -rn "<símbolo o ruta>" f
 ## 6. Bitácora (la completa el ejecutor)
 | ID | Commit | Verificación corrida | Notas / grep de consumidores / BLOQUEADO |
 |---|---|---|---|
+| A1 | `e5cd588` | `cd backend && JAVA_HOME=$(/usr/libexec/java_home) ./mvnw -q test` (18 suites, 39 tests, 0 failures/errors/skips); `JAVA_HOME=$(/usr/libexec/java_home) ./mvnw -q -DskipTests package`; `jar tf target/backend-0.0.1-SNAPSHOT.jar | grep -c h2` → `0` | H2 quedó en scope `test`; se eliminaron `spring.h2.console.*` y `spring.security.user`. `grep -c` devuelve exit 1 por cero coincidencias, resultado esperado. |
+| A2 | `4ccc845` | `cd frontend && npx tsc -b && npm run build` (OK); ESLint worktree vs `HEAD`: 2 vs 2 errores en `PublicEventForm.tsx` | El formulario usa `checkPublicAvailability`; conflictos sin título muestran “Evento existente”. Chequeo HTTP 200 sin sesión pendiente de E1; todavía no se marca completo. |
+| A3 | `140dc51` | `cd frontend && npx tsc -b && npm run build` (OK); ESLint worktree vs `HEAD`: 0 vs 0 en los seis archivos modificados; `grep -rn 'MIXTO' frontend/src` sin resultados | `TERCERA_EDAD` y “Tercera edad” añadidos y alineados con `AudienceType` Java; bundle-size warning de Vite no bloqueó el build. |
+| A4 | `795fd61` | `cd frontend && npx tsc -b && npm run build` (OK); ESLint worktree vs `HEAD`: 0 vs 0 en `publicRequests.store.ts` | Rechazadas/convertidas se actualizan en el lugar; no había test específico del store. Build tuvo advertencia de bundle grande. |
+| A5 | `81e9aa8` | `cd backend && JAVA_HOME=$(/usr/libexec/java_home) ./mvnw -q test` (19 suites, 41 tests, 0 failures/errors/skips); `cd frontend && npx tsc -b && npm run build` (OK); ESLint worktree vs `HEAD`: 0 vs 0 en los tres archivos frontend | Test de edición cubre RECHAZADO→400 y APROBADO→200 con transición a EN_REVISION. Se alinearon todos los helpers de edición; Vite mantiene advertencia de bundle grande. |
+| A6 | `337e19b` | `cd frontend && npx tsc -b && npm run build` (OK); `docker compose -f docker-compose.yml -f docker-compose.mail-access.yml config` (OK); `git diff --check` | Vite proxy, defaults y Mailpit override confirmados por Compose renderizado; no se levantaron servicios ni se probó entrega real de mail. |
+| A7 | `2858cac` | `cd backend && JAVA_HOME=$(/usr/libexec/java_home) ./mvnw -q test` (19 suites, 41 tests); `cd frontend && npx tsc -b && npm run build` (OK); ESLint worktree vs `HEAD`: 0 vs 0 en cuatro archivos; `grep -rn 'myEventsOnly' frontend/src` sin resultados | Filtrado oculto eliminado porque no había UI; la hidratación descarta la clave persistida antigua y conserva los otros filtros. Build tuvo advertencia de bundle grande. |
+| B1 | `pendiente` | `grep -rn`/`grep -rnF` de rutas y símbolos en `frontend/src backend/src`; no se borraron archivos ni se corrió build/test | BLOQUEADO: `services/api/{spaces,departments,calendar}.ts` importan y usan `services/http/client.ts`, todos candidatos del grupo B1. Se detuvo antes de borrar; se continúa con B2 según instrucción del usuario. |
 | | | | |
