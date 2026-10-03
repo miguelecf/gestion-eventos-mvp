@@ -424,13 +424,12 @@ export async function getPublicSpaces(
 
 export async function getSpaceMonthlyOccupancy(
   spaceId: number,
-  year: number,
-  month: number
+  date: string
 ): Promise<SpaceOccupancyResponse> {
   return await httpClient.get<SpaceOccupancyResponse>(
     ENDPOINTS.PUBLIC_SPACE_OCCUPANCY(spaceId),
     {
-      params: { year, month },
+      params: { date },
     }
   );
 }

@@ -36,7 +36,6 @@ export interface Comment {
 
 export interface CreateCommentInput {
   body: string;
-  visibility?: CommentVisibility;
 }
 
 export interface UpdateCommentInput {
@@ -148,10 +147,6 @@ export function canDeleteComment(
   return comment.author.id === currentUserId || isPrivileged;
 }
 
-export function isPublicComment(comment: Comment): boolean {
-  return comment.visibility === 'PUBLIC';
-}
-
 export function getCommentAge(comment: Comment): string {
   const now = new Date();
   const diffMs = now.getTime() - comment.createdAt.getTime();
@@ -174,7 +169,6 @@ export function getCommentAge(comment: Comment): string {
 export function getCommentVisibilityColor(visibility: CommentVisibility): string {
   const colorMap: Record<CommentVisibility, string> = {
     INTERNAL: 'bg-gray-100 text-gray-800',
-    PUBLIC: 'bg-blue-100 text-blue-800',
   };
 
   return colorMap[visibility] || 'bg-gray-100 text-gray-800';

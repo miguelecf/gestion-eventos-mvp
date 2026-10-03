@@ -57,7 +57,6 @@ export {
   adaptCommentForUpdate,
   canEditComment,
   canDeleteComment,
-  isPublicComment,
   getCommentAge,
   getCommentVisibilityColor,
   validateCommentBody

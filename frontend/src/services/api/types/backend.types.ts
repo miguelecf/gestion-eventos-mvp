@@ -69,7 +69,6 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
  */
 export const CommentVisibility = {
   INTERNAL: 'INTERNAL',
-  PUBLIC: 'PUBLIC'
 } as const;
 export type CommentVisibility = typeof CommentVisibility[keyof typeof CommentVisibility];
 
@@ -100,8 +99,10 @@ export type EventOriginType = typeof EventOriginType[keyof typeof EventOriginTyp
  * Estado de Solicitudes Públicas
  */
 export const PublicRequestStatus = {
-  RECEIVED: 'RECEIVED',
-  CONVERTED: 'CONVERTED'
+  RECIBIDO: 'RECIBIDO',
+  EN_REVISION: 'EN_REVISION',
+  CONVERTIDO: 'CONVERTIDO',
+  RECHAZADO: 'RECHAZADO'
 } as const;
 export type PublicRequestStatus = typeof PublicRequestStatus[keyof typeof PublicRequestStatus];
 
@@ -169,11 +170,11 @@ export interface BackendEventDTO {
 }
 
 export interface BackendPriorityConflictSummary {
-  conflictCode: string;
+  conflictId: string;
   displacedEventId: number;
   spaceId: number;
-  fromTime: string;
-  toTime: string;
+  from: string;
+  to: string;
   requiresRebooking: boolean;
 }
 
@@ -236,10 +237,8 @@ export type BackendUpdateEventDTO = Partial<Omit<BackendCreateEventDTO, 'contact
  */
 export interface BackendEventStatusResponse {
   eventId: number;
-  current: string;              // ✅ Campo real del backend
-  allowed: string[];            // ✅ Campo real del backend
-  currentStatus?: string;       // Deprecated: mantener por compatibilidad
-  allowedTransitions?: string[]; // Deprecated: mantener por compatibilidad
+  current: EventStatus;
+  allowed: EventStatus[];
 }
 
 /**
@@ -258,11 +257,9 @@ export interface BackendChangeStatusRequest {
  */
 export interface BackendStatusChangeResponse {
   eventId: number;
-  status: EventStatus;           // ✅ Campo REAL del backend
-  newStatus?: EventStatus;       // ⚠️ Deprecated: para compatibilidad
-  approvalPending?: boolean;
-  missing?: string[];            // ✅ Campo REAL del backend
-  missingApprovals?: string[];   // ⚠️ Deprecated: para compatibilidad
+  status: EventStatus;
+  approvalPending: boolean;
+  missing: string[];
 }
 
 /**
@@ -396,35 +393,52 @@ export interface BackendDepartmentDTO {
 
 /**
  * Respuesta de disponibilidad de espacio
- * Endpoint: POST /api/availability/check, POST /public/availability/check
+ * Endpoint: POST /api/availability/check
  */
 export interface BackendSpaceAvailabilityResponse {
-  available: boolean;
+  isAvailable: boolean | null;
+  skipped: boolean;
+  reason: string | null;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
   conflicts: Array<{
     eventId: number;
-    eventName: string;
-    from: string;              // HH:mm
-    to: string;                // HH:mm
-    status?: EventStatus;
-    priority?: Priority;
-    bufferBefore?: number;
-    bufferAfter?: number;
+    status: EventStatus;
+    title: string;
+    spaceId: number;
+    date: string;
+    from: string;
+    to: string;
+    internal: boolean;
+    bufferBeforeMin: number | null;
+    bufferAfterMin: number | null;
+  }>;
+}
+
+export interface BackendPublicAvailabilityResponse {
+  isAvailable: boolean | null;
+  skipped: boolean;
+  reason: string | null;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
+  conflicts: Array<{
+    status: EventStatus | null;
+    from: string;
+    to: string;
   }>;
 }
 
 /**
  * Respuesta de capacidad técnica
- * Endpoint: GET /internal/tech/capacity
+ * Endpoint: GET /api/tech/capacity
  */
 export interface BackendTechnicalCapacityResponse {
   date: string;              // yyyy-MM-dd
-  blockMinutes?: number;
-  defaultSlots?: number;
-  maxCapacity?: number;
+  blockMinutes: number;
+  defaultSlots: number;
   blocks: Array<{
-    from?: string;           // HH:mm
-    to?: string;             // HH:mm
-    time?: string;           // HH:mm legacy
+    from: string;            // HH:mm
+    to: string;              // HH:mm
     used: number;
     available: number;
   }>;
@@ -440,9 +454,9 @@ export interface BackendSubmitPublicRequestDTO {
   scheduleFrom: string;              // HH:mm
   scheduleTo: string;                // HH:mm
   name: string;
-  spaceId: number | null;
-  freeLocation: string | null;
-  requestingDepartmentId: number | null;
+  space_id: number | null;
+  free_location: string | null;
+  requesting_department_id: number | null;
   requirements?: string | null;
   coverage?: string | null;
   observations?: string | null;
@@ -459,12 +473,6 @@ export interface BackendSubmitPublicRequestDTO {
  * Respuesta de envío de solicitud pública
  * Endpoint: POST /public/event-requests
  */
-export interface BackendSubmitPublicRequestResponse {
-  trackingUuid: string;
-  status: PublicRequestStatus;
-  submittedAt: string;           // ISO 8601
-}
-
 /**
  * DTO de usuario autenticado
  * Endpoint: GET /auth/me
@@ -518,25 +526,7 @@ export interface BackendPageResponse<T> {
  * DTO para crear Solicitud de Evento Público
  * Endpoint: POST /public/event-requests
  */
-export interface PublicEventRequestPayload {
-  name: string;
-  audienceType: string;
-  date: string;                    // formato: yyyy-MM-dd
-  scheduleFrom: string;            // formato: HH:mm
-  scheduleTo: string;              // formato: HH:mm
-  technicalSchedule?: string | null; // formato: HH:mm
-  spaceId?: number | null;         // XOR con freeLocation
-  freeLocation?: string | null;    // XOR con spaceId
-  requestingDepartmentId?: number | null;
-  contactName: string;
-  contactEmail: string;
-  contactPhone: string;
-  bufferBeforeMin?: number;
-  bufferAfterMin?: number;
-  requirements?: string | null;
-  coverage?: string | null;
-  observations?: string | null;
-}
+export type PublicEventRequestPayload = BackendSubmitPublicRequestDTO;
 
 /**
  * DTO de respuesta al crear Solicitud Pública
@@ -546,9 +536,11 @@ export interface PublicEventRequestPayload {
  */
 export interface EventRequestCreatedResponse {
   tracking_uuid: string;           // UUID para tracking público (snake_case del backend)
-  status: string;                  // ej: "RECIBIDO" (RequestStatus)
+  status: PublicRequestStatus;
   request_date: string;            // ISO 8601 (snake_case del backend)
 }
+
+export type BackendSubmitPublicRequestResponse = EventRequestCreatedResponse;
 
 /**
  * DTO de respuesta de estado de Solicitud Pública
@@ -560,12 +552,12 @@ export interface EventRequestStatusResponse {
   /** Motivo comunicado al rechazar la solicitud; null si no está rechazada. */
   rejectionReason: string | null;
   request: {
-    status: 'RECIBIDO' | 'EN_REVISION' | 'CONVERTIDO' | 'RECHAZADO';
+    status: PublicRequestStatus;
     submittedAt: string;          // ISO 8601
   };
   /** Estado del evento creado al convertir la solicitud; null si aún no se convirtió. */
   event: {
-    status: string;
+    status: EventStatus;
   } | null;
   schedule: {
     date: string;                 // formato: yyyy-MM-dd
@@ -595,7 +587,6 @@ export interface AvailabilityCheckRequest {
   date: string;                    // formato: yyyy-MM-dd
   scheduleFrom: string;            // formato: HH:mm
   scheduleTo: string;              // formato: HH:mm
-  technicalSchedule?: string | null; // formato: HH:mm
   spaceId?: number | null;         // XOR con freeLocation
   freeLocation?: string | null;    // XOR con spaceId
   bufferBeforeMin?: number;
@@ -607,15 +598,16 @@ export interface AvailabilityCheckRequest {
  * Endpoint: POST /public/availability/check
  */
 export interface AvailabilityCheckResponse {
-  available: boolean;
-  reason?: string | null;          // Razón si no está disponible
-  existingEvents?: Array<{
-    id: number;
-    name: string;
-    scheduleFrom: string;
-    scheduleTo: string;
-    status: string;
-  }> | null;
+  isAvailable: boolean | null;
+  skipped: boolean;
+  reason: string | null;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
+  conflicts: Array<{
+    status: EventStatus | null;
+    from: string;
+    to: string;
+  }>;
 }
 
 /**
@@ -637,19 +629,11 @@ export interface PublicSpaceListItem {
  */
 export interface SpaceOccupancyResponse {
   spaceId: number;
-  spaceName: string;
-  year: number;
-  month: number;                   // 1-12
-  events: Array<{
-    eventId: number;
-    eventName?: string | null;
-    date: string;                  // formato: yyyy-MM-dd
-    scheduleFrom: string;          // formato: HH:mm
-    scheduleTo: string;            // formato: HH:mm
-    technicalSchedule?: string | null;
-    status: string;
-    bufferBeforeMin?: number;
-    bufferAfterMin?: number;
+  date: string;
+  blocks: Array<{
+    from: string;
+    to: string;
+    status: EventStatus | null;
   }>;
 }
 
@@ -676,10 +660,10 @@ export interface ConflictItem {
  * Endpoint: POST /api/events (cuando retorna 409)
  */
 export interface AvailabilityConflictResponse {
-  isAvailable: boolean;
+  isAvailable: boolean | null;
   skipped: boolean;
   reason: string | null;
-  effectiveFrom: string;           // formato: HH:mm
-  effectiveTo: string;             // formato: HH:mm
+  effectiveFrom: string | null;    // formato: HH:mm
+  effectiveTo: string | null;      // formato: HH:mm
   conflicts: ConflictItem[];
 }

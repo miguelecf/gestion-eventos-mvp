@@ -122,7 +122,7 @@ export function SpaceOccupancyPanel({
       <div className="space-y-4">
         {/* Header */}
         <div>
-          <h3 className="text-lg font-semibold">{spaceName}</h3>
+          <h3 className="text-lg font-semibold">{spaceName || 'Ocupación del espacio'}</h3>
           <p className="text-sm text-muted-foreground">
             Ocupación del {new Date(date + 'T00:00:00').toLocaleDateString('es-AR')}
           </p>
@@ -161,7 +161,9 @@ export function SpaceOccupancyPanel({
 
               // Color según estado
               const colorClass =
-                slot.status === 'APROBADO'
+                slot.status == null
+                  ? 'bg-gray-500/80 border-gray-600'
+                  : slot.status === 'APROBADO'
                   ? 'bg-green-500/80 border-green-600'
                   : slot.status === 'RESERVADO'
                     ? 'bg-blue-500/80 border-blue-600'
@@ -172,11 +174,11 @@ export function SpaceOccupancyPanel({
                   <div
                     className={`absolute h-full rounded border-2 ${colorClass} flex items-center px-2 overflow-hidden`}
                     style={{ left: `${left}%`, width: `${width}%` }}
-                    title={`${slot.eventName || 'Sin nombre'}\n${slot.from} - ${slot.to}\nEstado: ${slot.status}`}
+                    title={`${slot.eventName || 'Reservado'}\n${slot.from} - ${slot.to}\nEstado: ${slot.status ?? 'No informado'}`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <Badge variant="outline" className="text-xs shrink-0">
-                        {slot.status}
+                        {slot.status ?? 'Ocupado'}
                       </Badge>
                       <span className="text-xs text-white font-medium truncate">
                         {slot.eventName || 'Sin nombre'}

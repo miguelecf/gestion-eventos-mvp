@@ -60,8 +60,6 @@ function getCommentVisibilityLabel(value: unknown): string | null {
   switch (value) {
     case 'INTERNAL':
       return 'Interno';
-    case 'PUBLIC':
-      return 'Publico';
     default:
       return null;
   }

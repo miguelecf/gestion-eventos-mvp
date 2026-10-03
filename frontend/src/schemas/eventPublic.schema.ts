@@ -258,7 +258,7 @@ export function toPublicEventRequestPayload(data: PublicEventFormData) {
     observations: data.observations || null,
 
     // Metadatos
-    priority: 'MEDIUM', // ⚠️ FIJO - No editable en formulario público
+    priority: 'MEDIUM' as const, // Fijo y no editable en el formulario público.
     audienceType: data.audienceType,
 
     // Contacto

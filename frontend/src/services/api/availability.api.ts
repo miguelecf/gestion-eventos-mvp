@@ -11,7 +11,9 @@ import { httpClient } from './client';
 import { ENDPOINTS } from './client/config';
 import type { 
   BackendSpaceAvailabilityResponse,
+  BackendPublicAvailabilityResponse,
   BackendTechnicalCapacityResponse,
+  SpaceOccupancyResponse,
   EventStatus,
   Priority
 } from './types/backend.types';
@@ -36,11 +38,11 @@ export interface CheckAvailabilityParams {
  * Conflicto de disponibilidad adaptado
  */
 export interface AvailabilityConflict {
-  eventId: number;
-  eventName: string;
+  eventId?: number;
+  eventName?: string;
   from: string; // HH:mm
   to: string; // HH:mm
-  status?: EventStatus;
+  status?: EventStatus | null;
   priority?: Priority;
   bufferBefore?: number;
   bufferAfter?: number;
@@ -122,7 +124,7 @@ export interface OccupancySlot {
   from: string; // HH:mm
   to: string; // HH:mm
   eventName?: string;
-  status: EventStatus;
+  status: EventStatus | null;
 }
 
 /**
@@ -130,7 +132,7 @@ export interface OccupancySlot {
  */
 export interface SpaceOccupancyResult {
   spaceId: number;
-  spaceName: string;
+  spaceName?: string;
   date: string;
   occupied: OccupancySlot[];
   availableSlots: Array<{ from: string; to: string }>;
@@ -174,7 +176,7 @@ export async function checkAvailability(
     scheduleTo: params.scheduleTo,
     bufferBeforeMin: params.bufferBeforeMin,
     bufferAfterMin: params.bufferAfterMin,
-    excludeEventId: params.excludeEventId
+    ignoreEventId: params.excludeEventId
   };
 
   const response = await httpClient.post<BackendSpaceAvailabilityResponse>(
@@ -185,18 +187,17 @@ export async function checkAvailability(
   // Adaptar respuesta
   const conflicts: AvailabilityConflict[] = response.conflicts.map(conflict => ({
     eventId: conflict.eventId,
-    eventName: conflict.eventName,
+    eventName: conflict.title,
     from: conflict.from,
     to: conflict.to,
     status: conflict.status,
-    priority: conflict.priority,
-    bufferBefore: conflict.bufferBefore,
-    bufferAfter: conflict.bufferAfter
+    bufferBefore: conflict.bufferBeforeMin ?? undefined,
+    bufferAfter: conflict.bufferAfterMin ?? undefined
   }));
 
   // Generar mensaje descriptivo
   let message = '';
-  if (response.available) {
+  if (response.isAvailable) {
     message = '✅ Espacio disponible para la fecha y horario solicitado';
   } else {
     const count = conflicts.length;
@@ -204,7 +205,7 @@ export async function checkAvailability(
   }
 
   return {
-    available: response.available,
+    available: response.isAvailable === true,
     conflicts,
     message
   };
@@ -215,7 +216,7 @@ export async function checkAvailability(
  * Endpoint público para solicitudes externas
  * 
  * @param params - Parámetros de disponibilidad
- * @returns Resultado con disponibilidad y conflictos
+ * @returns Resultado con disponibilidad y franjas en conflicto (sin datos identificatorios)
  * 
  * @example
  * const result = await availabilityApi.checkPublicAvailability({
@@ -241,31 +242,26 @@ export async function checkPublicAvailability(
     bufferAfterMin: params.bufferAfterMin
   };
 
-  const response = await httpClient.post<BackendSpaceAvailabilityResponse>(
+  const response = await httpClient.post<BackendPublicAvailabilityResponse>(
     ENDPOINTS.AVAILABILITY_PUBLIC_CHECK,
     requestBody
   );
 
   const conflicts: AvailabilityConflict[] = response.conflicts.map(conflict => ({
-    eventId: conflict.eventId,
-    eventName: conflict.eventName,
     from: conflict.from,
     to: conflict.to,
     status: conflict.status,
-    priority: conflict.priority,
-    bufferBefore: conflict.bufferBefore,
-    bufferAfter: conflict.bufferAfter
   }));
 
   let message = '';
-  if (response.available) {
+  if (response.isAvailable) {
     message = '✅ Espacio disponible';
   } else {
     message = `❌ Espacio no disponible (${conflicts.length} ${conflicts.length === 1 ? 'conflicto' : 'conflictos'})`;
   }
 
   return {
-    available: response.available,
+    available: response.isAvailable === true,
     conflicts,
     message
   };
@@ -297,13 +293,13 @@ export async function getTechCapacity(
     `${ENDPOINTS.INTERNAL_TECH_CAPACITY}?date=${normalizedDate}`
   );
 
-  const maxCapacity = response.maxCapacity ?? response.defaultSlots ?? 0;
+  const maxCapacity = response.defaultSlots;
 
   // Adaptar bloques con cálculos adicionales
   const blocks: TechCapacityBlock[] = response.blocks.map(block => {
-    const time = block.time ?? block.from ?? '00:00';
-    const from = block.from ?? time;
-    const to = block.to ?? time;
+    const time = block.from;
+    const from = block.from;
+    const to = block.to;
     const utilizationPercent = maxCapacity > 0 
       ? Math.round((block.used / maxCapacity) * 100)
       : 0;
@@ -384,7 +380,7 @@ export async function getTechEvents(
  * Endpoint público (sin autenticación)
  * 
  * @param params - Parámetros con spaceId y date
- * @returns Slots ocupados y disponibles
+ * @returns Bloques horarios de ocupación según el contrato del backend
  * 
  * @example
  * const occupancy = await availabilityApi.getPublicSpaceOccupancy({
@@ -392,14 +388,8 @@ export async function getTechEvents(
  *   date: '2025-12-01'
  * });
  * 
- * console.log('Horarios ocupados:');
  * occupancy.occupied.forEach(slot => {
- *   console.log(`${slot.from} - ${slot.to}: ${slot.eventName || 'Reservado'}`);
- * });
- * 
- * console.log('Horarios disponibles:');
- * occupancy.availableSlots.forEach(slot => {
- *   console.log(`${slot.from} - ${slot.to}`);
+ *   console.log(`${slot.from} - ${slot.to}: ${slot.status ?? 'Ocupado'}`);
  * });
  */
 export async function getPublicSpaceOccupancy(
@@ -409,11 +399,20 @@ export async function getPublicSpaceOccupancy(
     ? params.date 
     : toBackendDate(params.date);
 
-  const response = await httpClient.get<SpaceOccupancyResult>(
+  const response = await httpClient.get<SpaceOccupancyResponse>(
     ENDPOINTS.PUBLIC_SPACE_OCCUPANCY(params.spaceId) + `?date=${date}`
   );
 
-  return response;
+  return {
+    spaceId: response.spaceId,
+    date: response.date,
+    occupied: response.blocks.map(block => ({
+      from: block.from,
+      to: block.to,
+      status: block.status,
+    })),
+    availableSlots: [],
+  };
 }
 
 /**

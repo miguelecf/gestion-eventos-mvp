@@ -11,8 +11,7 @@ import { httpClient } from './client';
 import { ENDPOINTS } from './client/config';
 import type { 
   BackendCommentDTO,
-  BackendCommentsPage,
-  CommentVisibility
+  BackendCommentsPage
 } from './types/backend.types';
 import type { PageResponse } from './types/pagination.types';
 import {
@@ -39,7 +38,6 @@ export type { CreateCommentInput, UpdateCommentInput, Comment };
 export interface GetCommentsParams {
   page?: number;
   size?: number;
-  visibility?: CommentVisibility; // Filtrar por visibilidad
   sort?: 'ASC' | 'DESC';
 }
 
@@ -68,8 +66,7 @@ export type QuickReaction = '👍' | '❤️' | '🎉' | '🤔' | '👀' | '🚀
  * @example
  * const commentsPage = await commentsApi.getComments(123, {
  *   page: 0,
- *   size: 10,
- *   visibility: 'PUBLIC'
+ *   size: 10
  * });
  * 
  * commentsPage.content.forEach(comment => {
@@ -80,16 +77,12 @@ export async function getComments(
   eventId: number,
   params: GetCommentsParams = {}
 ): Promise<PageResponse<Comment>> {
-  const { page = 0, size = 10, visibility, sort } = params;
+  const { page = 0, size = 10, sort } = params;
 
   const queryParams = new URLSearchParams({
     page: page.toString(),
     size: size.toString()
   });
-
-  if (visibility) {
-    queryParams.append('visibility', visibility);
-  }
 
   if (sort) {
     queryParams.append('sort', `createdAt,${sort.toLowerCase()}`);
@@ -140,8 +133,7 @@ export async function getCommentById(
  * 
  * @example
  * const newComment = await commentsApi.createComment(123, {
- *   body: 'Este es un comentario importante',
- *   visibility: 'INTERNAL'
+ *   body: 'Este es un comentario importante'
  * });
  */
 export async function createComment(
@@ -250,24 +242,18 @@ export function validateComment(body: string): CommentValidationResult {
  * Útil para vistas que necesitan mostrar todos los comentarios
  * 
  * @param eventId - ID del evento
- * @param visibility - Filtro opcional de visibilidad
  * @returns Array de todos los comentarios
  * 
  * @example
  * const allComments = await commentsApi.getAllComments(123);
  */
 export async function getAllComments(
-  eventId: number,
-  visibility?: CommentVisibility
+  eventId: number
 ): Promise<Comment[]> {
   const queryParams = new URLSearchParams({
     page: '0',
     size: '1000' // Tamaño grande para obtener todos
   });
-
-  if (visibility) {
-    queryParams.append('visibility', visibility);
-  }
 
   const backendPage = await httpClient.get<BackendCommentsPage>(
     `${ENDPOINTS.COMMENTS(eventId)}?${queryParams.toString()}`
@@ -281,7 +267,6 @@ export async function getAllComments(
  * Obtiene el conteo de comentarios de un evento
  * 
  * @param eventId - ID del evento
- * @param visibility - Filtro opcional de visibilidad
  * @returns Número total de comentarios
  * 
  * @example
@@ -289,17 +274,12 @@ export async function getAllComments(
  * console.log(`Total comentarios: ${count}`);
  */
 export async function getCommentsCount(
-  eventId: number,
-  visibility?: CommentVisibility
+  eventId: number
 ): Promise<number> {
   const queryParams = new URLSearchParams({
     page: '0',
     size: '1'
   });
-
-  if (visibility) {
-    queryParams.append('visibility', visibility);
-  }
 
   const backendPage = await httpClient.get<BackendCommentsPage>(
     `${ENDPOINTS.COMMENTS(eventId)}?${queryParams.toString()}`
@@ -313,32 +293,8 @@ export async function getCommentsCount(
 }
 
 /**
- * Obtiene los comentarios públicos de un evento
- * Shortcut para getComments con visibility='PUBLIC'
- * 
- * @param eventId - ID del evento
- * @param params - Parámetros de paginación
- * @returns Página de comentarios públicos
- * 
- * @example
- * const publicComments = await commentsApi.getPublicComments(123, {
- *   page: 0,
- *   size: 20
- * });
- */
-export async function getPublicComments(
-  eventId: number,
-  params: Omit<GetCommentsParams, 'visibility'> = {}
-): Promise<PageResponse<Comment>> {
-  return getComments(eventId, {
-    ...params,
-    visibility: 'PUBLIC'
-  });
-}
-
-/**
  * Obtiene los comentarios internos de un evento
- * Shortcut para getComments con visibility='INTERNAL'
+ * Shortcut para obtener los comentarios internos del endpoint de comentarios
  * 
  * @param eventId - ID del evento
  * @param params - Parámetros de paginación
@@ -352,12 +308,9 @@ export async function getPublicComments(
  */
 export async function getInternalComments(
   eventId: number,
-  params: Omit<GetCommentsParams, 'visibility'> = {}
+  params: GetCommentsParams = {}
 ): Promise<PageResponse<Comment>> {
-  return getComments(eventId, {
-    ...params,
-    visibility: 'INTERNAL'
-  });
+  return getComments(eventId, params);
 }
 
 /**
@@ -400,7 +353,6 @@ export const commentsApi = {
   validateComment,
   getAllComments,
   getCommentsCount,
-  getPublicComments,
   getInternalComments,
   addQuickReaction
 };

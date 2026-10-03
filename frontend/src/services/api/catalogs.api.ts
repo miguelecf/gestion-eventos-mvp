@@ -36,7 +36,6 @@ export interface PublicEventRequestInput {
   date: string; // yyyy-MM-dd
   scheduleFrom: string; // HH:mm
   scheduleTo: string; // HH:mm
-  expectedAttendees: number;
   audienceType: string;
   
   // Datos del solicitante
@@ -47,7 +46,6 @@ export interface PublicEventRequestInput {
   // Preferencias
   spaceId?: number;
   departmentId?: number;
-  requiresTech: boolean;
 }
 
 /**
@@ -469,13 +467,12 @@ export async function updateDepartment(
  *   date: '2025-12-15',
  *   scheduleFrom: '10:00',
  *   scheduleTo: '12:00',
- *   expectedAttendees: 50,
  *   audienceType: 'COMUNIDAD',
  *   contactName: 'Juan Pérez',
  *   contactEmail: 'juan@example.com',
  *   contactPhone: '+54911234567',
  *   spaceId: 5,
- *   requiresTech: true
+ *   departmentId: 2
  * });
  * 
  * console.log(`Código de seguimiento: ${result.trackingUuid}`);
@@ -492,9 +489,9 @@ export async function submitPublicRequest(
     contactName: input.contactName,
     contactEmail: input.contactEmail,
     contactPhone: input.contactPhone,
-    spaceId: input.spaceId ?? null,
-    freeLocation: null,
-    requestingDepartmentId: input.departmentId ?? null,
+    space_id: input.spaceId ?? null,
+    free_location: null,
+    requesting_department_id: input.departmentId ?? null,
     requirements: input.eventDescription,
     priority: 'MEDIUM', // Default para solicitudes públicas
     bufferBeforeMin: 15,
@@ -507,10 +504,10 @@ export async function submitPublicRequest(
   );
 
   return {
-    trackingUuid: response.trackingUuid,
+    trackingUuid: response.tracking_uuid,
     message: '✅ Solicitud enviada exitosamente',
     nextSteps: [
-      `Guarda este código de seguimiento: ${response.trackingUuid}`,
+      `Guarda este código de seguimiento: ${response.tracking_uuid}`,
       'Recibirás un email de confirmación',
       'Puedes consultar el estado en cualquier momento',
       'Te notificaremos cuando se procese tu solicitud'

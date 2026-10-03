@@ -347,16 +347,15 @@ export async function checkAvailability(
 
   // Adaptar respuesta (ya está en formato adecuado, solo normalizar)
   return {
-    available: response.available,
+    available: response.isAvailable === true,
     conflicts: response.conflicts.map(conflict => ({
       eventId: conflict.eventId,
-      eventName: conflict.eventName,
+      eventName: conflict.title,
       from: conflict.from,
       to: conflict.to,
       status: conflict.status,
-      priority: conflict.priority,
-      bufferBefore: conflict.bufferBefore,
-      bufferAfter: conflict.bufferAfter
+      bufferBefore: conflict.bufferBeforeMin ?? undefined,
+      bufferAfter: conflict.bufferAfterMin ?? undefined
     }))
   };
 }

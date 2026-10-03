@@ -138,22 +138,18 @@ export default function PublicEventForm() {
    */
   const loadSpaceOccupancy = async (spaceId: number, date: string) => {
     try {
-      // Extraer año y mes de la fecha yyyy-MM-dd
-      const [year, month] = date.split('-').map(Number);
-      const occupancyData = await publicRequestsApi.getSpaceMonthlyOccupancy(spaceId, year, month);
+      const occupancyData = await publicRequestsApi.getSpaceMonthlyOccupancy(spaceId, date);
       
       // Adaptar SpaceOccupancyResponse a SpaceOccupancyResult
       const result: SpaceOccupancyResult = {
         spaceId: occupancyData.spaceId,
-        spaceName: occupancyData.spaceName,
-        date: date,
-        occupied: occupancyData.events.map(evt => ({
-          from: evt.scheduleFrom,
-          to: evt.scheduleTo,
-          eventName: evt.eventName || 'Sin nombre',
-          status: evt.status as any,
+        date: occupancyData.date,
+        occupied: occupancyData.blocks.map(block => ({
+          from: block.from,
+          to: block.to,
+          status: block.status,
         })),
-        availableSlots: [], // No necesario para el panel
+        availableSlots: [],
       };
       setOccupancy(result);
     } catch (error) {

@@ -93,7 +93,7 @@ export function mapStatusesFromBackend(statuses: string[]): EventStatus[] {
  * @throws Error si el DTO es inválido o falta información crítica
  * 
  * @example
- * const dto = { eventId: 1, currentStatus: 'EN_REVISION', allowedTransitions: ['RESERVADO'] };
+ * const dto = { eventId: 1, current: 'EN_REVISION', allowed: ['RESERVADO'] };
  * const state = adaptEventStatusFromBackend(dto);
  * // state.currentStatus === 'EN_REVISION'
  * // state.allowedTransitions === ['RESERVADO']
@@ -112,12 +112,11 @@ export function adaptEventStatusFromBackend(
     throw new Error('Respuesta de estado sin eventId');
   }
 
-  // ✅ FIX: Soportar ambos formatos (current/currentStatus) con preferencia al real
-  const currentStatusValue = dto.current || dto.currentStatus;
-  const allowedTransitionsValue = dto.allowed || dto.allowedTransitions;
+  const currentStatusValue = dto.current;
+  const allowedTransitionsValue = dto.allowed;
 
   if (!currentStatusValue) {
-    console.error('[Status Adapter] DTO sin campo de estado (current/currentStatus):', dto);
+    console.error('[Status Adapter] DTO sin campo current:', dto);
     throw new Error('Respuesta de estado sin campo de estado. Posiblemente el usuario no tiene permisos para ver el estado del evento.');
   }
 
@@ -159,7 +158,7 @@ export function adaptChangeStatusForBackend(
 
 /**
  * Adapta la respuesta de POST /api/events/{id}/status
- * Consolida las variantes de campos (missing/missingApprovals)
+ * Normaliza la respuesta del backend para el modelo de la interfaz
  * 
  * @param dto - Response del backend después del cambio
  * @returns ChangeStatusResult normalizado
@@ -178,17 +177,14 @@ export function adaptChangeStatusForBackend(
 export function adaptChangeStatusFromBackend(
   dto: BackendStatusChangeResponse
 ): ChangeStatusResult {
-  // ✅ FIX CRÍTICO: Backend envía 'status', no 'newStatus'
-  // Soportamos ambos por compatibilidad pero priorizamos el campo real
-  const statusValue = (dto as any).status ?? dto.newStatus;
+  const statusValue = dto.status;
   
   if (!statusValue) {
     console.error('[Status Adapter] Response sin campo de estado:', dto);
-    throw new Error('Respuesta de cambio de estado sin campo status/newStatus');
+    throw new Error('Respuesta de cambio de estado sin campo status');
   }
 
-  // Consolidar missing/missingApprovals (el backend puede usar cualquiera)
-  const missingApprovals = dto.missing ?? dto.missingApprovals ?? [];
+  const missingApprovals = dto.missing;
 
   return {
     eventId: dto.eventId,
