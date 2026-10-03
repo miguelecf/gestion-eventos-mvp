@@ -6,3 +6,8 @@ node_modules/
 .env
 .DS_Store
 docs/review-pack/
+
+# Local agent/tool data
+.atl/
+artifacts/
+synthetic-user-engine/
