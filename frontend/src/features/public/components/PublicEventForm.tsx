@@ -173,7 +173,7 @@ export default function PublicEventForm() {
     setIsCheckingAvailability(true);
 
     try {
-      const result = await availabilityApi.checkAvailability({
+      const result = await availabilityApi.checkPublicAvailability({
         spaceId: spaceIdValue,
         date: dateValue,
         scheduleFrom: scheduleFromValue,
@@ -182,7 +182,14 @@ export default function PublicEventForm() {
         bufferAfterMin: bufferAfterValue,
       });
 
-      setAvailability(result);
+      setAvailability({
+        ...result,
+        conflicts: result.conflicts.map((conflict) => ({
+          ...conflict,
+          // The public availability response intentionally omits event titles.
+          eventName: conflict.eventName || 'Evento existente',
+        })),
+      });
 
       // Toast según resultado
       if (result.available) {
