@@ -40,7 +40,7 @@ const AGENDA_FIELDS = new Set<keyof EventFormValues>([
   'spaceId',
 ]);
 
-export const EDITABLE_EVENT_STATUSES: EventStatus[] = ['EN_REVISION', 'RESERVADO'];
+export const EDITABLE_EVENT_STATUSES: EventStatus[] = ['EN_REVISION', 'RESERVADO', 'APROBADO'];
 
 export const EVENT_FIELD_LABELS: Record<keyof EventFormValues, string> = {
   name: 'Nombre',
@@ -92,13 +92,13 @@ export interface MappedUpdateError {
 }
 
 export function isEditableEventStatus(status: string | null | undefined): status is EventStatus {
-  return status === 'EN_REVISION' || status === 'RESERVADO';
+  return status === 'EN_REVISION' || status === 'RESERVADO' || status === 'APROBADO';
 }
 
 export function getEditBlockReason(status: string | null | undefined): string {
   switch (status) {
     case 'APROBADO':
-      return 'Este evento está APROBADO. Para editarlo primero debés cambiar su estado a EN_REVISION.';
+      return 'El evento aprobado puede editarse; los cambios de agenda lo devuelven a revisión.';
     case 'RECHAZADO':
       return 'Este evento está RECHAZADO y no puede editarse desde la UI.';
     default:

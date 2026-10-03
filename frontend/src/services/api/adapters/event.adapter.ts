@@ -335,7 +335,7 @@ export function adaptEventForUpdate(
  * }
  */
 export function canEditEvent(event: Event): boolean {
-  return event.status === 'EN_REVISION' || event.status === 'RESERVADO';
+  return event.status === 'EN_REVISION' || event.status === 'RESERVADO' || event.status === 'APROBADO';
 }
 
 /**

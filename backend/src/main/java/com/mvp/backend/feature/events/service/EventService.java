@@ -167,6 +167,10 @@ public class EventService {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Event not found"));
 
+        if (event.getStatus() == Status.RECHAZADO) {
+            throw new DomainValidationException("No se puede editar un evento rechazado");
+        }
+
         LocalDate previousDate = event.getDate();
         LocalTime previousFrom = event.getScheduleFrom();
         LocalTime previousTo = event.getScheduleTo();

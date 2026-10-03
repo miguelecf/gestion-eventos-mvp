@@ -100,8 +100,9 @@ export function getStatusColor(status: EventStatus): string {
 }
 
 /**
- * Verifica si un estado es final (no permite más transiciones)
- * Estados finales: APROBADO, RECHAZADO
+ * Verifica si un estado no puede volver a editarse.
+ * RECHAZADO es el único estado que bloquea la edición; APROBADO vuelve a revisión
+ * cuando una edición modifica la agenda.
  * 
  * @param status - Estado del evento
  * @returns true si es un estado final
@@ -112,12 +113,12 @@ export function getStatusColor(status: EventStatus): string {
  * }
  */
 export function isFinalStatus(status: EventStatus): boolean {
-  return status === 'APROBADO' || status === 'RECHAZADO';
+  return status === 'RECHAZADO';
 }
 
 /**
  * Verifica si un evento puede ser editado según su estado
- * Solo se pueden editar eventos en EN_REVISION o RESERVADO
+ * Se pueden editar eventos en EN_REVISION, RESERVADO o APROBADO.
  * 
  * @param status - Estado del evento
  * @returns true si puede ser editado
@@ -128,7 +129,7 @@ export function isFinalStatus(status: EventStatus): boolean {
  * </Button>
  */
 export function canEditEvent(status: EventStatus): boolean {
-  return status === 'EN_REVISION' || status === 'RESERVADO';
+  return status === 'EN_REVISION' || status === 'RESERVADO' || status === 'APROBADO';
 }
 
 /**
