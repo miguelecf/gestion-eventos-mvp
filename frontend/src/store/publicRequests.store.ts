@@ -230,16 +230,9 @@ const createPublicRequestsStore: StateCreator<PublicRequestsStore> = (set, get) 
 
       set((state) => ({
         selectedRequest: updatedRequest,
-        // Technical debt:
-        // While the listing depends on /public/event-requests, rejected/converted
-        // requests disappear from the source dataset. Revisit this once
-        // GET /admin/event-requests exists.
-        requests:
-          updatedRequest.status === 'RECHAZADO' || updatedRequest.status === 'CONVERTIDO'
-            ? state.requests.filter((request) => request.id !== id)
-            : state.requests.map((request) => (
-                request.id === id ? updatedRequest : request
-              )),
+        requests: state.requests.map((request) => (
+          request.id === id ? updatedRequest : request
+        )),
         loading: { ...state.loading, action: false },
       }));
 
@@ -274,11 +267,11 @@ const createPublicRequestsStore: StateCreator<PublicRequestsStore> = (set, get) 
               convertedEventId: result.eventId,
             }
           : state.selectedRequest,
-        // Technical debt:
-        // The current listing still comes from /public/event-requests, which only
-        // returns active requests. Revisit this removal strategy when /admin/event-requests
-        // becomes available and the grid can show RECHAZADO / CONVERTIDO items.
-        requests: state.requests.filter((request) => request.id !== id),
+        requests: state.requests.map((request) => (
+          request.id === id
+            ? { ...request, status: 'CONVERTIDO', convertedEventId: result.eventId }
+            : request
+        )),
         loading: { ...state.loading, action: false },
       }));
 
