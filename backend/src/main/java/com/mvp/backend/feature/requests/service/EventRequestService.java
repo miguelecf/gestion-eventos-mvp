@@ -1,6 +1,7 @@
 package com.mvp.backend.feature.requests.service;
 
 import com.mvp.backend.feature.availability.exception.AvailabilityConflictException;
+import com.mvp.backend.feature.auth.security.CurrentUserService;
 import com.mvp.backend.feature.availability.model.AvailabilityParams;
 import com.mvp.backend.feature.availability.service.AvailabilityService;
 import com.mvp.backend.feature.catalogs.model.Department;
@@ -40,14 +41,9 @@ import com.mvp.backend.feature.requests.model.EventRequest;
 import com.mvp.backend.feature.requests.model.RequestStatus;
 import com.mvp.backend.feature.requests.repository.EventRequestRepository;
 import com.mvp.backend.feature.users.model.User;
-import com.mvp.backend.feature.users.service.UserService;
-import com.mvp.backend.feature.auth.security.UserPrincipal;
 import com.mvp.backend.feature.notifications.event.EventRequestCreatedEmailEvent;
 import com.mvp.backend.shared.DomainValidationException;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -74,7 +70,7 @@ public class EventRequestService {
     private final AvailabilityService availabilityService;
     private final ApplicationEventPublisher eventPublisher;
     private final EventRepository eventRepository;
-    private final UserService userService;
+    private final CurrentUserService currentUserService;
     private final TechCapacityService techCapacityService;
 
     @Transactional
@@ -369,7 +365,7 @@ public class EventRequestService {
         }
 
         String fromValue = current.name();
-        User actor = getCurrentUser();
+        User actor = currentUserService.get();
 
         if (newStatus == RequestStatus.EN_REVISION) {
             request.setReviewedAt(Instant.now());
@@ -467,7 +463,7 @@ public class EventRequestService {
             throw new TechCapacityExceededException("No hay capacidad técnica disponible para el rango solicitado.");
         }
 
-        User actor = getCurrentUser();
+        User actor = currentUserService.get();
         Instant now = Instant.now();
 
         Event event = Event.builder()
@@ -541,22 +537,4 @@ public class EventRequestService {
         }
     }
 
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getPrincipal() == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No authenticated user");
-        }
-        Object principal = authentication.getPrincipal();
-        Long userId;
-        if (principal instanceof UserPrincipal userPrincipal) {
-            userId = userPrincipal.getId();
-        } else if (principal instanceof UserDetails details) {
-            userId = userService.getByUsername(details.getUsername()).getId();
-        } else if (principal instanceof String username) {
-            userId = userService.getByUsername(username).getId();
-        } else {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No authenticated user");
-        }
-        return userService.getById(userId);
-    }
 }

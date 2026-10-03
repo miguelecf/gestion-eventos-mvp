@@ -1,6 +1,7 @@
 package com.mvp.backend.feature.events.service;
 
 import com.mvp.backend.feature.availability.exception.AvailabilityConflictException;
+import com.mvp.backend.feature.auth.security.CurrentUserService;
 import com.mvp.backend.feature.availability.model.AvailabilityParams;
 import com.mvp.backend.feature.availability.model.AvailabilityResult;
 import com.mvp.backend.feature.availability.model.ConflictItem;
@@ -32,11 +33,8 @@ import com.mvp.backend.feature.catalogs.model.Space;
 import com.mvp.backend.feature.catalogs.repository.DepartmentRepository;
 import com.mvp.backend.feature.catalogs.repository.SpaceRepository;
 import com.mvp.backend.feature.history.service.AuditService;
-import com.mvp.backend.feature.users.service.UserService;
 import com.mvp.backend.shared.DomainValidationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
@@ -56,7 +54,7 @@ public class EventService {
     private static final int MAX_BUFFER_MINUTES = 240;
 
     private final EventRepository eventRepository;
-    private final UserService userService;
+    private final CurrentUserService currentUserService;
     private final SpaceRepository spaceRepository;
     private final DepartmentRepository departmentRepository;
     private final AuditService auditService;
@@ -69,7 +67,7 @@ public class EventService {
 
     /* ---------- Commands ---------- */
     public EventCreateResult create(CreateEventDto dto) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.get();
 
         Space space = resolveSpace(dto.spaceId());
 
@@ -162,7 +160,7 @@ public class EventService {
 
     public EventUpdateResult update(Long id, UpdateEventDto req) {
 
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.get();
 
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Event not found"));
@@ -392,7 +390,7 @@ public class EventService {
             return; // ya dado de baja: idempotente, sin duplicar auditoría
         }
 
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.get();
         ev.setActive(false);
         ev.setDeletedAt(Instant.now());
         ev.setLastModifiedBy(currentUser);
@@ -459,26 +457,6 @@ public class EventService {
     }
 
     /* -----Mapping----- */
-
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getPrincipal() == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No authenticated user");
-        }
-        Object principal = authentication.getPrincipal();
-        Long userId;
-        if (principal instanceof com.mvp.backend.feature.auth.security.UserPrincipal userPrincipal) {
-            userId = userPrincipal.getId();
-        } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails details) {
-            // fallback in case of different principal implementation
-            userId = userService.getByUsername(details.getUsername()).getId();
-        } else if (principal instanceof String username) {
-            userId = userService.getByUsername(username).getId();
-        } else {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No authenticated user");
-        }
-        return userService.getById(userId);
-    }
 
     private String trimToNull(String value) {
         if (!StringUtils.hasText(value)) {

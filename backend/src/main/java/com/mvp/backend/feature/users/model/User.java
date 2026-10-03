@@ -1,6 +1,5 @@
 package com.mvp.backend.feature.users.model;
 
-import com.mvp.backend.feature.events.model.Event;
 import com.mvp.backend.shared.BaseEntity;
 import com.mvp.backend.shared.Priority;
 import jakarta.persistence.*;

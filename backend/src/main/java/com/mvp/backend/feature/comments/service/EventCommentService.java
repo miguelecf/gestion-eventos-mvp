@@ -8,11 +8,11 @@ import com.mvp.backend.feature.comments.mapper.EventCommentMapper;
 import com.mvp.backend.feature.comments.model.CommentVisibility;
 import com.mvp.backend.feature.comments.model.EventComment;
 import com.mvp.backend.feature.comments.repository.EventCommentRepository;
+import com.mvp.backend.feature.auth.security.CurrentUserService;
 import com.mvp.backend.feature.events.model.Event;
 import com.mvp.backend.feature.events.repository.EventRepository;
 import com.mvp.backend.feature.history.service.AuditService;
 import com.mvp.backend.feature.users.model.User;
-import com.mvp.backend.feature.users.service.UserService;
 import com.mvp.backend.feature.notifications.event.NewCommentEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -43,20 +43,20 @@ public class EventCommentService {
     private final EventCommentRepository commentRepository;
     private final EventCommentMapper mapper;
     private final AuditService auditService;
-    private final UserService userService;
+    private final CurrentUserService currentUserService;
     private final ApplicationEventPublisher eventPublisher;
 
     public EventCommentService(EventRepository eventRepository,
             EventCommentRepository commentRepository,
             EventCommentMapper mapper,
             AuditService auditService,
-            UserService userService,
+            CurrentUserService currentUserService,
             ApplicationEventPublisher eventPublisher) {
         this.eventRepository = eventRepository;
         this.commentRepository = commentRepository;
         this.mapper = mapper;
         this.auditService = auditService;
-        this.userService = userService;
+        this.currentUserService = currentUserService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -78,7 +78,7 @@ public class EventCommentService {
 
     public CommentResponseDto create(Long eventId, CommentCreateDto dto) {
         Event event = getEventOrThrow(eventId);
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.get();
         String normalizedBody = normalizeBody(dto.body());
 
         EventComment comment = EventComment.builder()
@@ -96,7 +96,7 @@ public class EventCommentService {
 
     public CommentResponseDto update(Long eventId, Long commentId, CommentUpdateDto dto) {
         EventComment comment = getEditableComment(eventId, commentId);
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.get();
         verifyAuthorOrPrivileged(comment.getAuthor(), currentUser);
 
         String normalizedBody = normalizeBody(dto.body());
@@ -115,7 +115,7 @@ public class EventCommentService {
 
     public void softDelete(Long eventId, Long commentId) {
         EventComment comment = getEditableComment(eventId, commentId);
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.get();
         verifyAuthorOrPrivileged(comment.getAuthor(), currentUser);
 
         comment.setDeletedAt(Instant.now());
@@ -176,22 +176,4 @@ public class EventCommentService {
         return false;
     }
 
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getPrincipal() == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No authenticated user");
-        }
-        Object principal = authentication.getPrincipal();
-        Long userId;
-        if (principal instanceof com.mvp.backend.feature.auth.security.UserPrincipal userPrincipal) {
-            userId = userPrincipal.getId();
-        } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails details) {
-            userId = userService.getByUsername(details.getUsername()).getId();
-        } else if (principal instanceof String username) {
-            userId = userService.getByUsername(username).getId();
-        } else {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No authenticated user");
-        }
-        return userService.getById(userId);
-    }
 }

@@ -1,6 +1,7 @@
 package com.mvp.backend.feature.events.service;
 
 import com.mvp.backend.feature.availability.exception.AvailabilityConflictException;
+import com.mvp.backend.feature.auth.security.CurrentUserService;
 import com.mvp.backend.feature.availability.model.AvailabilityParams;
 import com.mvp.backend.feature.availability.model.AvailabilityResult;
 import com.mvp.backend.feature.availability.service.AvailabilityService;
@@ -16,7 +17,6 @@ import com.mvp.backend.feature.priority.service.PriorityConflictService;
 import com.mvp.backend.feature.tech.exception.TechCapacityExceededException;
 import com.mvp.backend.feature.tech.service.TechCapacityService;
 import com.mvp.backend.feature.users.model.User;
-import com.mvp.backend.feature.users.service.UserService;
 import com.mvp.backend.feature.notifications.event.EventStatusChangedEvent;
 import com.mvp.backend.feature.availability.model.ConflictItem;
 import com.mvp.backend.feature.events.model.TechSupportMode;
@@ -25,8 +25,6 @@ import com.mvp.backend.shared.Priority;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -50,7 +48,7 @@ public class EventStatusService {
     private final TechCapacityService techCapacityService;
     private final PriorityPolicy priorityPolicy;
     private final PriorityConflictService priorityConflictService;
-    private final UserService userService;
+    private final CurrentUserService currentUserService;
     private final AuditService auditService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -62,7 +60,7 @@ public class EventStatusService {
     }
 
     public StatusChangeResponse changeStatus(Long eventId, ChangeStatusRequest request) {
-        User actor = getCurrentUser();
+        User actor = currentUserService.get();
         ensureOperativeRole(actor);
 
         Event event = eventRepository.findById(eventId)
@@ -370,25 +368,6 @@ public class EventStatusService {
                 actor.getId()
             ));
         }
-    }
-
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getPrincipal() == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No authenticated user");
-        }
-        Object principal = authentication.getPrincipal();
-        Long userId;
-        if (principal instanceof com.mvp.backend.feature.auth.security.UserPrincipal userPrincipal) {
-            userId = userPrincipal.getId();
-        } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails details) {
-            userId = userService.getByUsername(details.getUsername()).getId();
-        } else if (principal instanceof String username) {
-            userId = userService.getByUsername(username).getId();
-        } else {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No authenticated user");
-        }
-        return userService.getById(userId);
     }
 
     private static Map<Status, List<Status>> buildTransitions() {

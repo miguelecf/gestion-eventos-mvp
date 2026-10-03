@@ -10,7 +10,6 @@ import com.mvp.backend.feature.events.model.TechSupportMode;
 import com.mvp.backend.feature.events.repository.EventRepository;
 import com.mvp.backend.feature.history.service.AuditService;
 import com.mvp.backend.feature.priority.dto.PriorityConflictDecisionRequest;
-import com.mvp.backend.feature.priority.event.PriorityConflictCreatedEvent;
 import com.mvp.backend.feature.priority.model.PriorityConflict;
 import com.mvp.backend.feature.priority.model.PriorityConflictDecision;
 import com.mvp.backend.feature.priority.model.PriorityConflictStatus;
@@ -112,7 +111,6 @@ public class PriorityConflictService {
             if (displaced.getId() != null) {
                 alreadyRegistered.add(displaced.getId());
             }
-            eventPublisher.publishEvent(new PriorityConflictCreatedEvent(saved));
             eventPublisher.publishEvent(new PriorityConflictEvent(
                     saved.getId(),
                     displaced.getId(),

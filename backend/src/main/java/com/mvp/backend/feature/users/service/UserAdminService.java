@@ -1,6 +1,6 @@
 package com.mvp.backend.feature.users.service;
 
-import com.mvp.backend.feature.auth.security.UserPrincipal;
+import com.mvp.backend.feature.auth.security.CurrentUserService;
 import com.mvp.backend.feature.auth.service.EmailService;
 import com.mvp.backend.feature.users.dto.CreateUserRequest;
 import com.mvp.backend.feature.users.dto.UpdateUserRequest;
@@ -16,9 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +28,6 @@ import java.util.Locale;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +40,7 @@ public class UserAdminService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final CurrentUserService currentUserService;
 
     @Transactional(readOnly = true)
     public Page<UserAdminResponse> list(String q, Boolean active, String role, Pageable pageable) {
@@ -154,7 +151,7 @@ public class UserAdminService {
 
     public UserAdminResponse updateRole(Long id, UpdateUserRoleRequest request) {
         User target = findUser(id);
-        User actor = getCurrentUser();
+        User actor = currentUserService.get();
 
         RoleName nextRole = RoleName.fromValue(request.role());
         String currentRole = target.getRole();
@@ -174,7 +171,7 @@ public class UserAdminService {
 
     public UserAdminResponse updateStatus(Long id, UpdateUserStatusRequest request) {
         User target = findUser(id);
-        User actor = getCurrentUser();
+        User actor = currentUserService.get();
         boolean nextActive = request.active();
 
         if (actor.getId().equals(target.getId()) && !nextActive) {
@@ -237,16 +234,6 @@ public class UserAdminService {
     private User findUser(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Usuario no encontrado"));
-    }
-
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal principal)) {
-            throw new ResponseStatusException(UNAUTHORIZED, "No autenticado");
-        }
-
-        return userRepository.findById(principal.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No autenticado"));
     }
 
     private String generateTemporaryPassword() {
