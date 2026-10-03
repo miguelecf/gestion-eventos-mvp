@@ -30,7 +30,7 @@ import {
   type ClassifiedEventChanges,
   type MappedUpdateError,
 } from '@/features/events/utils/edit-event';
-import { getStatusBadgeVariant, getStatusLabel } from '@/features/events/utils/status-helpers';
+import { getStatusBadgeVariant, getStatusLabel } from '@/utils/event-status';
 import type { Event } from '@/models/event';
 import { editEventFormSchema, eventFormDefaults, type EventFormValues } from '@/schemas/eventForm.schema';
 import { eventsApi } from '@/services/api';

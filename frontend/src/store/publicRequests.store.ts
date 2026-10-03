@@ -7,7 +7,7 @@ import {
   type RequestConversionResult,
   type RequestConversionOptions,
 } from '@/services/api/publicRequests.api';
-import { getDefaultPublicRequestSort } from '@/features/publicRequests/utils/list-sorting';
+import { getDefaultPublicRequestSort } from '@/utils/request-sorting';
 import type {
   PaginationState,
   PublicEventRequest,

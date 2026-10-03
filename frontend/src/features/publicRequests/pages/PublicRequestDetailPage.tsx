@@ -36,7 +36,7 @@ import {
   type PublicEventRequest,
 } from '@/models/public-request';
 import { formatLocalDate } from '@/utils/dates';
-import { getPriorityBadgeVariant, getPriorityLabel, getStatusBadgeVariant, getStatusLabel } from '@/features/events/utils/status-helpers';
+import { getPriorityBadgeVariant, getPriorityLabel, getStatusBadgeVariant, getStatusLabel } from '@/utils/event-status';
 import type { EventStatus } from '@/models/event-status';
 
 interface GeneratedEventSummary {

@@ -1,6 +1,6 @@
 import type { Event, SortConfig } from '@/models/event';
 import { getLocalDateTimeSortValue } from '@/utils/dates';
-import { getStatusSortOrder } from '@/features/events/utils/status-helpers';
+import { getStatusSortOrder } from '@/utils/event-status';
 
 export type EventTableSortField =
   | 'date'

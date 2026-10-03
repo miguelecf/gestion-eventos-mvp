@@ -41,7 +41,7 @@ import {
   getPublicRequestTableManualSort,
   type PublicRequestTableManualSort,
   type PublicRequestTableSortField,
-} from '@/features/publicRequests/utils/list-sorting';
+} from '@/utils/request-sorting';
 
 type SimpleDateRangeFilter = 'all' | 'today' | 'next7days' | 'thisMonth';
 

@@ -55,7 +55,7 @@ import {
   getStatusBadgeVariant,
   getStatusDescription,
   getStatusLabel,
-} from '@/features/events/utils/status-helpers';
+} from '@/utils/event-status';
 
 interface EventLoadOptions {
   keepCurrent?: boolean;

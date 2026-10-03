@@ -22,7 +22,7 @@ import {
   filterPublicRequests,
   getDefaultPublicRequestSort,
   sortPublicRequests,
-} from '@/features/publicRequests/utils/list-sorting';
+} from '@/utils/request-sorting';
 
 export interface PublicSpacesFilters {
   publishableOnly?: boolean;

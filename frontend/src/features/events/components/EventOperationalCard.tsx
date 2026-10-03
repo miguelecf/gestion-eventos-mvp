@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import type { Event } from '@/models/event';
 import { formatBuffers, getTechSupportModeLabel } from '@/features/events/utils/approval-helpers';
-import { getAudienceTypeLabel, getPriorityLabel } from '@/features/events/utils/status-helpers';
+import { getAudienceTypeLabel, getPriorityLabel } from '@/utils/event-status';
 
 interface EventOperationalCardProps {
   event: Event;

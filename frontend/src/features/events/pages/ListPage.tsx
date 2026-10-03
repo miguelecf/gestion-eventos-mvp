@@ -37,7 +37,7 @@ import {
   canEditEvent,
   getPriorityBadgeVariant,
   getPriorityLabel,
-} from '@/features/events/utils/status-helpers';
+} from '@/utils/event-status';
 import {
   buildEventSortConfig,
   getEventTableManualSort,
