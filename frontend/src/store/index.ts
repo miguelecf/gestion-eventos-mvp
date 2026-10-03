@@ -3,7 +3,6 @@ import { persist, devtools } from 'zustand/middleware';
 import { defineAbilityFor, type AppAbility } from '@/libs/ability';
 import { createEventsSlice, type EventsState } from './events.slice';
 import { createCalendarSlice, type CalendarState } from './calendar.slice';
-import { createUiSlice, type UiState } from './ui.slice';
 
 // ==================== FASE 4 TAREA 14: NUEVOS STORES ====================
 // Stores independientes que integran SDKs de Fase 3
@@ -27,7 +26,7 @@ interface AuthState {
   clearAuth: () => void;
 }
 
-type RootState = AuthState & UiState & EventsState & CalendarState;
+type RootState = AuthState & EventsState & CalendarState;
 
 export const useAppStore = create<RootState>()(
   devtools(
@@ -52,17 +51,27 @@ export const useAppStore = create<RootState>()(
         }),
 
         // Combinar slices
-        ...createUiSlice(set, get, get as any),
+        // Legacy: useUrlSync todavía consume filtros, orden y paginación de eventos.
         ...createEventsSlice(set, get, get as any),
+        // Legacy: CalendarPage.OLD, useCalendarRange, useCalendarEvents y useUrlSync lo consumen.
         ...createCalendarSlice(set, get, get as any),
       }),
       { 
         name: 'app-storage',
+        version: 1,
+        migrate: (persistedState, version) => {
+          if (version === 0 && persistedState && typeof persistedState === 'object') {
+            const { sidebarOpen: _sidebarOpen, ...stateWithoutRemovedUiSlice } =
+              persistedState as Record<string, unknown>;
+            return stateWithoutRemovedUiSlice as unknown as RootState;
+          }
+
+          return persistedState as RootState;
+        },
         partialize: (state) => ({ 
           token: state.token, 
           userId: state.userId, 
           roles: state.roles,
-          sidebarOpen: state.sidebarOpen,
           filters: state.filters,
           sort: state.sort,
           pagination: { 
