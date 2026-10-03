@@ -10,12 +10,6 @@ spring:
     hikari:
       transaction-isolation: TRANSACTION_READ_COMMITTED
 
-  security:
-    user:
-      name: admin
-      password: admin123
-      roles: ADMIN
-
   jpa:
     hibernate:
       ddl-auto: validate # Flyway controla el esquema
@@ -26,11 +20,6 @@ spring:
 
   jackson:
     time-zone: America/Argentina/Buenos_Aires
-
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
 
   flyway:
     enabled: true
