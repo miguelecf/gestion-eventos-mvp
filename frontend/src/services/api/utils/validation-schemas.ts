@@ -217,32 +217,6 @@ export const trackPublicRequestSchema = z.object({
     .max(50, 'El código de tracking no puede superar 50 caracteres')
 });
 
-// ==================== CONFLICT DECISION SCHEMAS ====================
-
-/**
- * Schema para decisión sobre conflicto
- */
-export const conflictDecisionSchema = z.object({
-  conflictId: z.number().int().positive('El ID del conflicto debe ser positivo'),
-  
-  decision: z.enum(['KEEP_EXISTING', 'APPROVE_NEW'], {
-    message: 'Decisión debe ser KEEP_EXISTING o APPROVE_NEW'
-  }),
-  
-  reason: z.string()
-    .min(10, 'La razón debe tener al menos 10 caracteres')
-    .max(500, 'La razón no puede superar 500 caracteres')
-});
-
-/**
- * Schema para decisiones múltiples
- */
-export const resolveMultipleConflictsSchema = z.object({
-  decisions: z.array(conflictDecisionSchema)
-    .min(1, 'Debe haber al menos una decisión')
-    .max(50, 'No se pueden resolver más de 50 conflictos a la vez')
-});
-
 // ==================== PAGINATION SCHEMAS ====================
 
 /**
@@ -326,10 +300,6 @@ export const ValidationSchemas = {
   // Public Requests
   submitPublicRequest: submitPublicRequestSchema,
   trackPublicRequest: trackPublicRequestSchema,
-  
-  // Conflicts
-  conflictDecision: conflictDecisionSchema,
-  resolveMultipleConflicts: resolveMultipleConflictsSchema,
   
   // Pagination & Sort
   pagination: paginationSchema,

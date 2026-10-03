@@ -105,24 +105,6 @@ export const PublicRequestStatus = {
 } as const;
 export type PublicRequestStatus = typeof PublicRequestStatus[keyof typeof PublicRequestStatus];
 
-/**
- * Estado de Conflictos de Prioridad
- */
-export const PriorityConflictStatus = {
-  PENDING: 'PENDING',
-  RESOLVED: 'RESOLVED'
-} as const;
-export type PriorityConflictStatus = typeof PriorityConflictStatus[keyof typeof PriorityConflictStatus];
-
-/**
- * Decisión sobre Conflictos
- */
-export const ConflictDecision = {
-  KEEP_NEW: 'KEEP_NEW',
-  KEEP_DISPLACED: 'KEEP_DISPLACED'
-} as const;
-export type ConflictDecision = typeof ConflictDecision[keyof typeof ConflictDecision];
-
 // ==================== DTOs DEL BACKEND ====================
 
 /**
@@ -446,43 +428,6 @@ export interface BackendTechnicalCapacityResponse {
     used: number;
     available: number;
   }>;
-}
-
-/**
- * Respuesta de conflictos de prioridad
- * Endpoint: GET /internal/priority/conflicts
- */
-export interface BackendPriorityConflictsResponse {
-  eventId: number;
-  conflicts: Array<{
-    conflictCode: string;
-    displacedEventId: number;
-    displacedEventName: string;
-    displacedEventDate: string;      // yyyy-MM-dd
-    displacedEventTime: string;      // "HH:mm - HH:mm"
-    status: PriorityConflictStatus;
-    createdAt: string;               // ISO 8601
-  }>;
-}
-
-/**
- * DTO para registrar decisión de conflicto de prioridad
- * Endpoint: POST /internal/priority/decisions
- */
-export interface BackendPriorityDecisionDTO {
-  conflictCode: string;
-  decision: 'KEEP_NEW' | 'KEEP_DISPLACED';
-  target: 'DISPLACING_EVENT' | 'DISPLACED_EVENT';
-}
-
-/**
- * Respuesta de decisión de conflicto de prioridad
- * Endpoint: POST /internal/priority/decisions
- */
-export interface BackendPriorityDecisionResult {
-  conflictCode: string;
-  decision: 'KEEP_NEW' | 'KEEP_DISPLACED';
-  status: 'RESOLVED';
 }
 
 /**

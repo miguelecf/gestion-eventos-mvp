@@ -11,15 +11,10 @@ import { httpClient } from './client';
 import { ENDPOINTS } from './client/config';
 import { adaptSpringPage, buildPaginationQuery } from './adapters';
 import type { 
-  BackendPriorityConflictsResponse,
-  BackendPriorityDecisionDTO,
-  BackendPriorityDecisionResult,
   BackendSpaceDTO,
   BackendDepartmentDTO,
   BackendSubmitPublicRequestDTO,
   BackendSubmitPublicRequestResponse,
-  PriorityConflictStatus,
-  ConflictDecision,
   BackendPageResponse
 } from './types/backend.types';
 import type { PageResponse, SpringPageResponse } from './types/pagination.types';
@@ -27,60 +22,6 @@ import type { Space, CreateSpaceInput, UpdateSpaceInput, SpaceFilters } from '@/
 import type { Department, CreateDepartmentInput, UpdateDepartmentInput, DepartmentFilters } from '@/models/department';
 
 // ==================== TIPOS ESPECÍFICOS DEL SDK ====================
-
-/**
- * Conflicto de prioridad adaptado
- */
-export interface PriorityConflict {
-  conflictCode: string;
-  displacedEventId: number;
-  displacedEventName: string;
-  displacedEventDate: string; // yyyy-MM-dd
-  displacedEventTime: string; // "HH:mm - HH:mm"
-  status: PriorityConflictStatus;
-  createdAt: Date;
-  // Helpers
-  isResolved: boolean;
-  isPending: boolean;
-  timeAgo: string;
-}
-
-/**
- * Resultado de consulta de conflictos
- */
-export interface ConflictsResult {
-  eventId: number;
-  conflicts: PriorityConflict[];
-  hasConflicts: boolean;
-  pendingCount: number;
-  resolvedCount: number;
-}
-
-/**
- * Parámetros para obtener conflictos
- */
-export interface GetConflictsParams {
-  eventId: number;
-}
-
-/**
- * Parámetros para tomar decisión sobre conflicto
- */
-export interface MakeDecisionParams {
-  conflictCode: string;
-  decision: ConflictDecision;
-  target: 'DISPLACING_EVENT' | 'DISPLACED_EVENT';
-}
-
-/**
- * Resultado de decisión de conflicto
- */
-export interface DecisionResult {
-  conflictCode: string;
-  decision: ConflictDecision;
-  status: 'RESOLVED';
-  message: string;
-}
 
 // Space, CreateSpaceInput, UpdateSpaceInput y SpaceFilters ahora se importan desde @/models/space
 // Department, CreateDepartmentInput, UpdateDepartmentInput y DepartmentFilters ahora se importan desde @/models/department
@@ -116,157 +57,6 @@ export interface PublicRequestResult {
   trackingUuid: string;
   message: string;
   nextSteps: string[];
-}
-
-// ==================== FUNCIONES DE CONFLICTOS DE PRIORIDAD ====================
-
-/**
- * Obtiene conflictos de prioridad para un evento
- * Endpoint interno (requiere permisos de admin)
- * 
- * @param params - Parámetros con eventId
- * @returns Conflictos del evento
- * 
- * @example
- * const result = await catalogsApi.getConflicts({ eventId: 123 });
- * 
- * if (result.hasConflicts) {
- *   console.log(`${result.pendingCount} conflictos pendientes`);
- *   result.conflicts.forEach(c => {
- *     console.log(`- ${c.displacedEventName} (${c.status})`);
- *   });
- * }
- */
-export async function getConflicts(
-  params: GetConflictsParams
-): Promise<ConflictsResult> {
-  const response = await httpClient.get<BackendPriorityConflictsResponse>(
-    `${ENDPOINTS.INTERNAL_PRIORITY_CONFLICTS}?eventId=${params.eventId}`
-  );
-
-  // Adaptar conflictos
-  const conflicts: PriorityConflict[] = response.conflicts.map(conflict => {
-    const createdAt = new Date(conflict.createdAt);
-    const isResolved = conflict.status === 'RESOLVED';
-    const isPending = conflict.status === 'PENDING';
-    
-    // Calcular "tiempo atrás"
-    const now = new Date();
-    const diffMs = now.getTime() - createdAt.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-    
-    let timeAgo = '';
-    if (diffDays > 0) {
-      timeAgo = `hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
-    } else if (diffHours > 0) {
-      timeAgo = `hace ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
-    } else if (diffMins > 0) {
-      timeAgo = `hace ${diffMins} minuto${diffMins > 1 ? 's' : ''}`;
-    } else {
-      timeAgo = 'hace instantes';
-    }
-
-    return {
-      conflictCode: conflict.conflictCode,
-      displacedEventId: conflict.displacedEventId,
-      displacedEventName: conflict.displacedEventName,
-      displacedEventDate: conflict.displacedEventDate,
-      displacedEventTime: conflict.displacedEventTime,
-      status: conflict.status,
-      createdAt,
-      isResolved,
-      isPending,
-      timeAgo
-    };
-  });
-
-  const pendingCount = conflicts.filter(c => c.isPending).length;
-  const resolvedCount = conflicts.filter(c => c.isResolved).length;
-
-  return {
-    eventId: response.eventId,
-    conflicts,
-    hasConflicts: conflicts.length > 0,
-    pendingCount,
-    resolvedCount
-  };
-}
-
-/**
- * Registra una decisión sobre un conflicto de prioridad
- * Endpoint interno (requiere permisos de admin)
- * 
- * @param params - Parámetros de decisión
- * @returns Resultado de la decisión
- * 
- * @example
- * const result = await catalogsApi.makeDecision({
- *   conflictCode: 'CONF-2025-001',
- *   decision: 'KEEP_NEW',
- *   target: 'DISPLACING_EVENT'
- * });
- * 
- * console.log(result.message);
- */
-export async function makeDecision(
-  params: MakeDecisionParams
-): Promise<DecisionResult> {
-  const requestBody: BackendPriorityDecisionDTO = {
-    conflictCode: params.conflictCode,
-    decision: params.decision,
-    target: params.target
-  };
-
-  const response = await httpClient.post<BackendPriorityDecisionResult>(
-    ENDPOINTS.INTERNAL_PRIORITY_DECISIONS,
-    requestBody
-  );
-
-  let message = '';
-  if (response.decision === 'KEEP_NEW') {
-    message = '✅ Se mantiene el nuevo evento. El evento desplazado será rechazado.';
-  } else {
-    message = '✅ Se mantiene el evento existente. El nuevo evento será rechazado.';
-  }
-
-  return {
-    conflictCode: response.conflictCode,
-    decision: response.decision,
-    status: response.status,
-    message
-  };
-}
-
-/**
- * Resuelve múltiples conflictos en lote
- * 
- * @param decisions - Array de decisiones
- * @returns Array de resultados
- * 
- * @example
- * const results = await catalogsApi.resolveMultipleConflicts([
- *   { conflictCode: 'CONF-001', decision: 'KEEP_NEW', target: 'DISPLACING_EVENT' },
- *   { conflictCode: 'CONF-002', decision: 'KEEP_DISPLACED', target: 'DISPLACED_EVENT' }
- * ]);
- */
-export async function resolveMultipleConflicts(
-  decisions: MakeDecisionParams[]
-): Promise<DecisionResult[]> {
-  const results: DecisionResult[] = [];
-  
-  for (const decision of decisions) {
-    try {
-      const result = await makeDecision(decision);
-      results.push(result);
-    } catch (error) {
-      // Continuar con los demás aunque uno falle
-      console.error(`Error resolviendo ${decision.conflictCode}:`, error);
-    }
-  }
-  
-  return results;
 }
 
 // ==================== FUNCIONES DE CATÁLOGOS ====================
@@ -791,11 +581,6 @@ export async function findBestSpace(
  * Permite importar como: import { catalogsApi } from '@/services/api'
  */
 export const catalogsApi = {
-  // Conflictos de prioridad
-  getConflicts,
-  makeDecision,
-  resolveMultipleConflicts,
-  
   // Catálogos de espacios
   listSpaces,        // ✅ Con paginación y filtros
   getSpaces,         // ✅ Mantener para compatibilidad

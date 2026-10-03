@@ -48,8 +48,6 @@ export {
   findAvailableSlotSchema,
   submitPublicRequestSchema,
   trackPublicRequestSchema,
-  conflictDecisionSchema,
-  resolveMultipleConflictsSchema,
   paginationSchema,
   sortSchema,
   eventFiltersSchema,

@@ -13,8 +13,6 @@ import {
   catalogsApi,
   type Space,
   type Department,
-  type PriorityConflict,
-  type ConflictsResult,
   type PublicEventRequestInput,
   type PublicRequestResult,
   type SpaceFilters,
@@ -23,7 +21,6 @@ import {
   type DepartmentFilters,
   type CreateDepartmentInput,
   type UpdateDepartmentInput,
-  type MakeDecisionParams,
   handleApiError,
   logError
 } from '@/services/api';
@@ -34,7 +31,6 @@ export interface CatalogsStore {
   // ============ DATOS ============
   spaces: Space[];
   departments: Department[];
-  conflicts: PriorityConflict[];
   
   // ============ PAGINACIÓN ============
   spacesPagination: {
@@ -66,8 +62,6 @@ export interface CatalogsStore {
   loading: {
     spaces: boolean;
     departments: boolean;
-    conflicts: boolean;
-    decision: boolean;
     publicRequest: boolean;
     createSpace: boolean;
     updateSpace: boolean;
@@ -78,8 +72,6 @@ export interface CatalogsStore {
   errors: {
     spaces: string | null;
     departments: string | null;
-    conflicts: string | null;
-    decision: string | null;
     publicRequest: string | null;
     createSpace: string | null;
     updateSpace: string | null;
@@ -124,12 +116,6 @@ export interface CatalogsStore {
   // Existentes
   fetchSpaces: () => Promise<void>;
   fetchDepartments: () => Promise<void>;
-  fetchConflicts: (eventId: number) => Promise<void>;
-  makeDecision: (
-    conflictCode: string,
-    decision: MakeDecisionParams['decision'],
-    target: MakeDecisionParams['target']
-  ) => Promise<boolean>;
   submitPublicRequest: (input: PublicEventRequestInput) => Promise<PublicRequestResult | null>;
   clearErrors: () => void;
   reset: () => void;
@@ -138,7 +124,6 @@ export interface CatalogsStore {
 const initialState = {
   spaces: [],
   departments: [],
-  conflicts: [],
   spacesPagination: {
     page: 0,
     size: 20,
@@ -162,8 +147,6 @@ const initialState = {
   loading: {
     spaces: false,
     departments: false,
-    conflicts: false,
-    decision: false,
     publicRequest: false,
     createSpace: false,
     updateSpace: false,
@@ -173,8 +156,6 @@ const initialState = {
   errors: {
     spaces: null,
     departments: null,
-    conflicts: null,
-    decision: null,
     publicRequest: null,
     createSpace: null,
     updateSpace: null,
@@ -507,51 +488,6 @@ const createCatalogsStore: StateCreator<CatalogsStore> = (set, get) => ({
     get().listDepartments({ page: 0, size });
   },
   
-  fetchConflicts: async (eventId: number) => {
-    set((state) => ({
-      loading: { ...state.loading, conflicts: true },
-      errors: { ...state.errors, conflicts: null },
-    }));
-    
-    try {
-      const result: ConflictsResult = await catalogsApi.getConflicts({ eventId });
-      set({
-        conflicts: result.conflicts,
-        loading: { ...get().loading, conflicts: false },
-      });
-    } catch (error) {
-      logError(error, 'CatalogsStore.fetchConflicts');
-      const apiError = handleApiError(error);
-      set({
-        loading: { ...get().loading, conflicts: false },
-        errors: { ...get().errors, conflicts: apiError.message },
-      });
-    }
-  },
-  
-  makeDecision: async (conflictCode, decision, target) => {
-    set((state) => ({
-      loading: { ...state.loading, decision: true },
-      errors: { ...state.errors, decision: null },
-    }));
-    
-    try {
-      await catalogsApi.makeDecision({ conflictCode, decision, target });
-      set({
-        loading: { ...get().loading, decision: false },
-      });
-      return true;
-    } catch (error) {
-      logError(error, 'CatalogsStore.makeDecision');
-      const apiError = handleApiError(error);
-      set({
-        loading: { ...get().loading, decision: false },
-        errors: { ...get().errors, decision: apiError.message },
-      });
-      return false;
-    }
-  },
-  
   submitPublicRequest: async (input: PublicEventRequestInput) => {
     set((state) => ({
       loading: { ...state.loading, publicRequest: true },
@@ -580,8 +516,6 @@ const createCatalogsStore: StateCreator<CatalogsStore> = (set, get) => ({
       errors: {
         spaces: null,
         departments: null,
-        conflicts: null,
-        decision: null,
         publicRequest: null,
         createSpace: null,
         updateSpace: null,

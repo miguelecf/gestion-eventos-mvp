@@ -80,10 +80,6 @@ export const ENDPOINTS = {
   PUBLIC_SPACE_OCCUPANCY: (spaceId: number) =>
     `/public/spaces/${spaceId}/occupancy`,                 // GET ?date=yyyy-MM-dd
 
-  // ================ CONFLICTOS DE PRIORIDAD (internal) ================
-  INTERNAL_PRIORITY_CONFLICTS: '/internal/priority/conflicts', // GET ?eventId=...
-  INTERNAL_PRIORITY_DECISIONS: '/internal/priority/decisions', // POST
-
   // ================ CAPACIDAD TÉCNICA (internal) ================
   INTERNAL_TECH_CAPACITY: '/api/tech/capacity', // GET ?date=yyyy-MM-dd
   INTERNAL_TECH_EVENTS: '/api/tech/events',     // GET ?date=yyyy-MM-dd

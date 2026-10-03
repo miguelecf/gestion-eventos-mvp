@@ -37,9 +37,7 @@ export {
   UserRole,
   CommentVisibility,
   AuditActionType,
-  PublicRequestStatus,
-  PriorityConflictStatus,
-  ConflictDecision
+  PublicRequestStatus
 } from './types';
 
 // DTOs del Backend
@@ -60,9 +58,6 @@ export type {
   BackendDepartmentDTO,
   BackendSpaceAvailabilityResponse,
   BackendTechnicalCapacityResponse,
-  BackendPriorityConflictsResponse,
-  BackendPriorityDecisionDTO,
-  BackendPriorityDecisionResult,
   BackendSubmitPublicRequestDTO,
   BackendSubmitPublicRequestResponse,
   BackendMeDTO
@@ -154,11 +149,6 @@ export type {
 // SDK de Conflictos, Prioridad y Catálogos
 export { catalogsApi } from './catalogs.api';
 export type {
-  PriorityConflict,
-  ConflictsResult,
-  GetConflictsParams,
-  MakeDecisionParams,
-  DecisionResult,
   PublicEventRequestInput,
   PublicRequestResult
 } from './catalogs.api';
@@ -241,8 +231,6 @@ export {
   findAvailableSlotSchema,
   submitPublicRequestSchema,
   trackPublicRequestSchema,
-  conflictDecisionSchema,
-  resolveMultipleConflictsSchema,
   paginationSchema,
   sortSchema,
   eventFiltersSchema,

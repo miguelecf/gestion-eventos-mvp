@@ -34,9 +34,7 @@ export {
   UserRole,
   CommentVisibility,
   AuditActionType,
-  PublicRequestStatus,
-  PriorityConflictStatus,
-  ConflictDecision
+  PublicRequestStatus
 } from './backend.types';
 
 export type {
@@ -56,9 +54,6 @@ export type {
   BackendDepartmentDTO,
   BackendSpaceAvailabilityResponse,
   BackendTechnicalCapacityResponse,
-  BackendPriorityConflictsResponse,
-  BackendPriorityDecisionDTO,
-  BackendPriorityDecisionResult,
   BackendSubmitPublicRequestDTO,
   BackendSubmitPublicRequestResponse,
   BackendMeDTO
