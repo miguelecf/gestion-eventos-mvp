@@ -13,6 +13,12 @@ export default defineConfig({
   // so the host browser can reach the frontend.
   server: {
     host: "0.0.0.0",
+    proxy: {
+      "/api": "http://localhost:9090",
+      "/auth": "http://localhost:9090",
+      "/public": "http://localhost:9090",
+      "/admin": "http://localhost:9090",
+    },
     watch: usePolling
       ? {
           usePolling: true,

@@ -1,0 +1,4 @@
+services:
+  mailhog:
+    ports:
+      - "127.0.0.1:${MAILPIT_HOST_PORT:-8025}:8025"
