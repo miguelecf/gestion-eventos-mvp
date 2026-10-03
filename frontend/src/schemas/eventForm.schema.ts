@@ -9,10 +9,10 @@ const ARGENTINE_PHONE_REGEX = /^(\+?54)?[\s-]?9?[\s-]?\d{2,4}[\s-]?\d{6,8}$/;
 const prioritySchema = z.enum(['LOW', 'MEDIUM', 'HIGH']);
 const audienceTypeSchema = z.enum([
   'ESTUDIANTES',
-  'COMUNIDAD',
-  'MIXTO',
   'DOCENTES',
   'AUTORIDADES',
+  'COMUNIDAD',
+  'TERCERA_EDAD',
 ]);
 const techSupportModeSchema = z.enum(['SETUP_ONLY', 'ATTENDED']);
 

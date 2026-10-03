@@ -180,7 +180,7 @@ export function getAudienceTypeLabel(type: RequestAudienceType): string {
     case "COMUNIDAD":
       return "Comunidad";
     case "TERCERA_EDAD":
-      return "Tercera Edad";
+      return "Tercera edad";
     case "DOCENTES":
       return "Docentes";
     case "AUTORIDADES":

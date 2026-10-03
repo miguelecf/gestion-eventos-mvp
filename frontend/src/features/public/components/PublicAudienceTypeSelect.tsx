@@ -3,7 +3,7 @@
  * SELECTOR DE TIPO DE AUDIENCIA PÚBLICA
  * ===================================================================
  * Selector dropdown con tipos de audiencia para solicitudes públicas.
- * Incluye TERCERA_EDAD adicional al selector interno.
+ * Uses the same audience types as the backend.
  * ===================================================================
  */
 
@@ -13,11 +13,10 @@ import type { PublicAudienceType } from '@/schemas/eventPublic.schema';
 
 const PUBLIC_AUDIENCE_TYPES = [
   { value: 'ESTUDIANTES', label: 'Estudiantes' },
-  { value: 'COMUNIDAD', label: 'Comunidad' },
-  { value: 'MIXTO', label: 'Mixto' },
   { value: 'DOCENTES', label: 'Docentes' },
   { value: 'AUTORIDADES', label: 'Autoridades' },
-  { value: 'TERCERA_EDAD', label: 'Tercera Edad' },
+  { value: 'COMUNIDAD', label: 'Comunidad' },
+  { value: 'TERCERA_EDAD', label: 'Tercera edad' },
 ] as const;
 
 export interface PublicAudienceTypeSelectProps {

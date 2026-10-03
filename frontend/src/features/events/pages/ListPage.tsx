@@ -365,10 +365,10 @@ export function ListPage() {
   const getAudienceTypeLabel = (audienceType: string) => {
     const labels: Record<string, string> = {
       ESTUDIANTES: 'Estudiantes',
-      COMUNIDAD: 'Comunidad',
-      MIXTO: 'Mixto',
       DOCENTES: 'Docentes',
       AUTORIDADES: 'Autoridades',
+      COMUNIDAD: 'Comunidad',
+      TERCERA_EDAD: 'Tercera edad',
     };
     return labels[audienceType] || audienceType;
   };

@@ -3,10 +3,10 @@ import { cn } from "@/lib/utils";
 
 const AUDIENCE_TYPES = [
   { value: 'ESTUDIANTES', label: 'Estudiantes' },
-  { value: 'COMUNIDAD', label: 'Comunidad' },
-  { value: 'MIXTO', label: 'Mixto' },
   { value: 'DOCENTES', label: 'Docentes' },
-  { value: 'AUTORIDADES', label: 'Autoridades' }
+  { value: 'AUTORIDADES', label: 'Autoridades' },
+  { value: 'COMUNIDAD', label: 'Comunidad' },
+  { value: 'TERCERA_EDAD', label: 'Tercera edad' }
 ] as const;
 
 export type AudienceType = typeof AUDIENCE_TYPES[number]['value'];

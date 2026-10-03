@@ -46,10 +46,10 @@ export type TechSupportMode = typeof TechSupportMode[keyof typeof TechSupportMod
  */
 export const AudienceType = {
   ESTUDIANTES: 'ESTUDIANTES',
-  COMUNIDAD: 'COMUNIDAD',
-  MIXTO: 'MIXTO',
   DOCENTES: 'DOCENTES',
-  AUTORIDADES: 'AUTORIDADES'
+  AUTORIDADES: 'AUTORIDADES',
+  COMUNIDAD: 'COMUNIDAD',
+  TERCERA_EDAD: 'TERCERA_EDAD'
 } as const;
 export type AudienceType = typeof AudienceType[keyof typeof AudienceType];
 

@@ -305,10 +305,10 @@ export function getPriorityLabel(priority: Priority): string {
 export function getAudienceTypeLabel(audienceType: AudienceType): string {
   const labels: Record<AudienceType, string> = {
     ESTUDIANTES: 'Estudiantes',
-    COMUNIDAD: 'Comunidad',
-    MIXTO: 'Mixto',
     DOCENTES: 'Docentes',
     AUTORIDADES: 'Autoridades',
+    COMUNIDAD: 'Comunidad',
+    TERCERA_EDAD: 'Tercera edad',
   };
 
   return labels[audienceType] || audienceType;

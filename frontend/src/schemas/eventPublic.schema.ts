@@ -18,10 +18,9 @@ import { emailSchema } from '@/services/api/utils/validation-schemas';
  */
 export const PublicAudienceTypeSchema = z.enum([
   'ESTUDIANTES',
-  'COMUNIDAD',
-  'MIXTO',
   'DOCENTES',
   'AUTORIDADES',
+  'COMUNIDAD',
   'TERCERA_EDAD',
 ]);
 export type PublicAudienceType = z.infer<typeof PublicAudienceTypeSchema>;
