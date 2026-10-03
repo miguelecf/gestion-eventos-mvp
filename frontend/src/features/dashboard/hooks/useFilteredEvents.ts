@@ -74,16 +74,6 @@ export function useFilteredEvents(
         }
       }
 
-      // ========================================
-      // Filtro por "Mis eventos" (opcional)
-      // ========================================
-      if (filters.myEventsOnly) {
-        // Nota: Este filtro requiere comparar con el usuario actual
-        // Por ahora lo dejamos preparado pero sin implementar
-        // TODO: Integrar con useAuth cuando esté disponible
-        // if (event.createdBy?.id !== user?.id) return false;
-      }
-
       // Si pasa todos los filtros, incluir el evento
       return true;
     });

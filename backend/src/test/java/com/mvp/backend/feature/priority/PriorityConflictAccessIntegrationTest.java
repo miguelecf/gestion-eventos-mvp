@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PriorityConflictAccessIntegrationTest extends IntegrationTestBase {
 
     private static final Map<String, Object> DECISION = Map.of(
-            "conflictId", "NO-EXISTE", "deciderUserId", 1, "decision", "KEEP_ORIGINAL");
+            "conflictId", "NO-EXISTE", "decision", "KEEP_ORIGINAL");
 
     @Test
     void pendientesSoloParaAdmins() throws Exception {

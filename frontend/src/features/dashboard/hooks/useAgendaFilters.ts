@@ -24,9 +24,6 @@ export interface AgendaFilters {
   
   /** Filtrar solo eventos que requieren técnica */
   techRequired: boolean;
-  
-  /** Filtrar solo eventos creados por el usuario (opcional) */
-  myEventsOnly: boolean;
 }
 
 /**
@@ -36,7 +33,6 @@ const DEFAULT_FILTERS: AgendaFilters = {
   spaceId: null,
   departmentId: null,
   techRequired: false,
-  myEventsOnly: false,
 };
 
 /**
@@ -62,7 +58,14 @@ export function useAgendaFilters() {
   const [filters, setFilters] = useState<AgendaFilters>(() => {
     try {
       const stored = sessionStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : DEFAULT_FILTERS;
+      if (!stored) return DEFAULT_FILTERS;
+
+      const parsed = JSON.parse(stored) as Partial<AgendaFilters>;
+      return {
+        spaceId: parsed.spaceId ?? DEFAULT_FILTERS.spaceId,
+        departmentId: parsed.departmentId ?? DEFAULT_FILTERS.departmentId,
+        techRequired: parsed.techRequired ?? DEFAULT_FILTERS.techRequired,
+      };
     } catch (error) {
       console.warn('Error al cargar filtros desde sessionStorage:', error);
       return DEFAULT_FILTERS;
@@ -106,8 +109,7 @@ export function useAgendaFilters() {
   const hasActiveFilters =
     filters.spaceId !== null ||
     filters.departmentId !== null ||
-    filters.techRequired ||
-    filters.myEventsOnly;
+    filters.techRequired;
 
   return {
     filters,

@@ -22,9 +22,6 @@ public class AdminEventRequestController {
     private final EventRequestService eventRequestService;
 
     /**
-     * Detalle completo de una solicitud para gestión interna.
-     */
-    /**
      * Bandeja administrativa de solicitudes (reemplaza al listado que estaba expuesto en /public).
      * Filtro opcional por estado: {@code ?status=RECIBIDO&status=EN_REVISION}.
      */
@@ -33,21 +30,24 @@ public class AdminEventRequestController {
         return eventRequestService.listAdmin(status);
     }
 
+    /**
+     * Detalle completo de una solicitud para gestión interna.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<EventRequestResponseDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(eventRequestService.getAdminById(id));
     }
 
-    /**
-     * Mueve la solicitud entre estados: RECIBIDO↔EN_REVISION, cualquiera→RECHAZADO.
-     * La conversión a CONVERTIDO se resuelve en /convert-to-event.
-     */
     /** Historial de la solicitud con actor y motivo de cada decisión. */
     @GetMapping("/{id}/history")
     public List<RequestHistoryEntryDto> history(@PathVariable Long id) {
         return eventRequestService.getAdminHistory(id);
     }
 
+    /**
+     * Mueve la solicitud entre estados: RECIBIDO↔EN_REVISION, cualquiera→RECHAZADO.
+     * La conversión a CONVERTIDO se resuelve en /convert-to-event.
+     */
     @PatchMapping("/{id}/status")
     public ResponseEntity<EventRequestResponseDto> changeStatus(
             @PathVariable Long id,

@@ -21,8 +21,8 @@ export const API_CONFIG = {
  * 
  * Instrucciones:
  * 1. Hacer login en backend (Postman/Thunder Client/cURL):
- *    POST http://localhost:9090/api/auth/login
- *    Body: { "username": "admin", "password": "tu_password" }
+ *    POST http://localhost:9090/auth/login
+ *    Body: { "username": "admin.full", "password": "tu_password" }
  * 
  * 2. Copiar el token de la respuesta (sin "Bearer", solo el token)
  * 

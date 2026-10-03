@@ -2,8 +2,8 @@
  * ===================================================================
  * CATALOG FILTERS - Búsqueda local en catálogos
  * ===================================================================
- * Helpers para filtrar espacios y departamentos en el cliente
- * (MVP: backend no soporta búsqueda ?q= en estos endpoints)
+ * Helpers para filtrar colecciones de catálogos en memoria. Los endpoints también
+ * aceptan el parámetro `q` para búsquedas paginadas en el servidor.
  * ===================================================================
  */
 
