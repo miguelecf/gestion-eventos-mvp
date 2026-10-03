@@ -3,7 +3,7 @@ import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { API_CONFIG, DEV_AUTH_TOKEN, hasDevToken } from './config';
 import { 
   authInterceptor, 
-  errorInterceptor,
+  createErrorInterceptor,
   requestLoggingInterceptor,
   responseLoggingInterceptor
 } from './interceptors';
@@ -75,7 +75,7 @@ class HttpClient {
 
     this.client.interceptors.response.use(
       (response) => response,
-      errorInterceptor
+      createErrorInterceptor(this.client)
     );
   }
 
@@ -139,11 +139,11 @@ class HttpClient {
    */
   setAuthToken(token: string | null): void {
     if (token) {
-      localStorage.setItem('auth_token', token);
+      localStorage.setItem('accessToken', token);
       this.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       console.log('✅ Token de autenticación establecido');
     } else {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('accessToken');
       delete this.client.defaults.headers.common['Authorization'];
       console.log('🗑️ Token de autenticación removido');
     }
@@ -162,7 +162,7 @@ class HttpClient {
     }
     
     // Luego desde localStorage
-    return localStorage.getItem('auth_token');
+    return localStorage.getItem('accessToken');
   }
 
   /**

@@ -1,4 +1,4 @@
-import api from '@/lib/http';
+import { httpClient } from './client';
 import type { SpringPageResponse } from './types/pagination.types';
 import type {
   AdminUser,
@@ -37,34 +37,34 @@ function buildUsersQuery(filters: UserFilters = {}): string {
 export const usersApi = {
   list(filters: UserFilters = {}) {
     const query = buildUsersQuery(filters);
-    return api.get<SpringPageResponse<AdminUser>>(`${USERS_BASE_PATH}${query}`).then((r) => r.data);
+    return httpClient.get<SpringPageResponse<AdminUser>>(`${USERS_BASE_PATH}${query}`);
   },
 
   getById(id: number) {
-    return api.get<AdminUser>(`${USERS_BASE_PATH}/${id}`).then((r) => r.data);
+    return httpClient.get<AdminUser>(`${USERS_BASE_PATH}/${id}`);
   },
 
   create(payload: CreateAdminUserInput) {
-    return api.post<AdminUser>(USERS_BASE_PATH, payload).then((r) => r.data);
+    return httpClient.post<AdminUser>(USERS_BASE_PATH, payload);
   },
 
   update(id: number, payload: UpdateAdminUserInput) {
-    return api.patch<AdminUser>(`${USERS_BASE_PATH}/${id}`, payload).then((r) => r.data);
+    return httpClient.patch<AdminUser>(`${USERS_BASE_PATH}/${id}`, payload);
   },
 
   updateRole(id: number, role: UserRole) {
-    return api.patch<AdminUser>(`${USERS_BASE_PATH}/${id}/role`, { role }).then((r) => r.data);
+    return httpClient.patch<AdminUser>(`${USERS_BASE_PATH}/${id}/role`, { role });
   },
 
   updateStatus(id: number, active: boolean) {
-    return api.patch<AdminUser>(`${USERS_BASE_PATH}/${id}/status`, { active }).then((r) => r.data);
+    return httpClient.patch<AdminUser>(`${USERS_BASE_PATH}/${id}/status`, { active });
   },
 
   resetPassword(id: number) {
-    return api.post<AdminUser>(`${USERS_BASE_PATH}/${id}/reset-password`).then((r) => r.data);
+    return httpClient.post<AdminUser>(`${USERS_BASE_PATH}/${id}/reset-password`);
   },
 
   listRoles() {
-    return api.get<UserRoleOption[]>(`${USERS_BASE_PATH}/roles`).then((r) => r.data);
+    return httpClient.get<UserRoleOption[]>(`${USERS_BASE_PATH}/roles`);
   },
 };

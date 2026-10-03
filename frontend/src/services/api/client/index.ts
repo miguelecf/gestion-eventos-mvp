@@ -8,6 +8,7 @@ export { API_CONFIG, ENDPOINTS, ERROR_CODES } from './config';
 export type { ErrorCode } from './config';
 export { 
   authInterceptor, 
+  createErrorInterceptor,
   errorInterceptor,
   requestLoggingInterceptor,
   responseLoggingInterceptor

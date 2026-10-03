@@ -6,7 +6,7 @@
  * ===================================================================
  */
 
-import { httpClient } from '@/lib/http';
+import { httpClient } from './client';
 
 /**
  * Estructura del backend: TechCapacityResponse
@@ -55,12 +55,10 @@ export interface TechCapacity {
  * @param date - Fecha en formato YYYY-MM-DD
  */
 export async function fetchTechCapacity(date: string): Promise<TechCapacity> {
-  const response = await httpClient.get<BackendTechCapacityResponse>(
+  const backendData = await httpClient.get<BackendTechCapacityResponse>(
     '/api/tech/capacity',
     { params: { date } }
   );
-
-  const backendData = response.data;
 
   // Transformar bloques del backend al formato del frontend
   const blocks: TechCapacityBlock[] = backendData.blocks.map((block) => ({

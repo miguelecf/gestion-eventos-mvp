@@ -10,6 +10,7 @@
 import type { Event } from '@/models/event';
 import type { BackendEventDTO } from './types/backend.types';
 import { adaptEventsFromBackend } from './adapters/event.adapter';
+import { httpClient } from './client';
 
 /**
  * Obtiene la lista de eventos públicos activos
@@ -20,19 +21,7 @@ import { adaptEventsFromBackend } from './adapters/event.adapter';
  */
 export async function fetchPublicEvents(): Promise<Event[]> {
   try {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
-    const response = await fetch(`${baseUrl}/public/events`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const backendEvents: BackendEventDTO[] = await response.json();
+    const backendEvents = await httpClient.get<BackendEventDTO[]>('/public/events');
     return adaptEventsFromBackend(backendEvents);
   } catch (error) {
     console.error('Error fetching public events:', error);

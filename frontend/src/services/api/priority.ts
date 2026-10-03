@@ -6,7 +6,7 @@
  * ===================================================================
  */
 
-import { httpClient } from '@/lib/http';
+import { httpClient } from './client';
 import type { Priority } from './types/backend.types';
 
 /**
@@ -81,7 +81,7 @@ export async function fetchPendingConflicts(
   );
 
   // Transformar respuesta del backend al formato del frontend
-  return response.data.content.map(conflict => ({
+  return response.content.map(conflict => ({
     id: conflict.conflictId,
     conflictId: conflict.conflictId,
     highEventId: conflict.highEventId,

@@ -1,4 +1,10 @@
-import type { InternalAxiosRequestConfig, AxiosError, AxiosResponse } from 'axios';
+import type {
+  AxiosError,
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from 'axios';
+import { API_CONFIG } from './config';
 import type { ApiError } from '../types/api.types';
 
 type BackendErrorPayload = {
@@ -34,20 +40,27 @@ export const authInterceptor = (
   return config;
 };
 
-/**
- * Interceptor de errores
- * Normaliza todos los errores HTTP a formato ApiError consistente
- */
-export const errorInterceptor = async (error: AxiosError): Promise<never> => {
+type RetriableRequestConfig = InternalAxiosRequestConfig & { _retry?: boolean };
+
+type RefreshResponse = {
+  accessToken?: unknown;
+  refreshToken?: unknown;
+};
+
+const clearStoredTokens = (): void => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+};
+
+const normalizeError = (error: AxiosError): ApiError => {
   // Error de red (sin respuesta del servidor)
   if (!error.response) {
-    const apiError: ApiError = {
+    return {
       message: error.message || 'Error de conexión. Verifica tu red.',
       status: 0,
       code: error.code === 'ECONNABORTED' ? 'TIMEOUT' : 'NETWORK_ERROR',
       timestamp: new Date().toISOString()
     };
-    return Promise.reject(apiError);
   }
 
   // Error HTTP con respuesta del servidor
@@ -62,19 +75,6 @@ export const errorInterceptor = async (error: AxiosError): Promise<never> => {
     details: isObjectRecord(data) ? data : undefined,
     timestamp: payload?.timestamp || new Date().toISOString()
   };
-
-  // Manejo especial de 401 (sesión expirada)
-  if (status === 401) {
-    // ✅ Limpiar 'accessToken' y 'refreshToken'
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    
-    // Evitar redirección si ya estamos en login o en ruta pública
-    if (!window.location.pathname.includes('/login') && 
-        !window.location.pathname.includes('/public')) {
-      window.location.href = '/login?sessionExpired=true';
-    }
-  }
 
   // Manejo especial de 403 (sin permisos)
   if (status === 403) {
@@ -98,7 +98,105 @@ export const errorInterceptor = async (error: AxiosError): Promise<never> => {
     }
   }
 
-  return Promise.reject(apiError);
+  return apiError;
+};
+
+/**
+ * Interceptor de errores
+ * Renueva una sesión expirada una sola vez, compartiendo la renovación entre
+ * requests concurrentes, y normaliza los errores que no se puedan recuperar.
+ */
+export const createErrorInterceptor = (client: AxiosInstance) => {
+  let isRefreshing = false;
+  let failedQueue: Array<{
+    resolve: (token: string) => void;
+    reject: (error: unknown) => void;
+  }> = [];
+
+  const processQueue = (error: unknown, token: string | null = null): void => {
+    failedQueue.forEach((pending) => {
+      if (error) pending.reject(error);
+      else if (token) pending.resolve(token);
+    });
+    failedQueue = [];
+  };
+
+  const refreshSession = async (): Promise<string> => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      throw new Error('No hay refreshToken');
+    }
+
+    const response = await fetch(`${API_CONFIG.baseURL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) throw new Error('Refresh failed');
+
+    const data = await response.json() as RefreshResponse;
+    if (typeof data.accessToken !== 'string' || data.accessToken.length === 0) {
+      throw new Error('Refresh response did not include an accessToken');
+    }
+
+    localStorage.setItem('accessToken', data.accessToken);
+    if (typeof data.refreshToken === 'string' && data.refreshToken.length > 0) {
+      localStorage.setItem('refreshToken', data.refreshToken);
+    }
+    return data.accessToken;
+  };
+
+  return async (error: AxiosError): Promise<never> => {
+    const originalRequest = error.config as RetriableRequestConfig | undefined;
+    const requestUrl = originalRequest?.url ?? '';
+    const isAuthEndpoint = ['/auth/login', '/auth/register', '/auth/refresh']
+      .some((endpoint) => requestUrl.includes(endpoint));
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
+      // Mark before queueing too: a replayed request must never start another refresh.
+      originalRequest._retry = true;
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve: (token) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(client(originalRequest));
+            },
+            reject,
+          });
+        }) as Promise<never>;
+      }
+
+      isRefreshing = true;
+      const hadRefreshToken = Boolean(localStorage.getItem('refreshToken'));
+      let accessToken: string;
+      try {
+        accessToken = await refreshSession();
+      } catch (refreshError) {
+        processQueue(refreshError);
+        clearStoredTokens();
+        window.location.href = hadRefreshToken ? '/login?sessionExpired=true' : '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+
+      processQueue(null, accessToken);
+      originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+      // Do not await inside the refresh try/catch: a replayed 401 is not a
+      // refresh failure and must not clear a freshly renewed session.
+      return client(originalRequest) as Promise<never>;
+    }
+
+    throw normalizeError(error);
+  };
+};
+
+/** Standalone normalizer retained for consumers that use this interceptor directly. */
+export const errorInterceptor = async (error: AxiosError): Promise<never> => {
+  return Promise.reject(normalizeError(error));
 };
 
 /**
