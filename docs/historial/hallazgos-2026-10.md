@@ -1,18 +1,15 @@
 # Estado de corrección de hallazgos
 
-Fuente: el reporte "Errores Gestión de Eventos". Se atacan de **menor a mayor complejidad**. Un commit por ID.
+> **Documento histórico, no normativo.** Conserva el registro del reporte y las correcciones efectuadas en su momento. Para reglas vigentes, consultar `docs/decisiones-funcionales.md`, `docs/permisos.md` y el código actual.
 
-- **Estados:** `pendiente` · `en curso` · `corregido` · `documentado` (decisión sin cambio de código) · `descartado`.
-- **Próxima migración Flyway libre:** `V15`.
+Fuente: el reporte "Errores Gestión de Eventos". Se atacaron de **menor a mayor complejidad**, con un commit por ID.
+
+- **Estados registrados:** `pendiente` · `en curso` · `corregido` · `documentado` (decisión sin cambio de código) · `descartado`.
 - **Decisiones funcionales:** ver `docs/decisiones-funcionales.md`.
 
-## Pendientes para decidir juntos
-- **1.7-bis — pantalla de resolución de conflictos de prioridad:** no existe. Hoy sólo se pueden resolver por API. Opciones:
-  - construir la pantalla, unas horas de trabajo;
-  - documentarlo como alcance futuro.
-- **Limpieza de legacy sin consumidores:** `services/http/client.ts`, `services/api/{spaces,departments,calendar}.ts`, `catalogsApi.getConflicts/makeDecision` (que apuntan a `/internal/**`, inexistente), `CalendarPage.OLD.tsx` y los stores y slices sin uso.
-- **Carpetas sin versionar:** `artifacts/` (273 MB de video y audio) y `synthetic-user-engine/`. Esta última todavía usa el estado `SOLICITADO` y la decisión `CANCELLED`.
-- **Credenciales de seeds:** la contraseña en texto plano de los usuarios sembrados no está en el repo.
+## Notas de precisión al archivar
+- El árbol local inspeccionado de `synthetic-user-engine/` contiene transiciones de eventos con `SOLICITADO`; no contiene referencias a `CANCELLED`. La carpeta está excluida de Git y se considera legacy, por lo que esto no acredita que sea un contrato vigente ni describe copias fuera del checkout.
+- `backend/src/main/resources/db/migration/V2__seed.sql` comenta la contraseña de demo `admin123` y guarda su hash BCrypt en los usuarios sembrados. Este documento no verifica que esas credenciales funcionen en un entorno actual.
 
 ## Verificación final (5.7)
 Docker limpio con un proyecto aislado (`-p gestion-eventos-mvp-check`), ya dado de baja con `down -v`:
@@ -33,7 +30,7 @@ Docker limpio con un proyecto aislado (`-p gestion-eventos-mvp-check`), ya dado 
 - **2.7-bis:** al loguearse con contraseña temporal, el frontend ignoraba `mustChangePassword` y entraba con un token que sólo sirve para cambiar la contraseña, así que todas las pantallas daban 403. Además, `currentPassword` podía omitirse si la contraseña no era temporal. Corregido en el mismo commit que 2.7.
 - **2.1-bis:** el tracking esperaba el estado `SOLICITADO` en la solicitud, pero el backend usa `RECIBIDO`. Si un evento convertido terminaba `RECHAZADO`, la página igual decía "Aprobada". Corregido en 2.1.
 - **3.3-bis:** la UI sólo permitía dar de baja eventos en estado `SOLICITADO`, que nunca existe, así que la baja era imposible desde la interfaz. Ahora depende del permiso del rol. Corregido en 3.3. *Decisión asumida: la baja se permite en cualquier estado para roles admin.*
-- **1.7-bis (nuevo, pendiente de decisión):** no existe pantalla para resolver conflictos de prioridad. El cliente `catalogsApi.makeDecision`/`getConflicts` apunta a `/internal/priority/**`, que no existe, y usa decisiones inexistentes (`KEEP_NEW`/`KEEP_DISPLACED`); no tiene consumidores. Hoy la resolución sólo es posible por API.
+- **1.7-bis (pendiente al cierre del reporte):** no existía pantalla para resolver conflictos de prioridad. El cliente `catalogsApi.makeDecision`/`getConflicts` apuntaba a `/internal/priority/**`, que no existe, y usaba decisiones inexistentes (`KEEP_NEW`/`KEEP_DISPLACED`); no tenía consumidores. La decisión quedó resuelta después: la pantalla permanece como trabajo futuro y la consulta/resolución están disponibles por API; ver `docs/decisiones-funcionales.md`.
 - **1.7-ter:** `getCurrentUser()` está duplicado en 5 servicios. Se creó `CurrentUserService`; migrar las copias restantes es limpieza opcional.
 - **1.5:** `ability.ts` daba a USUARIO `update`/`delete` sobre `Event` y el dashboard le disparaba consultas que respondían 403. Corregido en 1.5.
 - **2.5-bis:** el correo de alta no incluía el código de seguimiento, aunque el reporte daba por hecho que sí. Corregido en 2.5.

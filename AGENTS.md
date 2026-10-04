@@ -34,7 +34,7 @@ El build de frontend también ejecuta `tsc -b`. Para archivos con errores previo
 | Permisos de rutas y roles | [docs/permisos.md](docs/permisos.md); `backend/.../config/SecurityConfig.java` es la autoridad de autorización efectiva. |
 | Decisiones de negocio | [docs/decisiones-funcionales.md](docs/decisiones-funcionales.md) y §1.3 de [plan.md](plan.md). |
 | Módulos, dependencias y convenciones de arquitectura | [docs/arquitectura.md](docs/arquitectura.md). |
-| Estado e historial de hallazgos | [docs/hallazgos-estado.md](docs/hallazgos-estado.md); se moverá a `docs/historial/` según D6. |
+| Estado e historial de hallazgos | [docs/historial/hallazgos-2026-10.md](docs/historial/hallazgos-2026-10.md) (documento histórico, no normativo). |
 | Compose, migraciones locales y correo | [DOCKER.md](DOCKER.md). |
 | Secuencia, alcance, cortes y evidencia de este trabajo | [plan.md](plan.md), especialmente §0 y §6 (Bitácora). |
 
