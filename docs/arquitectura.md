@@ -32,7 +32,7 @@ Estas son las reglas de diseño para cambios nuevos. Una desviación actual se r
 4. **Eventos con contrato estable:** declarar el evento en `event` del módulo que lo publica; transportar IDs y datos escalares, no entidades JPA. Los efectos posteriores al commit se escuchan con `@TransactionalEventListener(phase = AFTER_COMMIT)`.
 5. **Shared neutral:** `shared/` no depende de `feature/`. El manejo de excepciones específico de una feature debe exponerse mediante contratos neutrales o manejarse en su propio límite, no importarse desde `shared`.
 6. **Relaciones JPA permitidas:** una entidad puede tener `@ManyToOne`/`@OneToMany` hacia otra entidad de módulo porque hay una sola base y contexto de persistencia. Esa relación no autoriza al servicio consumidor a escribir la tabla ajena.
-7. **Cambios de dependencias:** no agregar una dependencia entre módulos sin actualizar este mapa y la guarda `ModuleBoundariesTest`. Hoy esa guarda **no está instalada**: C1 está bloqueado (ver [Deuda](#deuda)); no presentar este requisito como verificado.
+7. **Cambios de dependencias:** no agregar una dependencia entre módulos sin actualizar este mapa y la guarda `ModuleBoundariesTest`. La guarda ArchUnit está instalada y verificada; C1 dejó su conjunto de dependencias observado congelado en el test (ver [Deuda](#deuda)).
 
 ## Mapa actual de dependencias
 
@@ -114,7 +114,8 @@ La deuda se congela: este plan la documenta y busca impedir que aumente; no auto
 | 3 | Hay inyecciones de repositorios de otros módulos. Ejemplos comprobados: `CustomUserDetailsService`→`UserRepository`; `AvailabilityService`→`SpaceRepository`/`EventRepository`; `EventService`→repositorios de `catalogs` y `requests`; `EventRequestService`→repositorios de `catalogs`, `events` y `history`; `PriorityConflictService`→`SpaceRepository`/`EventRepository`; listeners/`NotificationService`→repositorios de varios módulos. | Omite la API del dueño y acopla consulta/escritura a persistencia. Verificar la lista completa con `grep -R '^import com.mvp.backend.feature.*repository' backend/src/main/java/com/mvp/backend/feature` antes de abordar el pago. |
 | 4 | `shared/GlobalExceptionHandler` depende de excepciones de `auth`, `availability`, `tech` y de `AvailabilityMapper`. | `shared` no es neutral; mueve la frontera del dominio al manejador global. El ideal es un contrato neutral para errores comunes y manejo específico donde corresponda. |
 | 5 | El grafo de imports tiene ciclos, entre ellos `auth↔users`, `availability↔events`, `comments↔notifications`, `events↔history/priority/requests/tech` y `requests↔history`. | Un módulo puede requerir cambios coordinados en su consumidor. Ver el mapa actual y el código para detalle; no inferir conteos históricos como estado actual. |
-| Bloqueo de guardian | C1 intentó aplicar la regla estricta de controllers, pero `PriorityConflictController` referencia `PriorityConflict`, cuya entidad tiene relaciones JPA a `Event` y `User`. La regla exacta de C1 solo permite dos excepciones distintas (`AdminEventRequestController → EventResponseDto` y `NotificationController → UserPrincipal`); añadir una excepción nueva sería cambiar el plan, no documentar deuda. | `ModuleBoundariesTest` no está presente. C1 permanece bloqueado hasta aislar la respuesta del controller/servicio para que sus tipos expuestos no incluyan entidades de otros módulos, o recibir una decisión explícita que cambie la regla. No afirmar que las fronteras backend están automatizadas. |
+
+**C1 resuelto:** `PriorityConflictController` obtiene la respuesta mapeada mediante `PriorityConflictService`, sin sumar una excepción a la regla estricta de controllers. Se conserva el contrato existente de `EventService.getOpenConflicts`, que devuelve entidades para sus consumidores actuales. `ModuleBoundariesTest` y sus probes negativos temporales se verificaron; los probes fueron revertidos y no se añadió ninguna allowlist.
 
 El listener de notificaciones aún usa eventos declarados en `notifications/event`; `NewCommentEvent`, `EventCreatedEmailEvent`, eventos de solicitudes y cambios de estado se procesan después del commit. La afirmación anterior sobre `PriorityConflictEvent` sin listener describe lo observado en el código actual, no una garantía futura.
 
@@ -130,7 +131,7 @@ La estructura funcional es `app → features → (store | services/api | compone
 
 ## Guardianes
 
-- **Backend:** el guardián planeado es `backend/src/test/java/com/mvp/backend/architecture/ModuleBoundariesTest.java` con ArchUnit. A la fecha documentada no existe porque C1 está bloqueado; ninguna prueba backend demuestra todavía las reglas anteriores.
+- **Backend:** `backend/src/test/java/com/mvp/backend/architecture/ModuleBoundariesTest.java` usa ArchUnit y contiene cuatro guardas: el conjunto exacto de aristas entre módulos (`ALLOWED_MODULE_EDGES`), el conjunto exacto de usos de repositorios ajenos (`ALLOWED_FOREIGN_REPOSITORY_USES`), dependencias permitidas de controllers con dos excepciones explícitas (`AdminEventRequestController → EventResponseDto` y `NotificationController → UserPrincipal`), y el conjunto exacto de clases en `feature.notifications.event`. Las sondas negativas temporales confirmaron que los límites fallan ante imports prohibidos; no se agregaron excepciones nuevas.
 - **Frontend:** `frontend/eslint.config.js` restringe imports entre features y desde `services`/`store` hacia features. La prueba negativa ejecutada por C2 se registró en `plan.md`; para verificar el estado actual ejecutar `cd frontend && npx eslint .` (el repositorio conserva errores preexistentes, comparar por archivo al tocar código).
 - Antes de cerrar una tarea de arquitectura, actualizar este documento, revisar imports/consumidores y correr el guardián disponible. Una tabla documentada no sustituye una prueba.
 
@@ -147,7 +148,7 @@ La estructura funcional es `app → features → (store | services/api | compone
 
 1. Crear `feature/<nombre>/{controller,service,repository,dto,model}` solo para responsabilidades que realmente tenga; no generar capas vacías.
 2. El módulo es dueño de sus entidades, repositorios y escrituras. Los otros módulos llaman a su servicio/DTO de contrato; no inyectan sus repositorios.
-3. Añadir tests de comportamiento y revisar el grafo de imports; documentar tablas, superficie pública y aristas aquí. No considerar completa la guarda backend hasta resolver C1 e instalar `ModuleBoundariesTest`.
+3. Añadir tests de comportamiento y revisar el grafo de imports; documentar tablas, superficie pública y aristas aquí. `ModuleBoundariesTest` verifica las reglas backend descritas arriba.
 
 ### Un evento de dominio
 

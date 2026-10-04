@@ -2,7 +2,7 @@
 
 > **Archivo:** `plan.md`, en la raíz del repo. `AGENTS.md` lo enlaza como "plan activo".
 > **Ejecuta:** Codex (u otro agente). **Revisa:** Claude, al terminar.
-> **Estado:** sin ejecutar. Commit base: `2de6235`.
+> **Estado:** en curso. Commit base: `2de6235`.
 
 ---
 
@@ -42,7 +42,7 @@ Gestión de Eventos (TFI UNLa). Hay dos tipos de usuarios:
 
 ### 1.2 Estado de partida
 - El commit base es **`2de6235`**. Los 45 hallazgos de un reporte externo están corregidos, con 39 tests de integración.
-- Historia en `docs/hallazgos-estado.md`, decisiones en `docs/decisiones-funcionales.md`, permisos en `docs/permisos.md`.
+- Historia archivada en `docs/historial/hallazgos-2026-10.md`, decisiones en `docs/decisiones-funcionales.md`, permisos en `docs/permisos.md`.
 - Una auditoría posterior encontró los problemas que corrige este plan:
   - docs contradictorios;
   - un contrato del frontend con tipos y endpoints inventados;
@@ -122,7 +122,7 @@ Gestión de Eventos (TFI UNLa). Hay dos tipos de usuarios:
   - **Evidencia:** `backend/pom.xml` (h2 `scope runtime`); `application.yml` (`spring.h2.console.enabled: true` para todos los perfiles) y `spring.security.user` `admin/admin123`, que no se usa.
   - **Cambio:** h2 pasa a `<scope>test</scope>`. Se borran `spring.h2.console.*` y `spring.security.user` de `application.yml`. Si un test necesita consola, va en `application-test.yml`.
   - **Hecho cuando:** `./mvnw test` está en verde y `jar tf target/*.jar | grep -c h2` da 0 después de `./mvnw -q -DskipTests package`.
-- [ ] **A2 · El formulario público usa la disponibilidad pública.**
+- [x] **A2 · El formulario público usa la disponibilidad pública.**
   - **Evidencia:** `frontend/src/features/public/components/PublicEventForm.tsx:176` llama a `availabilityApi.checkAvailability` (`/api/availability/check`, que requiere login). Existe `checkPublicAvailability` (`services/api/availability.api.ts:228`).
   - **Cambio:** usar `checkPublicAvailability` y adaptar el render si la respuesta pública trae menos campos (los conflictos no traen título).
   - **Hecho cuando:** sin sesión, el chequeo responde 200. Se verifica en E1.
@@ -196,15 +196,15 @@ Para cada grupo, antes de borrar o mover, correr `grep -rn "<símbolo o ruta>" f
   - actualizar los imports.
 
 ### Fase C — Guardianes de arquitectura
-- [ ] **C1 · `backend/src/test/java/com/mvp/backend/architecture/ModuleBoundariesTest.java`** con ArchUnit (`com.tngtech.archunit:archunit-junit5`, scope `test`, última versión 1.x en el `pom.xml`).
+- [x] **C1 · `backend/src/test/java/com/mvp/backend/architecture/ModuleBoundariesTest.java`** con ArchUnit (`com.tngtech.archunit:archunit-junit5`, scope `test`, última versión 1.x en el `pom.xml`).
   - Importa `com.mvp.backend` con `ImportOption.DoNotIncludeTests`. Módulo de una clase: `feature.<x>` → `x`; si no, `shared`, `config` o `root`.
   - **Regla 1:** el conjunto de aristas `origen->destino` entre módulos distintos (dependencias directas, sin contar `java.*`) tiene que ser **igual** a `ALLOWED_MODULE_EDGES`. Un `Set<String>` literal en el test, generado la primera vez desde el estado **posterior a la Fase B**. El test falla ante una arista nueva ("dependencia no permitida: documentar en docs/arquitectura.md o evitarla") y ante una que ya no existe ("deuda pagada: quitarla de la lista"). Es un trinquete: la deuda solo baja.
   - **Regla 2:** los usos de clases de `feature.<y>.repository` desde el módulo `x ≠ y` tienen que ser **iguales** a `ALLOWED_FOREIGN_REPOSITORY_USES` (`"ClaseOrigen -> Repositorio"`), con el mismo trinquete.
   - **Regla 3:** las clases de `feature.<x>.controller` solo dependen de `feature.<x>`, `shared`, `java`, `jakarta`, `org.springframework`, `lombok` y `io.swagger`, salvo la allowlist (`AdminEventRequestController -> EventResponseDto`, `NotificationController -> UserPrincipal`).
   - **Regla 4:** las clases de `feature.notifications.event` tienen que ser **iguales** a la allowlist actual. Los eventos nuevos van en el paquete `event` del módulo que los publica.
   - Cada lista lleva el comentario `// Deuda congelada — ver docs/arquitectura.md#deuda`.
-  - **Pruebas negativas** (temporales, no se commitean): inyectar `EventRepository` en `TechCapacityController` debe hacer fallar la regla 3; agregar un import de `catalogs.repository` en `tech` debe hacer fallar las reglas 1 y 2. Anotar el resultado en la Bitácora.
-- [ ] **C2 · Zonas de ESLint** en `frontend/eslint.config.js` con `no-restricted-imports`, generado con un loop sobre `fs.readdirSync('src/features')`:
+  - **Pruebas negativas** (temporales, no se commitean): inyectar `EventRepository` en un controller falla la regla 3; agregar `DepartmentRepository` temporalmente a `TechCapacityService` falla solo la regla 2 (la arista `tech→catalogs` ya existe); usar `UserRepository` desde `tech` falla las reglas 1 y 2; un probe temporal en `shared.Priority` falla la regla 1. Todos los probes se revirtieron y no se agregó allowlist.
+- [x] **C2 · Zonas de ESLint** en `frontend/eslint.config.js` con `no-restricted-imports`, generado con un loop sobre `fs.readdirSync('src/features')`:
   - `src/services/**` y `src/store/**` → prohibido `@/features/*`;
   - `src/features/<x>/**` → prohibido `@/features/<y>/**` para todo `y ≠ x` salvo `auth`;
   - mensaje: "Ver docs/arquitectura.md#frontend".
@@ -217,11 +217,11 @@ Para cada grupo, antes de borrar o mover, correr `grep -rn "<símbolo o ruta>" f
 - Se separan **regla vigente**, **deuda conocida** e **historia**.
 - Español. Los otros docs enlazan; no repiten.
 
-- [ ] **D1 · `.gitignore` y ruido:**
+- [x] **D1 · `.gitignore` y ruido:**
   - borrar `.atl/`;
   - agregar `.atl/`, `artifacts/` y `synthetic-user-engine/` al `.gitignore`;
   - borrar las carpetas locales `.github/modernize/` y `backend/.github/java-upgrade/` (ya ignoradas; son plantillas de otra herramienta con instrucciones dirigidas a agentes).
-- [ ] **D2 · `docs/arquitectura.md` (nuevo).**
+- [x] **D2 · `docs/arquitectura.md` (nuevo).**
   - **(a)** Estilo: monolito modular "tipo microservicios", con una sola base compartida.
   - **(b)** Tabla de módulos: responsabilidad, API pública (servicios y DTOs) y tablas que posee.
   - **(c)** Reglas vigentes:
@@ -242,43 +242,43 @@ Para cada grupo, antes de borrar o mover, correr `grep -rn "<símbolo o ruta>" f
     - legacy remanente: `useRole` solo se usa para mostrar etiquetas.
   - **(g)** Guardianes: `ModuleBoundariesTest` y las zonas de ESLint.
   - **(h)** "Cómo agregar…": un endpoint, un módulo, un evento de dominio, una migración.
-- [ ] **D3 · `AGENTS.md` canónico** (reescribir):
+- [x] **D3 · `AGENTS.md` canónico** (reescribir):
   - qué es el proyecto, stack, comandos (test, build, lint por archivo, E2E de la Fase E);
   - mapa de docs, "dónde está cada regla";
   - reglas de trabajo: commits por ítem; tests de integración con `IntegrationTestBase`; lint sin errores nuevos; **migraciones: el siguiente número es el que sigue a** `ls backend/src/main/resources/db/migration | sort -V | tail -1`, y **nunca** se edita una aplicada; el código legacy se puede tocar si se prueba que está mal o muerto;
   - qué ignorar: `artifacts/`, `synthetic-user-engine/` (local, contrato viejo) y `docs/historial/`;
   - "Plan activo: `plan.md`" (al terminar el plan, moverlo a `docs/historial/` y quitar esta línea).
   - `CLAUDE.md` queda solo con `@AGENTS.md`.
-- [ ] **D4 · `docs/permisos.md`:**
+- [x] **D4 · `docs/permisos.md`:**
   - declarar que es la fuente de verdad del contrato;
   - agregar `POST /auth/login`, `/auth/refresh` y `/auth/logout`, `GET /actuator/health` y Swagger (`/swagger-ui/**`, `/v3/api-docs/**`, públicos según `SecurityConfig`);
   - checklist "cambiar un permiso = este doc + `SecurityConfig` + test de integración + `libs/ability.ts` (y rutas/sidebar si aplica)".
-- [ ] **D5 · `docs/decisiones-funcionales.md`:**
+- [x] **D5 · `docs/decisiones-funcionales.md`:**
   - pasar a "decididas" las 4 decisiones de §1.3;
   - agregar la regla de edición;
   - sección "Alcance futuro": pantalla de conflictos (hoy solo por API);
   - los IDs del reporte quedan como referencia ("(hallazgo 3.1)") y no como título.
-- [ ] **D6 · Historia:**
-  - `git mv docs/hallazgos-estado.md docs/historial/hallazgos-2026-10.md`;
+- [x] **D6 · Historia:**
+  - archivar la historia en `docs/historial/hallazgos-2026-10.md`;
   - encabezado "Documento histórico, no normativo";
   - borrar la sección "Pendientes para decidir juntos" (queda resuelta acá);
   - corregir las afirmaciones falsas: "el simulador usa CANCELLED" y "la contraseña no está en el repo";
   - quitar "Próxima migración libre".
-- [ ] **D7 · `docs/backlog.md` (nuevo).** Cada tarea especificada para que un agente la tome, con endpoints, roles, payloads reales y un criterio de "hecho":
+- [x] **D7 · `docs/backlog.md` (nuevo).** Cada tarea especificada para que un agente la tome, con endpoints, roles, payloads reales y un criterio de "hecho":
   - pantalla de resolución de conflictos (`GET /api/priority/conflicts/pending`, `POST /api/priority/decisions` `{conflictId, decision: REBOOK_OTHER|KEEP_ORIGINAL, target?:{date,from,to,spaceId}, reason?}`, solo AF y AC);
   - pago de la deuda de arquitectura, en orden: las escrituras ajenas primero, después los eventos de `notifications/event` hacia sus publicadores, después los repositorios ajenos;
   - actualizar `synthetic-user-engine` al contrato vigente, si se decide versionarlo.
-- [ ] **D8 · `DOCKER.md`:**
+- [x] **D8 · `DOCKER.md`:**
   - "MailHog" → Mailpit (servicio `mailhog`);
   - cómo ver correos con el override (`docker compose -f docker-compose.yml -f docker-compose.mail-access.yml up`, en `http://127.0.0.1:8025`);
   - tabla completa de variables: `FRONTEND_*`, `MYSQL_*`, `MAIL_*`, `APP_PUBLIC_BASE_URL`, `APP_CORS_ALLOWED_ORIGINS`, `JWT_*`, `BACKEND_JAVA_OPTS`, `VITE_API_BASE_URL`, `DB_WAIT_TIMEOUT_SECONDS`;
   - usuarios sembrados y contraseña (la verificada en E1);
   - stack aislado con otro puerto: setear `APP_PUBLIC_BASE_URL` y `APP_CORS_ALLOWED_ORIGINS` acordes;
   - E2E (Fase E).
-- [ ] **D9 · READMEs.** `frontend/README.md` reemplaza el boilerplate de Vite. Nuevo `backend/README.md`. Cada uno con 15–25 líneas: scripts, estructura, cómo correr y links a `AGENTS.md` y `docs/arquitectura.md`.
+- [x] **D9 · READMEs.** `frontend/README.md` reemplaza el boilerplate de Vite. Nuevo `backend/README.md`. Cada uno con 15–25 líneas: scripts, estructura, cómo correr y links a `AGENTS.md` y `docs/arquitectura.md`.
 
 ### Fase E — E2E automatizado y repetible
-- [ ] **E1 · E2E de API: `scripts/e2e/api_smoke.py`.** Python 3 con la biblioteca estándar solamente (urllib, threading, json). Corre contra `BASE_URL`, por defecto `http://127.0.0.1:18080`, a través de nginx. Cada caso imprime `PASS`/`FAIL`, y el exit code es ≠0 si alguno falla. Casos mínimos:
+- [x] **E1 · E2E de API: `scripts/e2e/api_smoke.py`.** Python 3 con la biblioteca estándar solamente (urllib, threading, json). Corre contra `BASE_URL`, por defecto `http://127.0.0.1:18080`, a través de nginx. Cada caso imprime `PASS`/`FAIL`, y el exit code es ≠0 si alguno falla. Casos mínimos:
   1. `GET /` (frontend) → 200; `GET /h2-console` → 404 o 403, nunca la consola.
   2. **Público:**
      - `GET /public/catalogs/spaces` → 200;
@@ -312,7 +312,7 @@ Para cada grupo, antes de borrar o mover, correr `grep -rn "<símbolo o ruta>" f
       - se crean 2 eventos técnicos en el mismo horario, en espacios distintos;
       - se reservan los dos en paralelo con hilos → exactamente un 200 y un 409.
   12. **Correo:** con el override de Mailpit, `GET http://127.0.0.1:${MAILPIT_HOST_PORT:-8025}/api/v1/messages` contiene la confirmación (con el UUID), la revisión, el rechazo con su motivo y la conversión.
-- [ ] **E2 · E2E de navegador con Playwright: `frontend/e2e/`.**
+- [x] **E2 · E2E de navegador con Playwright: `frontend/e2e/`.**
   - Agregar `@playwright/test` como devDependency, `frontend/playwright.config.ts` (`baseURL` desde `E2E_BASE_URL`, solo chromium) y el script `"e2e": "playwright test"`. Instalar con `npx playwright install chromium`.
   - Specs mínimos, con selectores por rol o texto visible:
     1. `public-request.spec.ts`: completar el formulario público sin login (chequeo de disponibilidad sin error, audiencia "Tercera edad"), enviar, ver la confirmación con el código y abrir `/track/<uuid>` → "Recibida".
@@ -320,7 +320,7 @@ Para cada grupo, antes de borrar o mover, correr `grep -rn "<símbolo o ruta>" f
     3. `usuario.spec.ts`: login `viewer` → el sidebar muestra "Solicitar evento" y no muestra "Solicitudes" ni "Catálogos"; `/events/<id>/edit` → página de no autorizado.
     4. `password.spec.ts` (opcional): el admin crea un usuario → login con la contraseña temporal pide cambiarla. La contraseña temporal se lee de Mailpit.
   - Excluir `e2e/` del `tsconfig` de la app si hace falta, para no romper `tsc -b`.
-- [ ] **E3 · Runner único: `scripts/e2e/run.sh`.**
+- [x] **E3 · Runner único: `scripts/e2e/run.sh`.**
   1. `docker compose -p gestion-eventos-mvp-e2e -f docker-compose.yml -f docker-compose.mail-access.yml up -d --build`, con `FRONTEND_PORT=18080`, `MAILPIT_HOST_PORT=18025`, `APP_PUBLIC_BASE_URL=http://127.0.0.1:18080` y `APP_CORS_ALLOWED_ORIGINS=http://127.0.0.1:18080`.
   2. Esperar a que el backend esté sano: loop sobre `docker compose ps` o `curl /` hasta 180 s.
   3. Verificar el login de `admin.full` con `admin123`. Si falla, asignar con `docker compose exec mysql` un hash BCrypt conocido **solo en esta base descartable** (generado con `htpasswd -bnBC 10 "" <pass>`, cambiando `$2y` por `$2a`) y exportar `E2E_PASSWORD`. Anotar en la Bitácora cuál camino se tomó.
@@ -328,13 +328,13 @@ Para cada grupo, antes de borrar o mover, correr `grep -rn "<símbolo o ruta>" f
   5. **Siempre** (con `trap`): `docker compose -p gestion-eventos-mvp-e2e down -v`. Opción `--keep` para depurar.
   6. Exit code ≠0 si falla cualquiera de los dos E2E.
   - Documentado en `AGENTS.md` y en `DOCKER.md`.
-- [ ] **E4 · Correr `scripts/e2e/run.sh` completo** y pegar el resumen PASS/FAIL en la Bitácora. Si algo falla por un bug de la app, se corrige con un commit `fix(E4-<n>)` y se vuelve a correr hasta que todo esté en verde.
+- [x] **E4 · Correr `scripts/e2e/run.sh` completo** y pegar el resumen PASS/FAIL en la Bitácora. Si algo falla por un bug de la app, se corrige con un commit `fix(E4-<n>)` y se vuelve a correr hasta que todo esté en verde.
 
 ### Fase F — Verificación final integral
-- [ ] **F1 ·** `cd backend && ./mvnw test`: todo en verde, incluido `ModuleBoundariesTest`. Anotar la cantidad de tests.
-- [ ] **F2 ·** `cd frontend && npx tsc -b && npm run build && npx eslint .`: build OK. El total de errores de lint tiene que ser **menor o igual a 63**; anotar el número.
-- [ ] **F3 ·** `scripts/e2e/run.sh`: todo en verde (API y navegador).
-- [ ] **F4 · Lector frío.** Un agente nuevo, sin este historial, lee solo `AGENTS.md` y lo que enlaza, y responde. Cualquier respuesta dudosa o incorrecta obliga a corregir el doc y repetir.
+- [x] **F1 ·** `cd backend && ./mvnw test`: todo en verde, incluido `ModuleBoundariesTest`. Anotar la cantidad de tests.
+- [x] **F2 ·** `cd frontend && npx tsc -b && npm run build && npx eslint .`: build OK. El total de errores de lint tiene que ser **menor o igual a 63**; anotar el número.
+- [x] **F3 ·** `scripts/e2e/run.sh`: todo en verde (API y navegador).
+- [x] **F4 · Lector frío.** Un agente nuevo, sin este historial, lee solo `AGENTS.md` y lo que enlaza, y responde. Cualquier respuesta dudosa o incorrecta obliga a corregir el doc y repetir.
   1. ¿Qué cliente HTTP uso para un endpoint nuevo?
   2. ¿Qué número lleva una migración nueva y puedo editar V14?
   3. ¿Puedo inyectar `EventRepository` en `requests`? ¿Qué hago si lo necesito?
@@ -345,7 +345,7 @@ Para cada grupo, antes de borrar o mover, correr `grep -rn "<símbolo o ruta>" f
   8. ¿Cómo corro el E2E?
   9. ¿Qué hago con `synthetic-user-engine/`?
   10. ¿Qué pasos implica cambiar un permiso?
-- [ ] **F5 · grep final.** `grep -rnE "SOLICITADO|CANCELLED|/internal/|KEEP_NEW|KEEP_DISPLACED|MIXTO|MailHog"` sobre `backend/src frontend/src docs *.md` no da resultados fuera de `db/migration/V1..V14`, `docs/historial/` y el test negativo de `CANCELLED` en `PriorityConflictAccessIntegrationTest`. Cerrar la Bitácora con un resumen.
+- [ ] **F5 · grep final.** `grep -rnE "SOLICITADO|CANCELLED|/internal/|KEEP_NEW|KEEP_DISPLACED|MIXTO|MailHog"` sobre `backend/src frontend/src docs *.md` no da resultados fuera de `db/migration/V1..V14`, `docs/historial/` y el test negativo de `CANCELLED` en `PriorityConflictAccessIntegrationTest`. Cerrar la Bitácora con un resumen. Pendiente: los únicos hits restantes son autorreferencias activas en el `plan.md`; el comentario obsoleto `Status` en source se corrigió en `69671e3`. No declarar pase final ni archivar/quitar este plan hasta completar F5.
 
 ---
 
@@ -396,5 +396,22 @@ Para cada grupo, antes de borrar o mover, correr `grep -rn "<símbolo o ruta>" f
 | B7 | `061fa34` | `cd frontend && npx tsc -b && npm run build` (OK); ESLint: ningún archivo empeora; `grep -rln 'lib/http' frontend/src` deja solo `features/auth/*`; ambos clientes usan `accessToken` | Migración preserva refresh 401 con cola/reintento; no hay tests de refresh concurrente/fallo. `services/http/client.ts` y `audit.api.ts` conservan lecturas legacy de `token`, fuera de los dos clientes tratados; B1 sigue bloqueado. |
 | B8 | `15da181` | `JAVA_HOME=$(/usr/libexec/java_home) ./mvnw -q test` (OK; 19 suites, 41 tests, 0 failures/errors/skips); `git diff --check` (OK); grep de consumers del evento y de `getCurrentUser()` | Se quitó import sin uso, evento sin consumidores y publisher; se centralizó resolución de usuario en `CurrentUserService`. `PriorityConflictEvent` y listener de notificaciones permanecen. Sin tests focalizados para variantes de principal/atribución. |
 | B9 | `afbe5db` | `cd frontend && npx tsc -b && npm run build` (OK); ESLint en 11 archivos tocados: 0 errores, igual que baseline; grep de rutas antiguas sin resultados; `git diff --check` (OK) | Los helpers de sorting y estado ahora viven en `src/utils`; imports revisados y sin ciclos o dependencias de utils hacia features. Bundle mantiene advertencia >500 kB. |
-| C1 | `pendiente` | Sondeo ArchUnit focalizado falló ante dependencias controller→Event y controller→User; no quedaron cambios del sondeo tras detenerse; auditoría independiente confirmó el estado limpio | BLOQUEADO: `PriorityConflictController` consume `PriorityConflict`, que expone `Event` y `User`; aceptar estas aristas contradice la regla exacta del plan. Resolver el límite/controller antes de agregar la guarda. No se ejecutó suite completa ni pruebas negativas. |
-| | | | |
+| C1 | `cb22a8b` → `5e5de2d` | Guardas ArchUnit instaladas y verificadas; probes negativos: EventRepository en TechCapacityController → Regla 3; DepartmentRepository temporal en TechCapacityService → solo Regla 2 (tech→catalogs ya existe); UserRepository desde tech → Reglas 1 y 2; campo `shared.Priority` temporal en BackendApplication → Regla 1. Todos los probes se revirtieron. Antes de C1: 20 suites/42 tests; tras C1: focalizados 4/4 y suite completa 46 tests, 0 fallos/errores/skips, incluido ModuleBoundariesTest | C1 quedó resuelto sin allowlist nueva. `PriorityConflictController` ahora obtiene la proyección mediante `PriorityConflictService`; se conserva el contrato existente de `EventService.getOpenConflicts`, que devuelve entidades. |
+| C2 | `302366d` | `cd frontend && npx tsc -b && npm run build` (OK); ESLint reporta 61 errores y 7 warnings actuales; implementador informa ninguna violación en estas zonas; prueba negativa desde `services/api` → lint exit 1; `git diff --check` (OK) | Se generaron restricciones por feature con excepción auth y mensaje a `docs/arquitectura.md#frontend`. El lint global permanece rojo; no se debilitó. La revisión estática no sustituyó evidencia de ejecución. |
+| D1 | `557cb6f` | `git check-ignore -v` verifica `.atl/`, `artifacts/` y `synthetic-user-engine/`; `git diff --check` (OK); auditoría confirmó que ambas carpetas de datos se conservaron | Se quitaron solo `.atl/` y los dos directorios ignorados de salida de herramientas indicados en el plan. No se borró contenido de `artifacts/` ni `synthetic-user-engine/`. |
+| D2 | `df22516` | Revisión de documentación frente a las secciones (a–h) y fuentes actuales; `git diff --check` (OK); no se ejecutaron tests ni renderer | Se creó mapa de módulos/imports/deuda y guías. Al registrar D2, el grafo era un scan de imports, no salida validada de ArchUnit; C1 seguía bloqueado en ese momento. |
+| D3 | `12159b7` | Revisión independiente contra los requisitos; `git diff --check` (OK); comandos y rutas contrastados con scripts/repositorio | `AGENTS.md` quedó como guía canónica y `CLAUDE.md` referencia solo `@AGENTS.md`. Runner E2E aún no existe; se añadió invocación condicional después de E3. `docs/historial/` conserva documentos versionados no vigentes. |
+| D4 | `caa958f` | Revisión independiente contra `SecurityConfig`, tests y rutas frontend; `git diff --check` (OK); no se corrieron tests | `docs/permisos.md` declara fuente de verdad documental, lista rutas públicas y agrega checklist de cambios. Cobertura existente es más acotada que la matriz (Actuator readiness verificado, no todo Swagger/info). |
+| D5 | `8389426` | Revisión independiente de §1.3, servicios de edición, helpers UI y API de conflictos; `git diff --check` (OK); no se corrieron tests | Las cuatro decisiones quedaron como cerradas; regla de edición confirmada; pantalla de conflictos separada bajo `Alcance futuro`; IDs como referencias parentéticas. |
+| D6 | `9830d43` | `rg -F 'docs/hallazgos-estado.md'` sin resultados; `git diff --check` (OK); revisión independiente confirma referencias y claims corregidos | Ledger movido a `docs/historial/`, marcado no normativo; se eliminaron preguntas ya resueltas y “próxima migración libre”. La carpeta del simulador sigue siendo legacy ignorada; la contraseña seed no se verificó en vivo. |
+| D7 | `7a5d0f7` | Revisión independiente contra controller, DTOs, service, SecurityConfig, tests y docs; `git diff --check` (OK); no se corrieron tests | Backlog incluye permisos/contratos/paginación real, criterios verificables, deuda ordenada y actualización condicional del simulador. Al registrar D7, C1 aún estaba bloqueado; tests existentes no cubren todo el flujo futuro. |
+| D8 | `c1d498f` | Revisión independiente de Compose, variables, seed y plan; `git diff --check` (OK); Docker no se levantó. E1/E4 posteriores verifican el login y el runner aislado | DOCKER.md actualizado; los prerrequisitos E1/E3/E4 quedaron verificados posteriormente. |
+| D9 | `8c113be` | Ambos READMEs tienen 25 líneas, enlaces y comandos verificados; `git diff --check` (OK); revisión independiente corrigió la descripción del puerto backend | Boilerplate Vite reemplazado y guía backend añadida. `127.0.0.1:8080` es la entrada UI/Nginx; backend interno escucha en 9090. |
+| E1 | `bd74d08` | Ejecución final post-C1 en `scripts/e2e/run.sh` (HEAD `5e5de2d`): 16/16 casos API aprobados; cleanup del stack y volumen descartables verificados | El smoke pasó por nginx; login semilla `admin123`, disponibilidad pública y contratos API comprobados en el entorno aislado. |
+| E2 | `fafa2d4` + `e72274c`, `d1bb60f`, `d7f4283`, `60a1518` | Ejecución final post-C1 en `scripts/e2e/run.sh` (HEAD `5e5de2d`): 3/3 tests Playwright aprobados | Specs públicos/admin/viewer ejecutados; se corrigieron nombres/roles accesibles y locators obsoletos. Cleanup verificado. `npm install` reportó 27 vulnerabilidades (3 moderadas, 22 altas, 2 críticas); no se compararon con baseline ni se ejecutó `npm audit`. |
+| E3 | `84e9091` | Run final post-C1 `5e5de2d`: E1 16/16, E2 3/3; preflight local, aislamiento y cleanup verificados | Runner fijo al socket local y proyecto `gestion-eventos-mvp-e2e`; backend/MySQL no publican puertos de host. |
+| E4 | `e37a857`, `e72274c`, `d1bb60f`, `d7f4283`, `60a1518` | `scripts/e2e/run.sh`, ejecución post-C1 en HEAD `5e5de2d`: E1 16/16 y E2 3/3; cleanup verificado | Fallos iniciales corregidos mediante commits específicos; ejecución completa final verde. Los endpoints `/api/priority/conflicts` no fueron llamados por estos recorridos. |
+| F1 | `5e5de2d` | Antes de C1: 20 suites/42 tests; tras C1: test focalizado 4/4 y suite completa 46 tests, 0 fallos/errores/skips, incluido `ModuleBoundariesTest` | Verificación backend completa en verde con la guarda de arquitectura presente; probes negativos documentados en C1. |
+| F2 | — | `npx tsc -b` y `npm run build` OK; `npx eslint .`: 61 errores y 7 warnings, dentro del umbral ≤63 | El build/typecheck pasan; ESLint conserva errores preexistentes sin exceder el límite del plan. |
+| F3 | `5e5de2d` | `scripts/e2e/run.sh`: E1 16/16; E2 3/3; cleanup verificado | E2E API y navegador verdes tras C1 en el código fuente; los recorridos no ejercitan las respuestas del GET de conflictos. |
+| F4 | — | Lector frío respondió las 10 preguntas de §F4 sin incertidumbre, tanto antes como después de actualizar el estado C1 | La guía y los documentos enlazados permitieron resolver el cuestionario; la segunda lectura confirmó que no queda lenguaje que llame bloqueado a C1. |
