@@ -1,6 +1,6 @@
 # Guía del proyecto
 
-Guía canónica para trabajar en Gestión de Eventos (TFI UNLa). Seguí primero el [plan activo](plan.md), en especial su protocolo (§0).
+Guía canónica para trabajar en Gestión de Eventos (TFI UNLa). No hay un plan de trabajo activo; los planes archivados en `docs/historial/` son evidencia histórica, no instrucciones vigentes.
 
 ## Proyecto y stack
 
@@ -32,19 +32,17 @@ El build de frontend también ejecuta `tsc -b`. Para archivos con errores previo
 | Tema | Fuente de verdad |
 |---|---|
 | Permisos de rutas y roles | [docs/permisos.md](docs/permisos.md); `backend/.../config/SecurityConfig.java` es la autoridad de autorización efectiva. |
-| Decisiones de negocio | [docs/decisiones-funcionales.md](docs/decisiones-funcionales.md) y §1.3 de [plan.md](plan.md). |
+| Decisiones de negocio | [docs/decisiones-funcionales.md](docs/decisiones-funcionales.md). |
 | Módulos, dependencias y convenciones de arquitectura | [docs/arquitectura.md](docs/arquitectura.md). |
 | Estado e historial de hallazgos | [docs/historial/hallazgos-2026-10.md](docs/historial/hallazgos-2026-10.md) (documento histórico, no normativo). |
 | Compose, migraciones locales y correo | [DOCKER.md](DOCKER.md). |
-| Secuencia, alcance, cortes y evidencia de este trabajo | [plan.md](plan.md), especialmente §0 y §6 (Bitácora). |
+| Estado e historial de ejecución | Documentos archivados en `docs/historial/` (históricos, no normativos). |
 
 ## Reglas de trabajo
 
-- Trabajá los ítems del plan en orden. **Un ítem = un commit convencional**: `<tipo>(<ID>): <resultado>`. No crear ramas ni hacer push; no reescribir commits existentes.
+- Cuando se acuerde un plan de trabajo, ejecutar sus ítems en orden. **Un ítem = un commit convencional**: `<tipo>(<ID>): <resultado>`. No crear ramas ni hacer push; no reescribir commits existentes.
 - Cada test de integración backend nuevo debe extender `backend/src/test/java/com/mvp/backend/support/IntegrationTestBase`. Incluye helpers de autenticación/fixtures; un test `@Transactional` no dispara listeners `AFTER_COMMIT`.
 - En frontend, correr typecheck/build y lint por archivo. El archivo tocado no debe sumar errores de lint respecto de `HEAD`.
 - Para una migración, consultar el último nombre con `ls backend/src/main/resources/db/migration | sort -V | tail -1` y usar el siguiente número Flyway. **Nunca editar una migración existente o aplicada**: corregir con una nueva migración y actualizar la entidad cuando corresponda.
 - El código legacy se puede corregir o eliminar si la evidencia demuestra que está mal o muerto. Antes de eliminarlo, buscar consumidores y registrar el resultado; si hay consumidores o se activa un corte del plan, detener ese ítem y dejar constancia.
 - No versionar ni revisar como fuente vigente estos contenidos locales/de historial: `artifacts/` y `synthetic-user-engine/` (contrato viejo). `docs/historial/` conserva documentos versionados que ya no son la fuente vigente.
-
-**Plan activo:** [`plan.md`](plan.md). Al terminar el plan, moverlo a `docs/historial/` y quitar esta línea.

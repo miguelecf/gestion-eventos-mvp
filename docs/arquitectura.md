@@ -132,7 +132,7 @@ La estructura funcional es `app → features → (store | services/api | compone
 ## Guardianes
 
 - **Backend:** `backend/src/test/java/com/mvp/backend/architecture/ModuleBoundariesTest.java` usa ArchUnit y contiene cuatro guardas: el conjunto exacto de aristas entre módulos (`ALLOWED_MODULE_EDGES`), el conjunto exacto de usos de repositorios ajenos (`ALLOWED_FOREIGN_REPOSITORY_USES`), dependencias permitidas de controllers con dos excepciones explícitas (`AdminEventRequestController → EventResponseDto` y `NotificationController → UserPrincipal`), y el conjunto exacto de clases en `feature.notifications.event`. Las sondas negativas temporales confirmaron que los límites fallan ante imports prohibidos; no se agregaron excepciones nuevas.
-- **Frontend:** `frontend/eslint.config.js` restringe imports entre features y desde `services`/`store` hacia features. La prueba negativa ejecutada por C2 se registró en `plan.md`; para verificar el estado actual ejecutar `cd frontend && npx eslint .` (el repositorio conserva errores preexistentes, comparar por archivo al tocar código).
+- **Frontend:** `frontend/eslint.config.js` restringe imports entre features y desde `services`/`store` hacia features. La prueba negativa ejecutada por C2 quedó registrada en el [plan archivado](historial/plan-gestion-eventos-2026-10.md); para verificar el estado actual ejecutar `cd frontend && npx eslint .` (el repositorio conserva errores preexistentes, comparar por archivo al tocar código).
 - Antes de cerrar una tarea de arquitectura, actualizar este documento, revisar imports/consumidores y correr el guardián disponible. Una tabla documentada no sustituye una prueba.
 
 ## Cómo agregar
