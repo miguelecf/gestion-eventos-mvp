@@ -10,6 +10,9 @@ import com.mvp.backend.feature.events.model.TechSupportMode;
 import com.mvp.backend.feature.events.repository.EventRepository;
 import com.mvp.backend.feature.history.service.AuditService;
 import com.mvp.backend.feature.priority.dto.PriorityConflictDecisionRequest;
+import com.mvp.backend.feature.priority.dto.PriorityConflictDecisionResponse;
+import com.mvp.backend.feature.priority.dto.PriorityConflictResponse;
+import com.mvp.backend.feature.priority.dto.PendingPriorityConflictResponse;
 import com.mvp.backend.feature.priority.model.PriorityConflict;
 import com.mvp.backend.feature.priority.model.PriorityConflictDecision;
 import com.mvp.backend.feature.priority.model.PriorityConflictStatus;
@@ -125,8 +128,21 @@ public class PriorityConflictService {
     }
 
     @Transactional(readOnly = true)
+    public PriorityConflictResponse getOpenConflictsResponse(Long highEventId) {
+        List<PriorityConflictResponse.ConflictDetail> items = getOpenConflicts(highEventId).stream()
+                .map(this::toDetail)
+                .toList();
+        return new PriorityConflictResponse(highEventId, items);
+    }
+
+    @Transactional(readOnly = true)
     public Page<PriorityConflict> getAllOpenConflicts(Pageable pageable) {
         return repository.findByStatus(PriorityConflictStatus.OPEN, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PendingPriorityConflictResponse> getAllOpenConflictsResponse(Pageable pageable) {
+        return getAllOpenConflicts(pageable).map(this::toPendingResponse);
     }
 
     @Transactional
@@ -165,6 +181,42 @@ public class PriorityConflictService {
                 "Decisión: " + request.decision(), request.reason());
 
         return conflict;
+    }
+
+    @Transactional
+    public PriorityConflictDecisionResponse applyDecisionResponse(PriorityConflictDecisionRequest request) {
+        PriorityConflict conflict = applyDecision(request);
+        return new PriorityConflictDecisionResponse(conflict.getConflictCode(), conflict.getDecision(),
+                conflict.getStatus());
+    }
+
+    private PendingPriorityConflictResponse toPendingResponse(PriorityConflict conflict) {
+        return new PendingPriorityConflictResponse(
+                conflict.getConflictCode(),
+                conflict.getHighEvent() != null ? conflict.getHighEvent().getId() : null,
+                conflict.getDisplacedEvent() != null ? conflict.getDisplacedEvent().getId() : null,
+                conflict.getSpaceId(),
+                conflict.getDate(),
+                conflict.getFromTime(),
+                conflict.getToTime(),
+                conflict.getHighEvent() != null ? conflict.getHighEvent().getPriority() : null,
+                conflict.getDisplacedEvent() != null ? conflict.getDisplacedEvent().getPriority() : null,
+                conflict.getDisplacedEvent() != null && conflict.getDisplacedEvent().isRequiresRebooking(),
+                conflict.getCreatedAt(),
+                conflict.getCreatedBy() != null ? conflict.getCreatedBy().getId() : null);
+    }
+
+    private PriorityConflictResponse.ConflictDetail toDetail(PriorityConflict conflict) {
+        var audit = new PriorityConflictResponse.ConflictDetail.Audit(
+                conflict.getCreatedAt(),
+                conflict.getCreatedBy() != null ? conflict.getCreatedBy().getId() : null);
+        return new PriorityConflictResponse.ConflictDetail(
+                conflict.getConflictCode(),
+                conflict.getDisplacedEvent() != null ? conflict.getDisplacedEvent().getId() : null,
+                conflict.getSpaceId(),
+                conflict.getFromTime(),
+                conflict.getToTime(),
+                audit);
     }
 
     private void applyRebooking(PriorityConflictDecisionRequest request, Event displaced, User decider) {
