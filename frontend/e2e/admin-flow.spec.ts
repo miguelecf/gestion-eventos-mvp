@@ -31,6 +31,6 @@ test('an admin reviews, converts, and edits an internal event comment', async ({
   const commentCard = comment.locator('..');
   await commentCard.getByRole('button', { name: 'Editar' }).click();
   await commentCard.locator('textarea').fill(editedComment);
-  await commentCard.getByRole('button', { name: 'Guardar' }).click();
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
   await expect(page.getByText(editedComment, { exact: true })).toBeVisible();
 });
