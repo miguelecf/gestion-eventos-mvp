@@ -20,7 +20,7 @@ test('an admin reviews, converts, and edits an internal event comment', async ({
 
   await expect(page).toHaveURL(/\/events\/\d+$/);
   await expect(page.getByRole('heading', { name: eventName })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Comentarios internos' })).toBeVisible();
+  await expect(page.getByText('Comentarios internos', { exact: true })).toBeVisible();
 
   const originalComment = uniqueEventName('Internal comment');
   const editedComment = `${originalComment} edited`;
