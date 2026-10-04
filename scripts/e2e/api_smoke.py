@@ -183,11 +183,10 @@ def check_frontend_and_h2() -> str:
     status, _, raw = request("GET", "/")
     expect_status(status, 200, "GET /")
     require(bool(raw.strip()), "GET / returned an empty body")
-    h2_status, _, h2_raw = request("GET", "/h2-console")
-    expect_status(h2_status, {403, 404}, "GET /h2-console must not expose console")
-    require("h2-console" not in h2_raw.lower() or h2_status in {403, 404},
-            "H2 console response appears accessible")
-    return "frontend 200; H2 console denied"
+    for path in ("/h2-console", "/h2-console/", "/h2-console/login.do"):
+        h2_status, _, h2_raw = request("GET", path)
+        expect_status(h2_status, 404, f"GET {path} must not expose console ({h2_raw[:200]})")
+    return "frontend 200; H2 console paths return 404"
 
 
 def check_public_catalog_and_availability() -> str:
@@ -514,8 +513,8 @@ def main() -> int:
     # Prerequisite discovery is explicit and independently reported; downstream cases fail rather than skip.
     case("frontend and H2 console boundary", check_frontend_and_h2)
     case("public spaces and unauthenticated availability (A2)", check_public_catalog_and_availability)
-    case("seeded department catalog", check_departments)
     case("login for all four seeded users", check_logins)
+    case("seeded department catalog", check_departments)
     case("public request creation and tracking", check_public_request_and_tracking)
     case("public request-list denial", check_public_write_list_forbidden)
     case("AF inbox visibility and USUARIO denial", check_admin_inbox_and_user_denial)

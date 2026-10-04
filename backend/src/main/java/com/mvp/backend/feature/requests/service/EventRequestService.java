@@ -268,10 +268,10 @@ public class EventRequestService {
     }
 
     private void validateBuffers(CreateEventRequestDto dto) {
-        if (dto.bufferBeforeMin() == null || dto.bufferBeforeMin() < 0 || dto.bufferBeforeMin() > 240) {
+        if (dto.bufferBeforeMin() != null && (dto.bufferBeforeMin() < 0 || dto.bufferBeforeMin() > 240)) {
             throw new DomainValidationException("bufferBeforeMin must be between 0 and 240");
         }
-        if (dto.bufferAfterMin() == null || dto.bufferAfterMin() < 0 || dto.bufferAfterMin() > 240) {
+        if (dto.bufferAfterMin() != null && (dto.bufferAfterMin() < 0 || dto.bufferAfterMin() > 240)) {
             throw new DomainValidationException("bufferAfterMin must be between 0 and 240");
         }
     }
