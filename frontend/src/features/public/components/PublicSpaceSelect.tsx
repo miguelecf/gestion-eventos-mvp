@@ -13,6 +13,7 @@ import { publicRequestsApi } from '@/services/api';
 import type { PublicSpaceOption } from '@/services/api/publicRequests.api';
 
 export interface PublicSpaceSelectProps {
+  id?: string;
   value?: number | null;
   onChange: (spaceId: number | null) => void;
   disabled?: boolean;
@@ -25,6 +26,7 @@ export interface PublicSpaceSelectProps {
 const PublicSpaceSelect = React.forwardRef<HTMLSelectElement, PublicSpaceSelectProps>(
   (
     {
+      id,
       value,
       onChange,
       disabled,
@@ -75,6 +77,7 @@ const PublicSpaceSelect = React.forwardRef<HTMLSelectElement, PublicSpaceSelectP
     return (
       <div className="w-full">
         <select
+          id={id}
           ref={ref}
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}

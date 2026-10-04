@@ -531,6 +531,7 @@ export default function PublicEventForm() {
                 helpText="Seleccione el espacio donde se realizará el evento"
               >
                 <PublicSpaceSelect
+                  id="spaceId"
                   value={spaceIdValue}
                   onChange={(spaceId: number | null) => setValue('spaceId', spaceId ?? undefined)}
                   error={errors.spaceId?.message}
