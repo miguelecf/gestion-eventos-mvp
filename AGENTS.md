@@ -25,7 +25,7 @@ cd frontend && npx tsc -b && npm run build
 cd frontend && npx eslint src/ruta/al/archivo.tsx
 ```
 
-El build de frontend también ejecuta `tsc -b`. Para archivos con errores previos, comparar el número de errores de ESLint contra el mismo archivo en `HEAD`; no agregar errores nuevos. El runner Playwright/API de Fase E todavía no está establecido: `scripts/e2e/run.sh`, `frontend/playwright.config.ts` y `frontend/e2e/` no existen. Cuando E3 lo cree y verifique, ejecutar `bash scripts/e2e/run.sh`.
+El build de frontend también ejecuta `tsc -b`. Para archivos con errores previos, comparar el número de errores de ESLint contra el mismo archivo en `HEAD`; no agregar errores nuevos. Para ejecutar E1 y E2 contra el stack descartable, usá `bash scripts/e2e/run.sh` desde la raíz; requiere que `DOCKER_HOST` y `DOCKER_CONTEXT` no estén definidos y valida que el contexto seleccionado use un socket Unix local. Fija las conexiones a recursos internos/puertos locales, serializa ejecuciones concurrentes y por defecto elimina exclusivamente el proyecto `gestion-eventos-mvp-e2e` y sus volúmenes al salir. `--keep` conserva ese stack para depuración; ante un lock obsoleto, verificá que no haya un runner activo antes de quitarlo. No apuntes el runner a datos locales, compartidos ni de producción.
 
 ## Dónde están las reglas
 

@@ -106,6 +106,14 @@ Verificá la instancia en `http://127.0.0.1:18080`. No ejecutes `down -v` sobre 
 docker compose -p gestion-eventos-mvp-check down -v
 ```
 
-## E2E
+## E2E descartable
 
-El runner E2E de la Fase E todavía está pendiente de E3; no hay un comando E2E verificado para documentar. Cuando E3 incorpore y valide el runner, esta sección debe enlazar su comando y prerequisitos.
+Desde la raíz del repositorio, ejecutá ambos recorridos (API y Playwright) en un proyecto Compose aislado:
+
+```bash
+bash scripts/e2e/run.sh
+```
+
+El runner usa únicamente `docker-compose.yml` y `docker-compose.mail-access.yml`, fija el proyecto `gestion-eventos-mvp-e2e`, publica la aplicación en `127.0.0.1:18080` y Mailpit en `127.0.0.1:18025`, y configura URL pública/CORS para ese origen. Antes de cualquier inventario o acción Docker, rechaza `DOCKER_HOST`/`DOCKER_CONTEXT` heredados y exige que el contexto seleccionado tenga un endpoint de socket Unix local; luego fija todas sus operaciones Docker a ese contexto validado. Ignora valores heredados o de `.env` para la base, correo, perfil Spring, JWT y API del bundle frontend; antes de iniciar, comprueba que la configuración renderizada apunta a `mysql:3306/eventosbd`, Mailpit interno (`mailhog:1025`) y rutas locales. Espera hasta 180 segundos por la salud del backend y la página frontend. Un lock atómico impide que dos invocaciones del runner compartan el proyecto; si queda un lock obsoleto, primero comprobá que ningún runner siga activo. También rechaza recursos Docker preexistentes con ese nombre para no adoptar ni borrar silenciosamente otro stack.
+
+Por seguridad, al terminar —también ante un fallo o inicio parcial— ejecuta `docker compose ... down --volumes` **solo** para `gestion-eventos-mvp-e2e`; ese volumen MySQL descartable se elimina. `bash scripts/e2e/run.sh --keep` conserva el proyecto y sus datos para depuración, y el runner rechazará esa instancia en una ejecución posterior. Para quitarla conscientemente, primero comprobá que ningún runner la esté usando, que `DOCKER_HOST`/`DOCKER_CONTEXT` no estén definidos y que `docker context inspect "$(docker context show)" --format '{{.Endpoints.docker.Host}}'` devuelva un socket `unix://` local; recién entonces ejecutá `docker compose --project-name gestion-eventos-mvp-e2e --file docker-compose.yml --file docker-compose.mail-access.yml down --volumes --remove-orphans`. No cambies el nombre del proyecto ni reutilices este flujo con una base local/compartida/de producción. Si el login semilla `admin123` no funciona, el runner asigna una contraseña conocida a los cuatro usuarios sembrados solo en esta base aislada y pasa `E2E_PASSWORD` a ambos recorridos; no reutilices esa contraseña fuera de este entorno.
