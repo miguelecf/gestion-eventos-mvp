@@ -12,7 +12,7 @@ test('a visitor submits a request for Tercera edad and tracks its receipt', asyn
   await page.getByLabel('Hora de inicio').fill('10:00');
   await page.getByLabel('Hora de fin').fill('11:00');
 
-  const spaceSelect = page.getByLabel('Espacio');
+  const spaceSelect = page.getByRole('combobox', { name: 'Espacio *', exact: true });
   await expect(spaceSelect).toBeEnabled();
   await expect.poll(async () => spaceSelect.locator('option').count()).toBeGreaterThan(1);
   const waitForAvailabilityResponse = () => page.waitForResponse(

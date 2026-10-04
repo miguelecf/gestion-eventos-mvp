@@ -21,7 +21,7 @@ export async function createFreeLocationRequest(page: Page, prefix: string): Pro
   await expect(page.getByRole('heading', { name: 'Solicitud de Evento' })).toBeVisible();
   await page.getByLabel('Nombre del evento').fill(eventName);
   await page.getByRole('radio', { name: 'Otra ubicación' }).check();
-  await page.getByLabel('Ubicación').fill('Sede de pruebas E2E');
+  await page.getByRole('textbox', { name: 'Ubicación *', exact: true }).fill('Sede de pruebas E2E');
   await page.getByLabel('Fecha').fill(futureDate(90));
   await page.getByLabel('Hora de inicio').fill('10:00');
   await page.getByLabel('Hora de fin').fill('11:00');
