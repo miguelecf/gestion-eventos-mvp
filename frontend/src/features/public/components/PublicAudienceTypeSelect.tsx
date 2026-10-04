@@ -20,6 +20,7 @@ const PUBLIC_AUDIENCE_TYPES = [
 ] as const;
 
 export interface PublicAudienceTypeSelectProps {
+  id?: string;
   value: PublicAudienceType;
   onChange: (value: PublicAudienceType) => void;
   disabled?: boolean;

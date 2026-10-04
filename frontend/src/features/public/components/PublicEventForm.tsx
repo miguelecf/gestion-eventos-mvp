@@ -331,6 +331,7 @@ export default function PublicEventForm() {
                 control={control}
                 render={({ field }) => (
                   <PublicAudienceTypeSelect
+                    id={field.name}
                     value={field.value}
                     onChange={field.onChange}
                     ariaInvalid={!!errors.audienceType}

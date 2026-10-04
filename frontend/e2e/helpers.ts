@@ -21,7 +21,7 @@ export async function createFreeLocationRequest(page: Page, prefix: string): Pro
   await expect(page.getByRole('heading', { name: 'Solicitud de Evento' })).toBeVisible();
   await page.getByLabel('Nombre del evento').fill(eventName);
   await page.getByRole('radio', { name: 'Otra ubicación' }).check();
-  await page.getByLabel('Ubicación', { exact: true }).fill('Sede de pruebas E2E');
+  await page.getByLabel('Ubicación').fill('Sede de pruebas E2E');
   await page.getByLabel('Fecha').fill(futureDate(90));
   await page.getByLabel('Hora de inicio').fill('10:00');
   await page.getByLabel('Hora de fin').fill('11:00');
@@ -36,7 +36,7 @@ export async function createFreeLocationRequest(page: Page, prefix: string): Pro
 export async function loginAs(page: Page, username: string): Promise<void> {
   await page.goto('/login');
   await page.getByLabel('Usuario').fill(username);
-  await page.getByLabel('Contraseña').fill(e2ePassword);
+  await page.getByLabel('Contraseña', { exact: true }).fill(e2ePassword);
   await page.getByRole('button', { name: 'Ingresar a la plataforma' }).click();
   await expect(page).toHaveURL(/\/dashboard(?:$|\?)/);
   await expect(page.getByRole('heading', { name: 'Bienvenido al panel de eventos' })).toBeVisible();
