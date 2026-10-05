@@ -15,3 +15,6 @@ synthetic-user-engine/
 # Generated Playwright artifacts
 frontend/test-results/
 frontend/playwright-report/
+
+# Internal agent coordination (local only)
+docs/reporte-codex.md
