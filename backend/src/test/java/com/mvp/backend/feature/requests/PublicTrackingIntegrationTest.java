@@ -56,4 +56,38 @@ class PublicTrackingIntegrationTest extends IntegrationTestBase {
         assertThat(objectMapper.readTree(body).get("timeline")).allSatisfy(entry ->
                 assertThat(entry.get("type").asText()).isIn("STATUS", "SCHEDULE_CHANGE"));
     }
+
+    /**
+     * Borde: tras convertir, el rechazo del evento lleva motivo y nota internos. El solicitante
+     * ve el evento RECHAZADO, pero rejectionReason sólo comunica el de la solicitud (aquí null).
+     */
+    @Test
+    void trackingNoExponeMotivoNiNotaDeRechazoDelEvento() throws Exception {
+        String motivoSolicitud = "Revisar con Ceremonial antes de aceptar";
+        String motivoEvento = "Rechazo interno: conflicto con agenda del rectorado";
+        String notaEvento = "Nota interna: no informar al solicitante";
+        EventRequest request = createPublicRequest();
+
+        mockMvc.perform(as(Role.ADMIN_FULL, json(patch("/admin/event-requests/{id}/status", request.getId()),
+                        Map.of("newStatus", "EN_REVISION", "reason", motivoSolicitud))))
+                .andExpect(status().isOk());
+        String converted = mockMvc.perform(as(Role.ADMIN_FULL, post("/admin/event-requests/{id}/convert-to-event", request.getId())))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long eventId = objectMapper.readTree(converted).get("id").asLong();
+
+        mockMvc.perform(as(Role.ADMIN_FULL, json(post("/api/events/{id}/status", eventId),
+                        Map.of("to", "RECHAZADO", "reason", motivoEvento, "note", notaEvento))))
+                .andExpect(status().is2xxSuccessful());
+
+        String body = mockMvc.perform(get("/public/track/{uuid}", request.getTrackingUuid()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.request.status").value("CONVERTIDO"))
+                .andExpect(jsonPath("$.event.status").value("RECHAZADO"))
+                .andExpect(jsonPath("$.rejectionReason").doesNotExist())
+                .andExpect(jsonPath("$.timeline[?(@.scope == 'EVENT' && @.to == 'RECHAZADO')]").exists())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(body).doesNotContain(motivoSolicitud, motivoEvento, notaEvento, "rectorado", "Ceremonial");
+    }
 }
