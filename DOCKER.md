@@ -1,5 +1,7 @@
 # Docker local
 
+El motor local es **OrbStack** (reemplaza a Docker Desktop): antes de levantar, `docker context show` debe devolver `orbstack`. El runner E2E lo acepta porque su endpoint es un socket Unix local.
+
 Por defecto, el stack base publica solo la aplicación en `127.0.0.1:8080`; backend, MySQL y Mailpit permanecen dentro de la red Docker. Usá `docker compose` desde la raíz del repositorio.
 
 ## Inicio rápido
@@ -8,7 +10,7 @@ Por defecto, el stack base publica solo la aplicación en `127.0.0.1:8080`; back
 docker compose up --build
 ```
 
-Abrí `http://127.0.0.1:8080`. En Docker Dashboard, el proyecto Compose se llama `gestion-eventos-mvp`. Evitá arrancar contenedores sueltos: el backend resuelve MySQL por el DNS interno `mysql`.
+Abrí `http://127.0.0.1:8080`. En OrbStack, el proyecto Compose se llama `gestion-eventos-mvp`. Evitá arrancar contenedores sueltos: el backend resuelve MySQL por el DNS interno `mysql`.
 
 ## Datos iniciales
 
