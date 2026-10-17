@@ -417,10 +417,10 @@ public class EventService {
     }
 
     @Transactional(readOnly = true)
-    public List<EventResponseDto> listPublicActive() {
+    public List<PublicEventDto> listPublicActive() {
         return eventRepository.findByActiveTrueAndInternalFalseAndStatus(Status.APROBADO)
                 .stream()
-                .map(EventMapper::toDto)
+                .map(EventMapper::toPublicDto)
                 .toList();
     }
 

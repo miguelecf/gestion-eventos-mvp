@@ -7,10 +7,25 @@
  * ===================================================================
  */
 
-import type { Event } from '@/models/event';
-import type { BackendEventDTO } from './types/backend.types';
-import { adaptEventsFromBackend } from './adapters/event.adapter';
+import type { EventStatus, Priority } from './types/backend.types';
 import { httpClient } from './client';
+
+/**
+ * Contrato público del calendario (PublicEventDto en backend).
+ * No incluye contacto, usuarios ni datos de gestión.
+ */
+export interface PublicEvent {
+  id: number;
+  name: string;
+  date: string;
+  scheduleFrom: string;
+  scheduleTo: string;
+  status: EventStatus;
+  priority: Priority;
+  spaceName: string | null;
+  freeLocation: string | null;
+  departmentName: string | null;
+}
 
 /**
  * Obtiene la lista de eventos públicos activos
@@ -19,10 +34,9 @@ import { httpClient } from './client';
  * 
  * @returns Lista de eventos públicos y aprobados
  */
-export async function fetchPublicEvents(): Promise<Event[]> {
+export async function fetchPublicEvents(): Promise<PublicEvent[]> {
   try {
-    const backendEvents = await httpClient.get<BackendEventDTO[]>('/public/events');
-    return adaptEventsFromBackend(backendEvents);
+    return await httpClient.get<PublicEvent[]>('/public/events');
   } catch (error) {
     console.error('Error fetching public events:', error);
     throw error;

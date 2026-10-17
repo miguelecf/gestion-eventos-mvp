@@ -67,5 +67,6 @@ Este documento consolida las decisiones cerradas del plan y las reglas de negoci
 - **Baja de eventos:** es lógica (soft-delete), queda auditada (`EVENT_DELETED`) y se permite en cualquier estado a los roles admin.
 - **Motivos de rechazo:** el de una **solicitud** es obligatorio y se comunica al solicitante (correo y seguimiento); el de un **evento** es obligatorio y queda en la auditoría interna.
 - **Seguimiento público:** expone sólo nombre, estados, fecha y hora, ubicación legible, una línea temporal de cambios de estado y de agenda, y el motivo de rechazo de la solicitud; nunca expone comentarios internos, IDs ni datos administrativos.
+- **Calendario público:** `GET /public/events` expone sólo id, nombre, fecha y horario, estado, prioridad, espacio o ubicación libre y departamento; nunca expone el contacto del solicitante, usuarios, observaciones ni datos de gestión.
 - **Rechazos por conflicto de espacio o capacidad:** no se auditan, porque abortan la operación (`409`) sin persistir cambios; el usuario recibe el detalle del conflicto en la respuesta.
 - **Concurrencia de capacidad técnica:** las operaciones que consumen capacidad se serializan con un bloqueo pesimista sobre la configuración activa; el pool de conexiones usa `READ_COMMITTED`.

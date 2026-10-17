@@ -4,6 +4,7 @@ import com.mvp.backend.feature.catalogs.model.Department;
 import com.mvp.backend.feature.catalogs.model.Space;
 import com.mvp.backend.feature.events.dto.EventOriginType;
 import com.mvp.backend.feature.events.dto.EventResponseDto;
+import com.mvp.backend.feature.events.dto.PublicEventDto;
 import com.mvp.backend.feature.events.model.Event;
 import com.mvp.backend.feature.users.model.User;
 
@@ -54,6 +55,21 @@ public class EventMapper {
                 toUserRef(e.getLastModifiedBy()),
                 originType,
                 originRequestId
+        );
+    }
+
+    public static PublicEventDto toPublicDto(Event e) {
+        return new PublicEventDto(
+                e.getId(),
+                e.getName(),
+                e.getDate(),
+                e.getScheduleFrom(),
+                e.getScheduleTo(),
+                e.getStatus(),
+                e.getPriority(),
+                e.getSpace() != null ? e.getSpace().getName() : null,
+                e.getFreeLocation(),
+                e.getDepartment() != null ? e.getDepartment().getName() : null
         );
     }
 

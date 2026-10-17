@@ -4,8 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import type { EventInput } from '@fullcalendar/core';
-import { fetchPublicEvents } from '@/services/api/public-events';
-import type { Event } from '@/models/event';
+import { fetchPublicEvents, type PublicEvent } from '@/services/api/public-events';
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -33,15 +32,15 @@ export function PublicCalendarPage() {
       // El backend ya filtra: activos, no internos y aprobados
       const data = await fetchPublicEvents();
       
-      const calendarEvents: CalendarEvent[] = data.map((event: Event) => ({
+      const calendarEvents: CalendarEvent[] = data.map((event: PublicEvent) => ({
         id: event.id.toString(),
         title: event.name,
         start: `${event.date}T${event.scheduleFrom}`,
         end: `${event.date}T${event.scheduleTo}`,
         extendedProps: {
           calendar: getPriorityColor(event.priority),
-          department: event.department?.name || '',
-          space: event.space?.name || event.freeLocation || '',
+          department: event.departmentName || '',
+          space: event.spaceName || event.freeLocation || '',
           priority: event.priority,
           status: event.status,
         },
