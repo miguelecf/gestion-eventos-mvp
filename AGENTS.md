@@ -25,7 +25,7 @@ cd frontend && npx tsc -b && npm run build
 cd frontend && npx eslint src/ruta/al/archivo.tsx
 ```
 
-El build de frontend también ejecuta `tsc -b`. Para archivos con errores previos, comparar el número de errores de ESLint contra el mismo archivo en `HEAD`; no agregar errores nuevos. Para ejecutar E1 y E2 contra el stack descartable, usá `bash scripts/e2e/run.sh` desde la raíz; requiere que `DOCKER_HOST` y `DOCKER_CONTEXT` no estén definidos y valida que el contexto seleccionado use un socket Unix local. Fija las conexiones a recursos internos/puertos locales, serializa ejecuciones concurrentes y por defecto elimina exclusivamente el proyecto `gestion-eventos-mvp-e2e` y sus volúmenes al salir. `--keep` conserva ese stack para depuración; ante un lock obsoleto, verificá que no haya un runner activo antes de quitarlo. No apuntes el runner a datos locales, compartidos ni de producción.
+Si Maven falla con `cannot find symbol` sobre getters/builders de Lombok, un JDT LS sin agente de Lombok compiló en `target/`: correr `./mvnw clean test` (ver [docs/registro-cambios.md](docs/registro-cambios.md#incidencias-de-entorno)). El build de frontend también ejecuta `tsc -b`. Para archivos con errores previos, comparar el número de errores de ESLint contra el mismo archivo en `HEAD`; no agregar errores nuevos. Para ejecutar E1 y E2 contra el stack descartable, usá `bash scripts/e2e/run.sh` desde la raíz; requiere que `DOCKER_HOST` y `DOCKER_CONTEXT` no estén definidos y valida que el contexto seleccionado use un socket Unix local. Fija las conexiones a recursos internos/puertos locales, serializa ejecuciones concurrentes y por defecto elimina exclusivamente el proyecto `gestion-eventos-mvp-e2e` y sus volúmenes al salir. `--keep` conserva ese stack para depuración; ante un lock obsoleto, verificá que no haya un runner activo antes de quitarlo. No apuntes el runner a datos locales, compartidos ni de producción.
 
 ## Dónde están las reglas
 
@@ -36,11 +36,13 @@ El build de frontend también ejecuta `tsc -b`. Para archivos con errores previo
 | Módulos, dependencias y convenciones de arquitectura | [docs/arquitectura.md](docs/arquitectura.md). |
 | Estado e historial de hallazgos | [docs/historial/hallazgos-2026-10.md](docs/historial/hallazgos-2026-10.md) (documento histórico, no normativo). |
 | Compose, migraciones locales y correo | [DOCKER.md](DOCKER.md). |
+| Bitácora de tickets `SEC-xx` (fecha, commit, verificación) | [docs/registro-cambios.md](docs/registro-cambios.md). |
 | Estado e historial de ejecución | Documentos archivados en `docs/historial/` (históricos, no normativos). |
 
 ## Reglas de trabajo
 
 - Cuando se acuerde un plan de trabajo, ejecutar sus ítems en orden. **Un ítem = un commit convencional**: `<tipo>(<ID>): <resultado>`. No crear ramas ni hacer push; no reescribir commits existentes.
+- Al cerrar un ticket del sistema externo (`SEC-xx`), agregar una fila al log de [docs/registro-cambios.md](docs/registro-cambios.md) con fecha y hora del commit, hash, cambio y verificación, más su sección de detalle.
 - Cada test de integración backend nuevo debe extender `backend/src/test/java/com/mvp/backend/support/IntegrationTestBase`. Incluye helpers de autenticación/fixtures; un test `@Transactional` no dispara listeners `AFTER_COMMIT`.
 - En frontend, correr typecheck/build y lint por archivo. El archivo tocado no debe sumar errores de lint respecto de `HEAD`.
 - Para una migración, consultar el último nombre con `ls backend/src/main/resources/db/migration | sort -V | tail -1` y usar el siguiente número Flyway. **Nunca editar una migración existente o aplicada**: corregir con una nueva migración y actualizar la entidad cuando corresponda.
