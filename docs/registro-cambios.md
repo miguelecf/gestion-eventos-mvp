@@ -12,6 +12,7 @@ Bitácora de los tickets `SEC-xx` del sistema de tickets externo. Los tickets se
 |---|---|---|---|---|---|
 | 2026-10-11 12:26 | SEC-01 | `fb280b3` | test | Test de borde: el tracking no expone el motivo ni la nota internos del rechazo de un evento convertido. | `PublicTrackingIntegrationTest` 2/2 |
 | 2026-10-17 14:52 | SEC-02 | `187ac5f` | fix | `GET /public/events` responde `PublicEventDto` en lugar del DTO interno; sin contacto del solicitante ni datos de gestión. | `PublicEventsIntegrationTest`; suite backend 48/48; frontend `tsc -b`, build y lint |
+| 2026-10-17 16:06 | SEC-02 | `002aad7` | test | El calendario público expone exactamente los campos de `PublicEventDto` y solo eventos aprobados, activos y no internos; cubre `freeLocation` sin espacio. | `PublicEventsIntegrationTest` 2/2 |
 
 ## SEC-01 — Comentarios internos en el tracking público
 
@@ -31,7 +32,8 @@ Bitácora de los tickets `SEC-xx` del sistema de tickets externo. Los tickets se
 - **Fuga abierta:** `GET /public/events` (anónimo) devolvía `EventResponseDto` completo. Al convertir una solicitud, el evento copia `contactName`, `contactEmail` y `contactPhone` (`EventRequestService`), de modo que el contacto del solicitante quedaba público, junto con el email de `createdBy`/`lastModifiedBy`, observaciones, buffers, flags de gestión y `originRequestId`.
 - **Cambio:** `PublicEventDto` con id, nombre, fecha, horario, estado, prioridad, `spaceName`, `freeLocation` y `departmentName`. El frontend (`public-events.ts`, `PublicCalendarPage.tsx`) consume ese contrato. Regla registrada en [decisiones funcionales](decisiones-funcionales.md).
 - **Decisión:** la prioridad se mantiene en el contrato público porque el calendario la usa para el color.
-- **Pendiente:** no se corrió el E2E en esta entrega; el smoke solo usa el `id` del evento, que se conserva.
+- **Verificación en OrbStack:** con el stack de Compose levantado, `GET /public/events` en `127.0.0.1:8080` devolvió solo los campos del DTO público. El E2E no se corrió; el smoke solo usa el `id` del evento, que se conserva.
+- **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. Los tres coincidieron en que la fuga queda cerrada y en que el resto de `/public/**` no expone datos personales ni de gestión. Se aceptaron sus huecos de test (lista exacta de campos, exclusión de internos/inactivos/no aprobados, `freeLocation`), cubiertos en `002aad7`.
 
 ## Incidencias de entorno
 
