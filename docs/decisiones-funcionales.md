@@ -21,6 +21,13 @@ Este documento consolida las decisiones cerradas del plan y las reglas de negoci
 - `requiresTech` determina si el evento **consume capacidad técnica**. No determina si Técnica interviene.
 - **Implementación:** `EventStatusService.handleApproval`.
 
+### Soporte técnico al convertir una solicitud (hallazgo 3.2, REQ-01)
+- La solicitud pública no declara `requiresTech`; el solicitante solo informa `technicalSchedule`, que es informativo (ver hallazgo 3.6).
+- El área lo define al convertir la solicitud en evento (`POST /admin/event-requests/{id}/convert-to-event`, body opcional `{requiresTech, techSupportMode}`), y el valor se conserva en el evento creado.
+- Sin body, o con `requiresTech=false`, el evento no consume capacidad técnica. Con `requiresTech=true` y sin modo, el modo es `SETUP_ONLY`.
+- Con `requiresTech=true`, la conversión valida la capacidad técnica del rango y se rechaza si no hay cupo.
+- **Implementación:** `EventRequestService.convertToEvent`; en la interfaz, el diálogo de conversión de `PublicRequestDetailPage`. **Test:** `RequestConversionIntegrationTest`.
+
 ### Administración de la capacidad técnica (hallazgo 3.5)
 - La configuración (`tech_capacity_config`: minutos por bloque y cupos por bloque) se gestiona por **migración Flyway**. No hay pantalla de administración.
 - Si existiera más de una configuración activa, gana siempre la de mayor `id`, de forma determinística (hallazgo 5.3).
