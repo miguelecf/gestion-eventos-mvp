@@ -2,6 +2,24 @@
 
 Este documento reúne trabajo futuro que no forma parte de la funcionalidad actual. Las rutas y permisos describen el contrato vigente del backend; no implican que ya exista una pantalla para consumirlo.
 
+## Pendientes detectados en la segunda iteración (tickets SEC/REQ)
+
+Hallazgos que aparecieron al cerrar tickets de la segunda iteración y quedaron fuera de su alcance. Se toman en la tercera iteración. Cada uno indica el ticket donde surgió; el detalle está en el [registro de cambios](registro-cambios.md).
+
+### Schemas Zod de eventos desalineados con el backend (surgió en REQ-02)
+
+`frontend/src/services/api/utils/validation-schemas.ts` declara `EventStatusSchema = ['APROBADO', 'CANCELADO', 'PENDIENTE', 'RECHAZADO', 'REPROGRAMADO']`, pero el backend (`Status.java`) solo tiene `EN_REVISION`, `RESERVADO`, `APROBADO` y `RECHAZADO`. Lo usan `changeEventStatusSchema`, `eventFiltersSchema` y el agregado `ValidationSchemas`. Al 2026-10-19, de ese módulo solo se consume `emailSchema` (`src/schemas/eventPublic.schema.ts`); el resto se reexporta desde los barrels (`services/api/index.ts`, `services/api/utils/index.ts`) sin uso.
+
+- [ ] Volver a buscar consumidores y registrar el resultado.
+- [ ] Si siguen sin uso: eliminar los schemas muertos y sus reexportaciones, y conservar `emailSchema`. Si aparece un consumidor: alinear `EventStatusSchema` con `Status.java` y revisar los schemas que dependen de él.
+- [ ] `tsc -b`, build y lint sin errores nuevos en los archivos tocados.
+
+### Test del rechazo por capacidad técnica al convertir (surgió en REQ-01)
+
+`EventRequestService.convertToEvent` rechaza la conversión con `requiresTech=true` si no hay capacidad técnica en el rango (`TechCapacityExceededException`). `RequestConversionIntegrationTest` solo cubre la conversión con soporte y sin body.
+
+- [ ] Test de integración (extiende `IntegrationTestBase`): con la capacidad técnica agotada en el rango, la conversión con `requiresTech=true` responde error, no crea el evento y la solicitud no pasa a `CONVERTIDO`.
+
 ## Resolver conflictos de prioridad
 
 **Objetivo:** permitir que los roles autorizados revisen conflictos abiertos y resuelvan uno conservando el evento original o reubicando el evento desplazado.

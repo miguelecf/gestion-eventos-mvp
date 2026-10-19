@@ -56,7 +56,7 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 - **Valores por defecto:** sin body, el evento queda con `requiresTech=false`. Con `true` y sin modo, el modo es `SETUP_ONLY`. Con `true`, se valida la capacidad técnica antes de crear el evento.
 - **Interfaz:** el diálogo de conversión de `PublicRequestDetailPage` tiene un checkbox de soporte técnico y un selector de modo.
 - **Documentación:** regla agregada a [decisiones funcionales](decisiones-funcionales.md) (`33a5b9d`). Antes figuraba solo en el historial y en el Javadoc del controller.
-- **Cobertura:** `RequestConversionIntegrationTest` cubre la conversión con soporte `ATTENDED` y sin body (2/2). El rechazo por falta de capacidad técnica al convertir no tiene test.
+- **Cobertura:** `RequestConversionIntegrationTest` cubre la conversión con soporte `ATTENDED` y sin body (2/2). El rechazo por falta de capacidad técnica al convertir no tiene test; cargado en el [backlog](backlog.md#pendientes-detectados-en-la-segunda-iteración-tickets-secreq).
 
 ## REQ-02 — `CONVERTIDO` no equivale a `APROBADO`
 
@@ -68,7 +68,7 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
   - `RequestConfirmationPage` decía "Si es aprobada, el evento aparecerá en el calendario público". Ahora explica que la solicitud aceptada se convierte en evento y que aparece en el calendario cuando Ceremonial y Técnica lo aprueban.
   - `PublicRequestStatusSchema` (Zod, sin consumidores) modelaba la solicitud con `APROBADA`. Quedó alineado con `RequestStatus` del backend.
 - **Documentación:** regla agregada a [decisiones funcionales](decisiones-funcionales.md).
-- **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. Ninguno encontró otro lugar que equipare `CONVERTIDO` con `APROBADO`. Se aceptó el schema Zod legado. Queda pendiente, fuera de alcance: `EventStatusSchema` usa estados de evento que no existen (`CANCELADO`, `PENDIENTE`, `REPROGRAMADO`).
+- **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. Ninguno encontró otro lugar que equipare `CONVERTIDO` con `APROBADO`. Se aceptó el schema Zod legado. Queda pendiente, fuera de alcance: `EventStatusSchema` usa estados de evento que no existen (`CANCELADO`, `PENDIENTE`, `REPROGRAMADO`); cargado en el [backlog](backlog.md#pendientes-detectados-en-la-segunda-iteración-tickets-secreq).
 
 ## Incidencias de entorno
 
