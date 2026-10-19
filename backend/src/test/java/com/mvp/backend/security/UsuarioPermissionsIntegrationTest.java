@@ -7,9 +7,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -33,6 +36,23 @@ class UsuarioPermissionsIntegrationTest extends IntegrationTestBase {
         mockMvc.perform(as(Role.USUARIO, get("/api/events/{id}/comments", event.getId())))
                 .andExpect(status().isForbidden());
         mockMvc.perform(as(Role.USUARIO, get("/api/audit/{id}", event.getId())))
+                .andExpect(status().isForbidden());
+
+        Event persisted = eventRepository.findById(event.getId()).orElseThrow();
+        assertThat(persisted.getName()).isEqualTo(event.getName());
+        assertThat(persisted.getStatus()).isEqualTo(Status.EN_REVISION);
+        assertThat(persisted.isActive()).isTrue();
+    }
+
+    @Test
+    void usuarioNoEscribeEventosConMetodosSinMapear() throws Exception {
+        Event event = newEvent(Status.EN_REVISION);
+
+        // SEC-03: la escritura sobre /api/events/** se niega por defecto a USUARIO, aunque el método
+        // todavía no tenga endpoint (403 de seguridad, no 405 del dispatcher).
+        mockMvc.perform(as(Role.USUARIO, json(put("/api/events/{id}", event.getId()), Map.of("name", "Hackeado"))))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(as(Role.USUARIO, delete("/api/events/{id}", event.getId())))
                 .andExpect(status().isForbidden());
     }
 

@@ -17,7 +17,7 @@ Roles: **AF** = ADMIN_FULL · **AC** = ADMIN_CEREMONIAL · **AT** = ADMIN_TECNIC
 | Listar solicitudes (bandeja) | `GET /admin/event-requests` | | | ✔ | ✔ | ✔ |
 | Detalle, historial, estado, conversión de solicitud | `/admin/event-requests/**` | | | ✔ | ✔ | ✔ |
 | Ver eventos | `GET /api/events/**` | | ✔ | ✔ | ✔ | ✔ |
-| Crear / editar / dar de baja eventos | `POST /api/events`, `PATCH /api/events/{id}`, `PATCH /api/events/{id}/soft-delete` | | | ✔ | ✔ | ✔ |
+| Crear / editar / dar de baja eventos | `POST /api/events`, `PATCH /api/events/{id}`, `PATCH /api/events/{id}/soft-delete`; cualquier otro método no `GET` sobre `/api/events/**` queda reservado a admins | | | ✔ | ✔ | ✔ |
 | Cambiar estado del evento | `GET/POST /api/events/{id}/status` | | | ✔¹ | ✔¹ | ✔ |
 | Comentarios internos | `/api/events/{id}/comments/**` | | | ✔ | ✔ | ✔ |
 | Auditoría de evento | `GET /api/audit/**` | | | ✔ | ✔ | ✔ |
