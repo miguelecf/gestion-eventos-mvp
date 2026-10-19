@@ -1,10 +1,10 @@
 # Registro de cambios por ticket
 
-Bitácora de los tickets `SEC-xx` del sistema de tickets externo. Los tickets se revisan de a uno, aunque el hallazgo figure como corregido en [el historial](historial/hallazgos-2026-10.md): primero se verifica el código y el test, y después se corrige o se agrega cobertura.
+Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistema de tickets externo. Los tickets se revisan de a uno, aunque el hallazgo figure como corregido en [el historial](historial/hallazgos-2026-10.md): primero se verifica el código y el test, y después se corrige o se agrega cobertura.
 
 - **Horario:** hora del commit, en Argentina (UTC−03:00).
 - **Commit:** hash corto del commit que contiene el cambio. Los commits que solo actualizan esta bitácora no se registran.
-- **Estado:** `verificado` (ya estaba corregido; solo se agregó cobertura) o `corregido` (había una fuga y se arregló).
+- **Estado:** `verificado` (ya estaba corregido; solo se agregó cobertura) o `corregido` (había una fuga y se arregló) o `cumplido` (requisito ya implementado; solo se verificó y documentó).
 
 ## Log
 
@@ -14,6 +14,7 @@ Bitácora de los tickets `SEC-xx` del sistema de tickets externo. Los tickets se
 | 2026-10-17 14:52 | SEC-02 | `187ac5f` | fix | `GET /public/events` responde `PublicEventDto` en lugar del DTO interno; sin contacto del solicitante ni datos de gestión. | `PublicEventsIntegrationTest`; suite backend 48/48; frontend `tsc -b`, build y lint |
 | 2026-10-17 16:06 | SEC-02 | `002aad7` | test | El calendario público expone exactamente los campos de `PublicEventDto` y solo eventos aprobados, activos y no internos; cubre `freeLocation` sin espacio. | `PublicEventsIntegrationTest` 2/2 |
 | 2026-10-19 08:48 | SEC-03 | `b8c17b9` | fix | Toda escritura (cualquier método no `GET`) sobre `/api/events/**` queda reservada a admins; antes `PUT`/`DELETE` caían en `anyRequest().authenticated()`. | `UsuarioPermissionsIntegrationTest` 4/4 (rojo previo: 405 en vez de 403); suite backend en verde |
+| 2026-10-19 08:56 | REQ-01 | `33a5b9d` | docs | Regla en decisiones funcionales: el área define `requiresTech` al convertir la solicitud y se conserva en el evento. Implementación original `226ca6a` (hallazgo 3.2). | `RequestConversionIntegrationTest` 2/2 |
 
 ## SEC-01 — Comentarios internos en el tracking público
 
@@ -45,6 +46,16 @@ Bitácora de los tickets `SEC-xx` del sistema de tickets externo. Los tickets se
 - **Cambio:** después de `GET /api/events/**` (que incluye a USUARIO), una regla sin método reserva el resto de `/api/events/**` a AF/AC/AT. Reemplaza las reglas sueltas de `PATCH` y `POST`. Actualizada la matriz de [permisos](permisos.md).
 - **Cobertura agregada:** `PUT`/`DELETE` de USUARIO responden 403, y tras los intentos rechazados el evento conserva el nombre, el estado y `active`.
 - **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. Ninguno encontró hallazgos bloqueantes. Se descartaron dos notas menores: `HEAD` sobre `/api/events/**` ahora exige rol admin, pero no se usa y el contrato documenta solo `GET`; y una precisión de redacción del comentario, que ya describe el efecto real.
+
+## REQ-01 — Preservar `requiresTech` al convertir solicitudes en eventos
+
+**Estado:** cumplido. Implementado en `226ca6a` (hallazgo 3.2); este ticket solo agrega la regla a la documentación vigente.
+
+- **Modelo:** la solicitud no tiene `requiresTech`; el solicitante solo informa `technicalSchedule`, que es informativo. El área lo define al convertir (`POST /admin/event-requests/{id}/convert-to-event`, body opcional `{requiresTech, techSupportMode}`), y `EventRequestService.convertToEvent` lo guarda en el evento.
+- **Valores por defecto:** sin body, el evento queda con `requiresTech=false`. Con `true` y sin modo, el modo es `SETUP_ONLY`. Con `true`, se valida la capacidad técnica antes de crear el evento.
+- **Interfaz:** el diálogo de conversión de `PublicRequestDetailPage` tiene un checkbox de soporte técnico y un selector de modo.
+- **Documentación:** regla agregada a [decisiones funcionales](decisiones-funcionales.md) (`33a5b9d`). Antes figuraba solo en el historial y en el Javadoc del controller.
+- **Cobertura:** `RequestConversionIntegrationTest` cubre la conversión con soporte `ATTENDED` y sin body (2/2). El rechazo por falta de capacidad técnica al convertir no tiene test.
 
 ## Incidencias de entorno
 
