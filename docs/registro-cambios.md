@@ -16,6 +16,7 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 | 2026-10-19 08:48 | SEC-03 | `b8c17b9` | fix | Toda escritura (cualquier método no `GET`) sobre `/api/events/**` queda reservada a admins; antes `PUT`/`DELETE` caían en `anyRequest().authenticated()`. | `UsuarioPermissionsIntegrationTest` 4/4 (rojo previo: 405 en vez de 403); suite backend en verde |
 | 2026-10-19 08:56 | REQ-01 | `33a5b9d` | docs | Regla en decisiones funcionales: el área define `requiresTech` al convertir la solicitud y se conserva en el evento. Implementación original `226ca6a` (hallazgo 3.2). | `RequestConversionIntegrationTest` 2/2 |
 | 2026-10-19 09:00 | REQ-02 | `96dd380` | fix | En la bandeja interna, `CONVERTIDO` deja el verde de `APROBADO` y pasa a celeste, con una descripción que aclara que no implica aprobación. Se corrigen el texto de la confirmación pública y el schema Zod de estados de solicitud, y se agrega la regla a decisiones funcionales. Tracking y correo ya estaban corregidos en `eaf4a8d` (hallazgo 2.1). | frontend `tsc -b`, build y lint sin errores en los archivos tocados |
+| 2026-10-19 09:29 | SEC-04 | `05e11b7` | feat | Matriz única `frontend/src/libs/permisos.json`: `ability.ts` arma CASL desde ella y `PermissionMatrixIntegrationTest` la contrasta con los controllers, `SecurityConfig` y los `@PreAuthorize`. | `PermissionMatrixIntegrationTest` 3/3 y pruebas negativas; suite backend 53/53; frontend `tsc -b`, build y lint sin errores nuevos |
 
 ## SEC-01 — Comentarios internos en el tracking público
 
@@ -69,6 +70,28 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
   - `PublicRequestStatusSchema` (Zod, sin consumidores) modelaba la solicitud con `APROBADA`. Quedó alineado con `RequestStatus` del backend.
 - **Documentación:** regla agregada a [decisiones funcionales](decisiones-funcionales.md).
 - **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. Ninguno encontró otro lugar que equipare `CONVERTIDO` con `APROBADO`. Se aceptó el schema Zod legado. Queda pendiente, fuera de alcance: `EventStatusSchema` usa estados de evento que no existen (`CANCELADO`, `PENDIENTE`, `REPROGRAMADO`); cargado en el [backlog](backlog.md#pendientes-detectados-en-la-segunda-iteración-tickets-secreq).
+
+## SEC-04 — Matriz única de permisos entre backend y CASL
+
+**Estado:** corregido. Antes había tres copias que se alineaban a mano (hallazgo 1.5): la tabla de `docs/permisos.md`, `SecurityConfig` y `ability.ts`.
+
+- **Diseño (elegido por Miguel):** un JSON versionado como fuente única. Vive en `frontend/src/libs/` porque la imagen Docker del frontend solo copia `frontend/`; el test backend lo lee por ruta relativa (el build Docker del backend corre con `-DskipTests`).
+- **CASL:** `ability.ts` arma las reglas desde la matriz, sin `cannot` explícitos (lo que no figura queda denegado). Valida acciones y sujetos al cargar el módulo. `ADMIN_FULL` deja de tener `manage all` y recibe sus filas; la pantalla de usuarios pasa a `manage User` (`routes.tsx`, sidebar). Se comparó rol por rol con la versión anterior: ninguna consulta de la UI pierde permisos.
+- **Test:** `PermissionMatrixIntegrationTest` verifica:
+  1. Que la matriz y los controllers tengan exactamente los mismos endpoints.
+  2. Que `SecurityConfig` permita o niegue cada endpoint × rol (y anónimo) según la matriz, vía `WebInvocationPrivilegeEvaluator`, sin ejecutar los endpoints.
+  3. Que los `@PreAuthorize` coincidan con los roles de su fila.
+- **Pruebas negativas:**
+  - Dar `event.create` a USUARIO en la matriz falla con "matriz=true, SecurityConfig=false".
+  - Quitar un endpoint de la matriz falla el test de cobertura.
+  - Quitar `ADMIN_TECNICA` del `@PreAuthorize` de comentarios falla el test de `@PreAuthorize`.
+  - Todas se revirtieron.
+- **Documentación:** `docs/permisos.md` explica la matriz, sus campos, las reglas que aplican los servicios, la infraestructura fuera de la matriz y qué no verifica el test. También se actualizaron `AGENTS.md` y `docs/arquitectura.md`.
+- **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura.
+  - **Aceptado:** el test no evaluaba `@PreAuthorize` (agregado); las descripciones de comentarios decían "limita al autor", pero `verifyAuthorOrPrivileged` también deja pasar a AF/AC/AT (corregido); la documentación prometía más de lo que verifica el test (precisado).
+  - **Documentado como límite:** una sola instancia por ruta; el mapeo de `casl` a filas es revisión humana.
+  - **Al backlog:** las filas sin endpoints (conformidades por rol), que no tienen test.
+  - **Descartado:** que el `manage all` anterior excluyera acciones custom. En CASL, `manage` es comodín.
 
 ## Incidencias de entorno
 
