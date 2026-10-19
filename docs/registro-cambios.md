@@ -15,6 +15,7 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 | 2026-10-17 16:06 | SEC-02 | `002aad7` | test | El calendario público expone exactamente los campos de `PublicEventDto` y solo eventos aprobados, activos y no internos; cubre `freeLocation` sin espacio. | `PublicEventsIntegrationTest` 2/2 |
 | 2026-10-19 08:48 | SEC-03 | `b8c17b9` | fix | Toda escritura (cualquier método no `GET`) sobre `/api/events/**` queda reservada a admins; antes `PUT`/`DELETE` caían en `anyRequest().authenticated()`. | `UsuarioPermissionsIntegrationTest` 4/4 (rojo previo: 405 en vez de 403); suite backend en verde |
 | 2026-10-19 08:56 | REQ-01 | `33a5b9d` | docs | Regla en decisiones funcionales: el área define `requiresTech` al convertir la solicitud y se conserva en el evento. Implementación original `226ca6a` (hallazgo 3.2). | `RequestConversionIntegrationTest` 2/2 |
+| 2026-10-19 09:00 | REQ-02 | `96dd380` | fix | En la bandeja interna, `CONVERTIDO` deja el verde de `APROBADO` y pasa a celeste, con una descripción que aclara que no implica aprobación. Se corrigen el texto de la confirmación pública y el schema Zod de estados de solicitud, y se agrega la regla a decisiones funcionales. Tracking y correo ya estaban corregidos en `eaf4a8d` (hallazgo 2.1). | frontend `tsc -b`, build y lint sin errores en los archivos tocados |
 
 ## SEC-01 — Comentarios internos en el tracking público
 
@@ -56,6 +57,18 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 - **Interfaz:** el diálogo de conversión de `PublicRequestDetailPage` tiene un checkbox de soporte técnico y un selector de modo.
 - **Documentación:** regla agregada a [decisiones funcionales](decisiones-funcionales.md) (`33a5b9d`). Antes figuraba solo en el historial y en el Javadoc del controller.
 - **Cobertura:** `RequestConversionIntegrationTest` cubre la conversión con soporte `ATTENDED` y sin body (2/2). El rechazo por falta de capacidad técnica al convertir no tiene test.
+
+## REQ-02 — `CONVERTIDO` no equivale a `APROBADO`
+
+**Estado:** corregido (parcialmente previo). El tracking público quedó corregido en `eaf4a8d` (hallazgo 2.1).
+
+- **Ya cubierto:** `TrackingPage` usa el estado del evento cuando existe ("Convertida a evento · En revisión", "Reservada", "Aprobada") y el correo de conversión (`EmailNotificationListener`) aclara que falta la conformidad de Ceremonial y Técnica.
+- **Restos corregidos:**
+  - La bandeja y el detalle admin (`PublicRequestStatusBadge`, vía `models/public-request.ts`) mostraban `CONVERTIDO` con variante `success` y verde esmeralda, la misma semántica visual que `APROBADO`. Ahora usa `outline` y celeste (`sky`), y la descripción dice que la conversión no implica aprobación.
+  - `RequestConfirmationPage` decía "Si es aprobada, el evento aparecerá en el calendario público". Ahora explica que la solicitud aceptada se convierte en evento y que aparece en el calendario cuando Ceremonial y Técnica lo aprueban.
+  - `PublicRequestStatusSchema` (Zod, sin consumidores) modelaba la solicitud con `APROBADA`. Quedó alineado con `RequestStatus` del backend.
+- **Documentación:** regla agregada a [decisiones funcionales](decisiones-funcionales.md).
+- **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. Ninguno encontró otro lugar que equipare `CONVERTIDO` con `APROBADO`. Se aceptó el schema Zod legado. Queda pendiente, fuera de alcance: `EventStatusSchema` usa estados de evento que no existen (`CANCELADO`, `PENDIENTE`, `REPROGRAMADO`).
 
 ## Incidencias de entorno
 
