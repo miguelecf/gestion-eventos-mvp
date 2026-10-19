@@ -1,0 +1,247 @@
+{
+  "$comment": "Matriz única de permisos (SEC-04). La lee ability.ts para armar CASL y la verifica PermissionMatrixIntegrationTest contra SecurityConfig y los controllers. Ver docs/permisos.md.",
+  "roles": ["USUARIO", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+  "permissions": [
+    {
+      "id": "auth.login",
+      "description": "Iniciar sesión y renovarla",
+      "public": true,
+      "casl": [],
+      "endpoints": ["POST /auth/login", "POST /auth/refresh"]
+    },
+    {
+      "id": "auth.session",
+      "description": "Cerrar sesión, ver el perfil propio y cambiar la contraseña propia",
+      "roles": ["USUARIO", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [],
+      "endpoints": ["POST /auth/logout", "GET /auth/me", "POST /auth/change-password"]
+    },
+    {
+      "id": "request.create",
+      "description": "Crear una solicitud de evento",
+      "public": true,
+      "casl": [{ "action": "request:create", "subject": "EventRequest" }],
+      "endpoints": ["POST /public/event-requests"]
+    },
+    {
+      "id": "public.read",
+      "description": "Seguimiento de solicitud, calendario público, espacios y disponibilidad pública",
+      "public": true,
+      "casl": [],
+      "endpoints": [
+        "GET /public/track/{trackingUuid}",
+        "GET /public/events",
+        "GET /public/catalogs/spaces",
+        "POST /public/availability/check",
+        "GET /public/spaces/{spaceId}/occupancy"
+      ]
+    },
+    {
+      "id": "request.inbox",
+      "description": "Ver la bandeja de solicitudes, su detalle y su historial",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "read", "subject": "PublicRequest" }],
+      "endpoints": [
+        "GET /admin/event-requests",
+        "GET /admin/event-requests/{id}",
+        "GET /admin/event-requests/{id}/history"
+      ]
+    },
+    {
+      "id": "request.manage",
+      "description": "Pasar a revisión, rechazar o convertir una solicitud en evento",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [],
+      "endpoints": [
+        "PATCH /admin/event-requests/{id}/status",
+        "POST /admin/event-requests/{id}/convert-to-event"
+      ]
+    },
+    {
+      "id": "event.read",
+      "description": "Ver eventos",
+      "roles": ["USUARIO", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "read", "subject": "Event" }],
+      "endpoints": [
+        "GET /api/events",
+        "GET /api/events/{id}",
+        "GET /api/events/date",
+        "GET /api/events/range",
+        "GET /api/events/priority/{priority}",
+        "GET /api/events/status/{status}",
+        "GET /api/events/user/{userId}"
+      ]
+    },
+    {
+      "id": "event.create",
+      "description": "Crear eventos",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "create", "subject": "Event" }],
+      "endpoints": ["POST /api/events"]
+    },
+    {
+      "id": "event.update",
+      "description": "Editar eventos",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "update", "subject": "Event" }],
+      "endpoints": ["PATCH /api/events/{id}"]
+    },
+    {
+      "id": "event.internal",
+      "description": "Marcar un evento como interno (campo de PATCH /api/events/{id})",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "internal:toggle", "subject": "Event" }],
+      "endpoints": []
+    },
+    {
+      "id": "event.delete",
+      "description": "Dar de baja eventos (baja lógica)",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "delete", "subject": "Event" }],
+      "endpoints": ["PATCH /api/events/{id}/soft-delete"]
+    },
+    {
+      "id": "event.changeState",
+      "description": "Ver y cambiar el estado del evento",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "changeState", "subject": "Event" }],
+      "endpoints": ["GET /api/events/{id}/status", "POST /api/events/{id}/status"]
+    },
+    {
+      "id": "event.approveCeremonial",
+      "description": "Dar o quitar ceremonialOk (lo valida EventStatusService dentro de POST /api/events/{id}/status)",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_FULL"],
+      "casl": [{ "action": "approveCeremonial", "subject": "Event" }],
+      "endpoints": []
+    },
+    {
+      "id": "event.approveTechnical",
+      "description": "Dar o quitar technicalOk (lo valida EventStatusService dentro de POST /api/events/{id}/status)",
+      "roles": ["ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "approveTechnical", "subject": "Event" }],
+      "endpoints": []
+    },
+    {
+      "id": "comment.read",
+      "description": "Ver comentarios internos",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [],
+      "endpoints": ["GET /api/events/{eventId}/comments"]
+    },
+    {
+      "id": "comment.create",
+      "description": "Crear comentarios internos",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "comment:create", "subject": "Comment" }],
+      "endpoints": ["POST /api/events/{eventId}/comments"]
+    },
+    {
+      "id": "comment.update",
+      "description": "Editar comentarios internos",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "comment:update", "subject": "Comment" }],
+      "endpoints": ["PATCH /api/events/{eventId}/comments/{commentId}"]
+    },
+    {
+      "id": "comment.delete",
+      "description": "Borrar comentarios internos",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "comment:delete", "subject": "Comment" }],
+      "endpoints": ["DELETE /api/events/{eventId}/comments/{commentId}"]
+    },
+    {
+      "id": "audit.view",
+      "description": "Ver la auditoría de un evento",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "audit:view", "subject": "AuditLog" }],
+      "endpoints": ["GET /api/audit/{eventId}"]
+    },
+    {
+      "id": "availability.check",
+      "description": "Chequeo de disponibilidad interno",
+      "roles": ["USUARIO", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "availability:check", "subject": "Availability" }],
+      "endpoints": ["POST /api/availability/check"]
+    },
+    {
+      "id": "tech.view",
+      "description": "Ver la capacidad técnica",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "viewTechCapacity", "subject": "TechCapacity" }],
+      "endpoints": ["GET /api/tech/capacity", "GET /api/tech/events"]
+    },
+    {
+      "id": "priority.read",
+      "description": "Ver conflictos de prioridad",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [{ "action": "read", "subject": "Priority" }],
+      "endpoints": ["GET /api/priority/conflicts", "GET /api/priority/conflicts/pending"]
+    },
+    {
+      "id": "priority.resolve",
+      "description": "Resolver conflictos de prioridad",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_FULL"],
+      "casl": [{ "action": "resolvePriority", "subject": "Priority" }],
+      "endpoints": ["POST /api/priority/decisions"]
+    },
+    {
+      "id": "catalog.read",
+      "description": "Ver catálogos (espacios y departamentos)",
+      "roles": ["USUARIO", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [
+        { "action": "read", "subject": "Space" },
+        { "action": "read", "subject": "Department" }
+      ],
+      "endpoints": [
+        "GET /api/catalogs/spaces",
+        "GET /api/catalogs/spaces/{id}",
+        "GET /api/catalogs/departments",
+        "GET /api/catalogs/departments/{id}"
+      ]
+    },
+    {
+      "id": "catalog.manage",
+      "description": "Administrar catálogos",
+      "roles": ["ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [
+        { "action": "manageCatalogs", "subject": "Space" },
+        { "action": "manageCatalogs", "subject": "Department" }
+      ],
+      "endpoints": [
+        "POST /api/catalogs/spaces",
+        "PATCH /api/catalogs/spaces/{id}",
+        "POST /api/catalogs/departments",
+        "PATCH /api/catalogs/departments/{id}"
+      ]
+    },
+    {
+      "id": "users.manage",
+      "description": "Administrar usuarios y roles",
+      "roles": ["ADMIN_FULL"],
+      "casl": [{ "action": "manage", "subject": "User" }],
+      "endpoints": [
+        "GET /api/users",
+        "POST /api/users",
+        "GET /api/users/{id}",
+        "PATCH /api/users/{id}",
+        "POST /api/users/{id}/reset-password",
+        "PATCH /api/users/{id}/role",
+        "PATCH /api/users/{id}/status",
+        "GET /api/users/roles",
+        "POST /auth/register"
+      ]
+    },
+    {
+      "id": "notifications.own",
+      "description": "Notificaciones propias",
+      "roles": ["USUARIO", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "ADMIN_FULL"],
+      "casl": [],
+      "endpoints": [
+        "GET /api/notifications",
+        "GET /api/notifications/count/unread",
+        "PATCH /api/notifications/{id}/read",
+        "PATCH /api/notifications/read-all"
+      ]
+    }
+  ]
+}

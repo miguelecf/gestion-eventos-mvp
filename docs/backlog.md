@@ -20,6 +20,12 @@ Hallazgos que aparecieron al cerrar tickets de la segunda iteración y quedaron 
 
 - [ ] Test de integración (extiende `IntegrationTestBase`): con la capacidad técnica agotada en el rango, la conversión con `requiresTech=true` responde error, no crea el evento y la solicitud no pasa a `CONVERTIDO`.
 
+### Test de las reglas de permisos que aplican los servicios (surgió en SEC-04)
+
+`PermissionMatrixIntegrationTest` verifica las filas con endpoints, pero no las que aplican los servicios: `event.approveCeremonial` y `event.approveTechnical` (`EventStatusService`, `CEREMONIAL_ONLY`/`TECHNICAL_ONLY`). Hoy ningún test cubre esos 403.
+
+- [ ] Test de integración (extiende `IntegrationTestBase`): en `POST /api/events/{id}/status`, AC no puede cambiar `technicalOk`, AT no puede cambiar `ceremonialOk` (403) y AF puede cambiar ambos; los roles salen de las filas de `permisos.json` o se contrastan con ellas.
+
 ## Resolver conflictos de prioridad
 
 **Objetivo:** permitir que los roles autorizados revisen conflictos abiertos y resuelvan uno conservando el evento original o reubicando el evento desplazado.

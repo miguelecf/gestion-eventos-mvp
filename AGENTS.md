@@ -31,7 +31,7 @@ Si Maven falla con `cannot find symbol` sobre getters/builders de Lombok, un JDT
 
 | Tema | Fuente de verdad |
 |---|---|
-| Permisos de rutas y roles | [docs/permisos.md](docs/permisos.md); `backend/.../config/SecurityConfig.java` es la autoridad de autorización efectiva. |
+| Permisos de rutas y roles | Matriz única `frontend/src/libs/permisos.json` (la leen CASL y `PermissionMatrixIntegrationTest`), explicada en [docs/permisos.md](docs/permisos.md); `backend/.../config/SecurityConfig.java` es la autoridad de autorización efectiva. |
 | Decisiones de negocio | [docs/decisiones-funcionales.md](docs/decisiones-funcionales.md). |
 | Módulos, dependencias y convenciones de arquitectura | [docs/arquitectura.md](docs/arquitectura.md). |
 | Estado e historial de hallazgos | [docs/historial/hallazgos-2026-10.md](docs/historial/hallazgos-2026-10.md) (documento histórico, no normativo). |

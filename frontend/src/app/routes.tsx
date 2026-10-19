@@ -98,7 +98,7 @@ export const router = createBrowserRouter([
 
           // Admin users (manage all)
           {
-            element: <RoleRoute action="manage" subject="all" />,
+            element: <RoleRoute action="manage" subject="User" />,
             children: [{ path: "/admin/users", element: <UsersPage /> }],
           },
         ],

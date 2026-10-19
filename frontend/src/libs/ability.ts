@@ -1,32 +1,38 @@
 import { AbilityBuilder, createMongoAbility, type MongoAbility, type ForcedSubject } from '@casl/ability';
+import matrix from './permisos.json';
 
 // Acciones
-export type Action = 
-  | 'manage' | 'read' | 'create' | 'update' | 'delete'
-  | 'changeState' 
-  | 'approveCeremonial' | 'approveTechnical'
-  | 'resolvePriority'
-  | 'viewTechCapacity'
-  | 'manageCatalogs'
-  | 'audit:view'
-  | 'comment:create' | 'comment:update' | 'comment:delete'
-  | 'request:create'
-  | 'availability:check'
-  | 'internal:toggle';
+const ACTIONS = [
+  'manage', 'read', 'create', 'update', 'delete',
+  'changeState',
+  'approveCeremonial', 'approveTechnical',
+  'resolvePriority',
+  'viewTechCapacity',
+  'manageCatalogs',
+  'audit:view',
+  'comment:create', 'comment:update', 'comment:delete',
+  'request:create',
+  'availability:check',
+  'internal:toggle',
+] as const;
+export type Action = typeof ACTIONS[number];
 
 // Sujetos
-export type Subject = 
-  | 'Event' 
-  | 'EventRequest'
-  | 'PublicRequest'
-  | 'Comment' 
-  | 'Space' 
-  | 'Department' 
-  | 'Priority' 
-  | 'TechCapacity' 
-  | 'AuditLog' 
-  | 'Availability' 
-  | 'all';
+const SUBJECTS = [
+  'Event',
+  'EventRequest',
+  'PublicRequest',
+  'Comment',
+  'Space',
+  'Department',
+  'Priority',
+  'TechCapacity',
+  'AuditLog',
+  'Availability',
+  'User',
+  'all',
+] as const;
+export type Subject = typeof SUBJECTS[number];
 
 // Tipos para condiciones
 export interface EventConditions {
@@ -49,65 +55,39 @@ export interface AuditLogConditions {
 
 export type AppAbility = MongoAbility<[Action, Subject | ForcedSubject<Subject>]>;
 
+interface PermissionRow {
+  id: string;
+  public?: boolean;
+  roles?: string[];
+  casl: { action: string; subject: string }[];
+}
+
+/**
+ * Reglas CASL de la matriz única (permisos.json, SEC-04). Lo que no figura queda denegado.
+ * Se validan al cargar el módulo: una acción o sujeto desconocido rompe al iniciar, no en silencio.
+ */
+const RULES = (matrix.permissions as PermissionRow[]).map((row) => ({
+  public: row.public === true,
+  roles: row.roles ?? [],
+  casl: row.casl.map(({ action, subject }) => {
+    if (!(ACTIONS as readonly string[]).includes(action) || !(SUBJECTS as readonly string[]).includes(subject)) {
+      throw new Error(`permisos.json (${row.id}): acción o sujeto CASL desconocido: ${action} ${subject}`);
+    }
+    return { action: action as Action, subject: subject as Subject };
+  }),
+}));
+
 export function defineAbilityFor(roles: string[], _userId: string): AppAbility {
-  const { can, cannot, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+  const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+  const userRoles = roles.map((role) => role.replace(/^ROLE_/, ''));
 
-  // ROLE_ADMIN_FULL 👑
-  if (roles.includes('ROLE_ADMIN_FULL')) {
-    can('manage', 'all');
-    return build();
-  }
-
-  // ROLE_ADMIN_CEREMONIAL 🎪
-  if (roles.includes('ROLE_ADMIN_CEREMONIAL')) {
-    can(['read', 'create', 'update', 'delete'], 'Event');
-    can('changeState', 'Event');
-    can('approveCeremonial', 'Event');
-    can('internal:toggle', 'Event');
-    can('read', 'Priority');
-    can('resolvePriority', 'Priority');
-    can('viewTechCapacity', 'TechCapacity');
-    can(['comment:create', 'comment:update', 'comment:delete'], 'Comment');
-    can('manageCatalogs', ['Space', 'Department']);
-    can('audit:view', 'AuditLog');
-    can('availability:check', 'Availability');
-    can('request:create', 'EventRequest');
-    can('read', ['Space', 'Department', 'PublicRequest']);
-  }
-
-  // ROLE_ADMIN_TECNICA 🔧
-  if (roles.includes('ROLE_ADMIN_TECNICA')) {
-    can(['read', 'create', 'update', 'delete'], 'Event');
-    can('changeState', 'Event');
-    can('approveTechnical', 'Event');
-    can('internal:toggle', 'Event');
-    can('read', 'Priority');
-    can('viewTechCapacity', 'TechCapacity');
-    can(['comment:create', 'comment:update', 'comment:delete'], 'Comment');
-    can('manageCatalogs', ['Space', 'Department']);
-    can('audit:view', 'AuditLog');
-    can('availability:check', 'Availability');
-    can('request:create', 'EventRequest');
-    can('read', ['Space', 'Department', 'PublicRequest']);
-    
-    // Bloqueado: las decisiones de prioridad son solo AF/AC
-    cannot('resolvePriority', 'Priority');
-  }
-
-  // ROLE_USUARIO 👤 (docs/permisos.md: ver eventos, pedir solicitudes, chequear disponibilidad, ver catálogos)
-  if (roles.includes('ROLE_USUARIO')) {
-    can('read', 'Event');
-    can('request:create', 'EventRequest');
-    can('availability:check', 'Availability');
-    can('read', ['Space', 'Department']);
-
-    // Bloqueado (explícito): no crea/edita/da de baja eventos, no ve la bandeja,
-    // ni comentarios, auditoría, prioridad o capacidad técnica.
-    cannot(['create', 'update', 'delete', 'changeState', 'internal:toggle'], 'Event');
-    cannot('read', ['PublicRequest', 'Priority']);
-    cannot(['manageCatalogs', 'resolvePriority', 'viewTechCapacity', 'audit:view', 'comment:create', 'comment:update', 'comment:delete'], 'all');
+  for (const rule of RULES) {
+    if (rule.public || rule.roles.some((role) => userRoles.includes(role))) {
+      for (const { action, subject } of rule.casl) {
+        can(action, subject);
+      }
+    }
   }
 
   return build();
 }
-

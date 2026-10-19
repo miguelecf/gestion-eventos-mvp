@@ -63,7 +63,7 @@ const catalogsNavigation: NavigationItem[] = [
 ];
 
 const adminNavigation: NavigationItem[] = [
-  { label: "Usuarios & Roles", to: "/admin/users", icon: Users2, requires: ["manage", "all"] },
+  { label: "Usuarios & Roles", to: "/admin/users", icon: Users2, requires: ["manage", "User"] },
 ];
 
 interface AppSidebarProps {

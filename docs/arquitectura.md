@@ -125,7 +125,7 @@ La estructura funcional es `app → features → (store | services/api | compone
 
 - Una feature no importa otra feature, salvo `auth` (sesión global). `frontend/eslint.config.js` expresa la restricción para `src/features/**`, `src/services/**` y `src/store/**`.
 - Código nuevo de API: agregar un `*.api.ts` bajo `src/services/api/`, usar `services/api/client` y sus `ENDPOINTS`; no introducir fetch crudo ni reactivar `lib/http.ts` o `services/http/client.ts` para APIs nuevas. Los límites legacy aún existen para autenticación y código heredado.
-- CASL (`src/libs/ability.ts`) es el sistema de permisos de UI; rutas y componentes deben consultar la ability (`RoleRoute`, `useCan`). La autorización efectiva siempre la valida el backend.
+- CASL (`src/libs/ability.ts`) es el sistema de permisos de UI y arma sus reglas desde la matriz única `src/libs/permisos.json`; rutas y componentes deben consultar la ability (`RoleRoute`, `useCan`). La autorización efectiva siempre la valida el backend.
 - `useRole` es legacy y actualmente se importa solo en `features/users/pages/ProfilePage.tsx` para mostrar etiqueta, descripción y permisos textuales; no usarlo para autorizar nuevas acciones.
 - El mensaje de las restricciones de ESLint apunta a este apartado: `docs/arquitectura.md#frontend`.
 
@@ -140,7 +140,7 @@ La estructura funcional es `app → features → (store | services/api | compone
 ### Un endpoint
 
 1. Implementar controller, DTOs y lógica en el módulo dueño; el controller delega al servicio local y no expone entidades JPA.
-2. Aplicar seguridad en `backend/src/main/java/com/mvp/backend/config/SecurityConfig.java` y actualizar `docs/permisos.md`.
+2. Aplicar seguridad en `backend/src/main/java/com/mvp/backend/config/SecurityConfig.java` y agregar el endpoint a la matriz `frontend/src/libs/permisos.json` (ver `docs/permisos.md`); `PermissionMatrixIntegrationTest` falla si falta.
 3. Agregar test de integración con `backend/src/test/java/com/mvp/backend/support/IntegrationTestBase`; incluir roles permitidos/denegados y respuestas observables.
 4. Actualizar el `*.api.ts` correspondiente en `frontend/src/services/api/` si el endpoint se consume desde la UI, y reflejar permisos con CASL cuando corresponda.
 
