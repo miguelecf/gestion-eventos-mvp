@@ -90,8 +90,9 @@ export function getRequestStatusBadgeVariant(
       return "outline";
     case "EN_REVISION":
       return "default";
+    // CONVERTIDO no equivale a APROBADO: el verde queda reservado al evento aprobado.
     case "CONVERTIDO":
-      return "success";
+      return "outline";
     case "RECHAZADO":
       return "outline";
     default:
@@ -123,7 +124,7 @@ export function getRequestStatusColor(status: PublicRequestStatus): string {
     case "RECHAZADO":
       return "border-red-300 bg-red-100 text-red-700";
     case "CONVERTIDO":
-      return "border-emerald-300 bg-emerald-100 text-emerald-700";
+      return "border-sky-300 bg-sky-100 text-sky-700";
     default:
       return "border-slate-300 bg-slate-100 text-slate-700";
   }
@@ -140,7 +141,7 @@ export function getRequestStatusDescription(
     case "RECHAZADO":
       return "Solicitud cerrada. Ya no puede convertirse en evento.";
     case "CONVERTIDO":
-      return "Solicitud convertida. La gestión continúa en el módulo de eventos.";
+      return "Solicitud convertida en evento. No implica aprobación: el evento sigue su propia revisión.";
     default:
       return "";
   }

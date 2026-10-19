@@ -21,6 +21,11 @@ Este documento consolida las decisiones cerradas del plan y las reglas de negoci
 - `requiresTech` determina si el evento **consume capacidad técnica**. No determina si Técnica interviene.
 - **Implementación:** `EventStatusService.handleApproval`.
 
+### `CONVERTIDO` no equivale a `APROBADO` (hallazgo 2.1, REQ-02)
+- La solicitud (`RECIBIDO` → `EN_REVISION` → `CONVERTIDO`/`RECHAZADO`) y el evento creado al convertirla tienen ciclos de vida distintos. Convertir significa aceptar la solicitud para tramitarla; el evento nace en `EN_REVISION` y solo se aprueba con las dos conformidades.
+- **Tracking público y correo:** si existe el evento, manda su estado ("Convertida a evento · En revisión", "Reservada", "Aprobada", "Rechazada"); el correo de conversión aclara que falta la conformidad de Ceremonial y Técnica.
+- **Interfaz interna:** `CONVERTIDO` se muestra como "Convertido" con color propio (celeste); el verde queda reservado al evento `APROBADO`.
+
 ### Soporte técnico al convertir una solicitud (hallazgo 3.2, REQ-01)
 - La solicitud pública no declara `requiresTech`; el solicitante solo informa `technicalSchedule`, que es informativo (ver hallazgo 3.6).
 - El área lo define al convertir la solicitud en evento (`POST /admin/event-requests/{id}/convert-to-event`, body opcional `{requiresTech, techSupportMode}`), y el valor se conserva en el evento creado.

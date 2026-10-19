@@ -12,7 +12,7 @@ import { z } from 'zod';
 
 export const EventTypeSchema = z.enum(['ACADEMICO', 'INSTITUCIONAL', 'CULTURAL', 'DEPORTIVO', 'OTRO']);
 export const EventStatusSchema = z.enum(['APROBADO', 'CANCELADO', 'PENDIENTE', 'RECHAZADO', 'REPROGRAMADO']);
-export const PublicRequestStatusSchema = z.enum(['PENDIENTE', 'EN_REVISION', 'APROBADA', 'RECHAZADA']);
+export const PublicRequestStatusSchema = z.enum(['RECIBIDO', 'EN_REVISION', 'CONVERTIDO', 'RECHAZADO']);
 
 // ==================== SCHEMAS BÁSICOS ====================
 

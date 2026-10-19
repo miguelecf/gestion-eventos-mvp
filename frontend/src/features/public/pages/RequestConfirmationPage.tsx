@@ -163,8 +163,8 @@ export function RequestConfirmationPage() {
             <div className="flex-1">
               <p className="text-sm font-medium">Respuesta y confirmación</p>
               <p className="text-sm text-muted-foreground">
-                Recibirá un email con la decisión. Si es aprobada, el evento aparecerá en el
-                calendario público.
+                Recibirá un email con la decisión. Si se acepta, se convierte en un evento que
+                aparecerá en el calendario público cuando Ceremonial y Técnica lo aprueben.
               </p>
             </div>
           </li>
