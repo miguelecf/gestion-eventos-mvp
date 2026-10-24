@@ -18,6 +18,7 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 | 2026-10-19 09:00 | REQ-02 | `96dd380` | fix | En la bandeja interna, `CONVERTIDO` deja el verde de `APROBADO` y pasa a celeste, con una descripción que aclara que no implica aprobación. Se corrigen el texto de la confirmación pública y el schema Zod de estados de solicitud, y se agrega la regla a decisiones funcionales. Tracking y correo ya estaban corregidos en `eaf4a8d` (hallazgo 2.1). | frontend `tsc -b`, build y lint sin errores en los archivos tocados |
 | 2026-10-19 09:29 | SEC-04 | `05e11b7` | feat | Matriz única `frontend/src/libs/permisos.json`: `ability.ts` arma CASL desde ella y `PermissionMatrixIntegrationTest` la contrasta con los controllers, `SecurityConfig` y los `@PreAuthorize`. | `PermissionMatrixIntegrationTest` 3/3 y pruebas negativas; suite backend 53/53; frontend `tsc -b`, build y lint sin errores nuevos |
 | 2026-10-24 09:53 | SEC-05 | `71b4faf` | fix | `GET /api/priority/conflicts/**` ya estaba restringido (hallazgo 1.6), pero `HEAD` como USUARIO daba 200: Spring MVC lo atiende con el handler `GET` y caía en `anyRequest().authenticated()`. Se agrega una regla para cualquier método sobre `/api/priority/**`. | `PriorityConflictAccessIntegrationTest` 5/5 (rojo previo: 200 en vez de 403) y prueba negativa; suite backend 55/55 |
+| 2026-10-24 10:08 | SEC-06 | `c872cec` | test | El decisor de un conflicto ya salía del usuario autenticado (hallazgo 1.7). Test de `REBOOK_OTHER` con un `deciderUserId` falso: `decisionBy`, `lastModifiedBy` y el actor de las dos auditorías son el principal. | `PriorityConflictDecisionIntegrationTest` 3/3 y prueba negativa; suite backend 56/56 |
 
 ## SEC-01 — Comentarios internos en el tracking público
 
@@ -110,6 +111,17 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
   - **Aceptado:** el hueco de `HEAD` y de los métodos sin handler (corregido); `createdAt` del fixture era redundante porque `@PrePersist` lo pisa (quitado).
   - **Al backlog:** el mismo hueco de `HEAD` en `/api/audit/**`, `/api/tech/**` y `/admin/event-requests/**` (la sonda dio 200 o 400 como USUARIO); y las notificaciones de conflicto a un admin degradado a USUARIO. Ver el [backlog](backlog.md#pendientes-detectados-en-la-segunda-iteración-tickets-secreq).
   - **Descartado:** que `requiresRebooking` en `EventResponseDto` exponga conflictos a USUARIO. Es un dato de `event.read`, sin el conflicto ni el evento que lo desplaza.
+
+## SEC-06 — `deciderUserId` obtenido del usuario autenticado
+
+**Estado:** verificado. El hallazgo 1.7 (`43b1093`) quitó `deciderUserId` de `PriorityConflictDecisionRequest` y creó `CurrentUserService`, que resuelve al usuario desde el principal del JWT. `PriorityConflictService.applyDecision` lo obtiene una sola vez y lo usa para `decisionBy`, `lastModifiedBy` del evento desplazado y las auditorías `PRIORITY_CONFLICT` y `SCHEDULE_CHANGE`. Si el cliente manda `deciderUserId`, Jackson lo ignora.
+
+- **Hueco de cobertura:** el test existente solo probaba `KEEP_ORIGINAL` y solo miraba `decisionBy`. `REBOOK_OTHER` también usa al decisor, al modificar el evento y auditar el cambio de agenda, y no tenía test.
+- **Test agregado (`PriorityConflictDecisionIntegrationTest`):** AC reubica el evento desplazado con un `deciderUserId` de AF en el body. Verifica que `decisionBy`, `lastModifiedBy` y el actor de las auditorías `PRIORITY_CONFLICT` (cierre) y `SCHEDULE_CHANGE` sean AC, y que el evento haya cambiado de espacio. El principal es AC porque el fixture lo crea AF: un decisor tomado de otro lado no coincide por casualidad.
+- **Prueba negativa:** pasar `conflict.getCreatedBy()` a `applyRebooking` en lugar del decisor hace fallar el test (esperado AC, recibido AF). Se revirtió.
+- **Revisión con Pi:** `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. `opencode-go/deepseek-v4-pro` volvió a responder `402 Insufficient account funds`.
+  - **Sin hallazgos:** ningún camino toma al decisor del cliente. Tampoco hay otros endpoints que acepten un ID de actor para acciones auditables: `GET /api/events/user/{userId}` es un filtro, `/api/users/{id}` es el usuario objeto de la acción, y `CreateNotificationDto.userId` es un destinatario interno que ningún controller expone.
+  - **Aceptado:** filtrar la auditoría `PRIORITY_CONFLICT` por `toValue == 'CLOSED'`, para que el test no dependa de que el fixture abra el conflicto sin auditar.
 
 ## Incidencias de entorno
 
