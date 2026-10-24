@@ -33,6 +33,7 @@ Si Maven falla con `cannot find symbol` sobre getters/builders de Lombok, un JDT
 |---|---|
 | Permisos de rutas y roles | Matriz única `frontend/src/libs/permisos.json` (la leen CASL y `PermissionMatrixIntegrationTest`), explicada en [docs/permisos.md](docs/permisos.md); `backend/.../config/SecurityConfig.java` es la autoridad de autorización efectiva. |
 | Decisiones de negocio | [docs/decisiones-funcionales.md](docs/decisiones-funcionales.md). |
+| Registro de decisiones (qué, por qué, consecuencias) | [docs/adr.md](docs/adr.md). Cada decisión nueva de un ticket suma una entrada; una decisión no se edita, se reemplaza. |
 | Módulos, dependencias y convenciones de arquitectura | [docs/arquitectura.md](docs/arquitectura.md). |
 | Estado e historial de hallazgos | [docs/historial/hallazgos-2026-10.md](docs/historial/hallazgos-2026-10.md) (documento histórico, no normativo). |
 | Compose, migraciones locales y correo | [DOCKER.md](DOCKER.md). |
