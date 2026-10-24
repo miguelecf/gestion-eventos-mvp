@@ -9,6 +9,9 @@ import com.mvp.backend.feature.catalogs.repository.SpaceRepository;
 import com.mvp.backend.feature.events.model.Event;
 import com.mvp.backend.feature.events.model.Status;
 import com.mvp.backend.feature.events.repository.EventRepository;
+import com.mvp.backend.feature.priority.model.PriorityConflict;
+import com.mvp.backend.feature.priority.model.PriorityConflictStatus;
+import com.mvp.backend.feature.priority.repository.PriorityConflictRepository;
 import com.mvp.backend.feature.requests.model.EventRequest;
 import com.mvp.backend.feature.requests.repository.EventRequestRepository;
 import com.mvp.backend.feature.users.model.User;
@@ -56,6 +59,7 @@ public abstract class IntegrationTestBase {
     @Autowired protected PasswordEncoder passwordEncoder;
     @Autowired protected EventRepository eventRepository;
     @Autowired protected EventRequestRepository eventRequestRepository;
+    @Autowired protected PriorityConflictRepository priorityConflictRepository;
 
     private final Map<Role, String> tokens = new EnumMap<>(Role.class);
 
@@ -126,6 +130,23 @@ public abstract class IntegrationTestBase {
                 .status(status)
                 .priority(Priority.MEDIUM)
                 .space(newSpace())
+                .createdBy(user(Role.ADMIN_FULL))
+                .build());
+    }
+
+    /** Conflicto de prioridad abierto entre dos eventos reservados, persistido directamente. */
+    protected PriorityConflict newPriorityConflict() {
+        Event high = newEvent(Status.RESERVADO);
+        Event displaced = newEvent(Status.RESERVADO);
+        return priorityConflictRepository.save(PriorityConflict.builder()
+                .conflictCode("IT-" + UUID.randomUUID().toString().substring(0, 8))
+                .highEvent(high)
+                .displacedEvent(displaced)
+                .spaceId(displaced.getSpace().getId())
+                .date(displaced.getDate())
+                .fromTime(displaced.getScheduleFrom())
+                .toTime(displaced.getScheduleTo())
+                .status(PriorityConflictStatus.OPEN)
                 .createdBy(user(Role.ADMIN_FULL))
                 .build());
     }

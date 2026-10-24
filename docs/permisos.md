@@ -5,7 +5,7 @@ La **fuente de verdad** de los permisos es la matriz única [`frontend/src/libs/
 - **CASL:** `frontend/src/libs/ability.ts` arma las reglas de la interfaz leyendo la matriz. Lo que no figura queda denegado (tampoco `ADMIN_FULL` tiene un `manage all` genérico: recibe exactamente las filas en las que figura). Rutas (`RoleRoute`) y sidebar consultan esas reglas.
 - **Backend:** `PermissionMatrixIntegrationTest` verifica que la matriz tenga exactamente los mismos endpoints que los controllers, que `SecurityConfig` permita o niegue cada endpoint a cada rol (y al anónimo) tal como dice la matriz, y que los `@PreAuthorize` de los controllers coincidan con los roles de su fila.
 
-**Qué no verifica el test:** que cada par de `casl` esté en la fila correcta (es una revisión humana); las filas sin endpoints, cuyas reglas aplican los servicios; y la evaluación usa una sola instancia de cada ruta (variables reemplazadas por `1`), suficiente para los patrones Ant actuales.
+**Qué no verifica el test:** que cada par de `casl` esté en la fila correcta (es una revisión humana); las filas sin endpoints, cuyas reglas aplican los servicios; y la evaluación usa una sola instancia de cada ruta (variables reemplazadas por `1`), suficiente para los patrones Ant actuales. Tampoco evalúa `HEAD`, que Spring MVC atiende con el handler `GET`: una regla que solo restringe `GET` deja `HEAD` en `anyRequest().authenticated()`. Por eso `/api/events/**` y `/api/priority/**` cierran con una regla para cualquier método (SEC-03, SEC-05), cubierta por sus tests de comportamiento.
 
 La autorización efectiva la aplica el backend (`SecurityConfig` y, donde corresponda, los servicios). CASL refleja el contrato en la interfaz y no reemplaza los controles del servidor.
 

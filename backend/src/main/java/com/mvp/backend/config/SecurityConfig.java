@@ -95,6 +95,11 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.POST, "/api/priority/decisions")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL")
+                        // Cualquier otro método sobre /api/priority/** (HEAD incluido, que Spring MVC
+                        // atiende con el handler GET): sólo roles admin. Antes caía en
+                        // anyRequest().authenticated() — hallazgo 1.6, SEC-05, docs/permisos.md.
+                        .requestMatchers("/api/priority/**")
+                        .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.GET, "/api/notifications/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "USUARIO")
                         .requestMatchers(HttpMethod.PATCH, "/api/notifications/**")

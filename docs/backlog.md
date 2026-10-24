@@ -26,6 +26,19 @@ Hallazgos que aparecieron al cerrar tickets de la segunda iteración y quedaron 
 
 - [ ] Test de integración (extiende `IntegrationTestBase`): en `POST /api/events/{id}/status`, AC no puede cambiar `technicalOk`, AT no puede cambiar `ceremonialOk` (403) y AF puede cambiar ambos; los roles salen de las filas de `permisos.json` o se contrastan con ellas.
 
+### `HEAD` en rutas admin restringidas solo por `GET` (surgió en SEC-05)
+
+Spring MVC atiende `HEAD` con el handler `GET`, pero los matchers de `SecurityConfig` con `HttpMethod.GET` no lo cubren, así que `HEAD` cae en `anyRequest().authenticated()`. Una sonda del 2026-10-24 dio, como USUARIO: `HEAD /api/audit/1` → 200, `HEAD /admin/event-requests` → 200, `HEAD /api/tech/capacity` → 400 (pasa la seguridad y falla el binding). No devuelve cuerpo, pero el controller se ejecuta para un rol sin permiso. El anónimo recibe 403. SEC-05 lo cerró solo para `/api/priority/**`; `/api/events/**` ya lo cubría desde SEC-03.
+
+- [ ] Cerrar `HEAD` (y los métodos sin handler) en `/api/audit/**`, `/api/tech/**` y `/admin/event-requests/**`, con una regla para cualquier método o con un criterio general en `SecurityConfig`.
+- [ ] Que `PermissionMatrixIntegrationTest` evalúe también `HEAD` para cada endpoint `GET` de la matriz, para que el caso no dependa de tests sueltos.
+
+### Notificaciones de conflicto a un usuario degradado a USUARIO (surgió en SEC-05)
+
+`NotificationEventListener` notifica el conflicto de prioridad al creador del evento desplazado sin mirar su rol, y la notificación nombra ambos eventos. Hoy los eventos los crean admins, pero si AF degrada a ese admin a USUARIO (`UserAdminService`), sigue leyendo esas notificaciones y recibe nuevas. No permite listar conflictos ajenos.
+
+- [ ] Decidir si la notificación se filtra por rol al enviarla o al leerla, o si se acepta como aviso al responsable del evento; registrar la decisión en `docs/decisiones-funcionales.md`.
+
 ## Resolver conflictos de prioridad
 
 **Objetivo:** permitir que los roles autorizados revisen conflictos abiertos y resuelvan uno conservando el evento original o reubicando el evento desplazado.
