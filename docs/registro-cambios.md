@@ -17,6 +17,7 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 | 2026-10-19 08:56 | REQ-01 | `33a5b9d` | docs | Regla en decisiones funcionales: el área define `requiresTech` al convertir la solicitud y se conserva en el evento. Implementación original `226ca6a` (hallazgo 3.2). | `RequestConversionIntegrationTest` 2/2 |
 | 2026-10-19 09:00 | REQ-02 | `96dd380` | fix | En la bandeja interna, `CONVERTIDO` deja el verde de `APROBADO` y pasa a celeste, con una descripción que aclara que no implica aprobación. Se corrigen el texto de la confirmación pública y el schema Zod de estados de solicitud, y se agrega la regla a decisiones funcionales. Tracking y correo ya estaban corregidos en `eaf4a8d` (hallazgo 2.1). | frontend `tsc -b`, build y lint sin errores en los archivos tocados |
 | 2026-10-19 09:29 | SEC-04 | `05e11b7` | feat | Matriz única `frontend/src/libs/permisos.json`: `ability.ts` arma CASL desde ella y `PermissionMatrixIntegrationTest` la contrasta con los controllers, `SecurityConfig` y los `@PreAuthorize`. | `PermissionMatrixIntegrationTest` 3/3 y pruebas negativas; suite backend 53/53; frontend `tsc -b`, build y lint sin errores nuevos |
+| 2026-10-24 09:53 | SEC-05 | `71b4faf` | fix | `GET /api/priority/conflicts/**` ya estaba restringido (hallazgo 1.6), pero `HEAD` como USUARIO daba 200: Spring MVC lo atiende con el handler `GET` y caía en `anyRequest().authenticated()`. Se agrega una regla para cualquier método sobre `/api/priority/**`. | `PriorityConflictAccessIntegrationTest` 5/5 (rojo previo: 200 en vez de 403) y prueba negativa; suite backend 55/55 |
 
 ## SEC-01 — Comentarios internos en el tracking público
 
@@ -92,6 +93,23 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
   - **Documentado como límite:** una sola instancia por ruta; el mapeo de `casl` a filas es revisión humana.
   - **Al backlog:** las filas sin endpoints (conformidades por rol), que no tienen test.
   - **Descartado:** que el `manage all` anterior excluyera acciones custom. En CASL, `manage` es comodín.
+
+## SEC-05 — Conflictos pendientes restringidos según el rol
+
+**Estado:** corregido. El hallazgo 1.6 (`9f0d668`) ya restringía `GET /api/priority/conflicts/**` a AF, AC y AT, y `POST /api/priority/decisions` a AF y AC, según la regla de [decisiones funcionales](decisiones-funcionales.md). La matriz (filas `priority.read` y `priority.resolve`) y `PermissionMatrixIntegrationTest` lo confirmaban, y el dashboard solo consulta `/pending` con `read Priority`; AT ve la alerta con "Ver eventos" en lugar de "Resolver".
+
+- **Fuga encontrada:** con un USUARIO autenticado, `HEAD /api/priority/conflicts/pending` y `HEAD /api/priority/conflicts?eventId=` respondían 200. Spring MVC atiende `HEAD` con el handler `GET`, y el matcher solo restringía `GET`, así que `HEAD` caía en `anyRequest().authenticated()` y el controller ejecutaba la consulta, aunque sin cuerpo. Los métodos sin handler daban 405 en lugar de 403. Lo detectó la revisión con Pi y se confirmó con una sonda descartable.
+- **Corrección:** en `SecurityConfig`, después de las reglas específicas, una regla para cualquier método sobre `/api/priority/**` reservada a los tres roles admin, como hizo SEC-03 con `/api/events/**`. Como las reglas específicas se evalúan antes, AT sigue sin poder resolver.
+- **Tests (`PriorityConflictAccessIntegrationTest`):**
+  - Anónimo y USUARIO reciben 403 en `/pending` y en `/conflicts?eventId=`. Los tres admins reciben 200 con un conflicto real, no solo una página vacía.
+  - USUARIO recibe 403 en `HEAD` y `DELETE`; AT puede hacer `HEAD`. Rojo previo: 403 esperado, 200 recibido.
+  - El fixture de conflictos pasa de `PriorityConflictDecisionIntegrationTest` a `IntegrationTestBase` (`newPriorityConflict()`).
+- **Prueba negativa:** agregar USUARIO a la regla `GET` hace fallar los dos tests de consulta (403 esperado, 200 recibido). Se revirtió.
+- **Documentación:** `docs/permisos.md` aclara que `PermissionMatrixIntegrationTest` no evalúa `HEAD`.
+- **Revisión con Pi:** `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura, en dos rondas (la segunda sobre la corrección final, sin hallazgos). `opencode-go/deepseek-v4-pro` no corrió: el proveedor respondió `402 Insufficient account funds`.
+  - **Aceptado:** el hueco de `HEAD` y de los métodos sin handler (corregido); `createdAt` del fixture era redundante porque `@PrePersist` lo pisa (quitado).
+  - **Al backlog:** el mismo hueco de `HEAD` en `/api/audit/**`, `/api/tech/**` y `/admin/event-requests/**` (la sonda dio 200 o 400 como USUARIO); y las notificaciones de conflicto a un admin degradado a USUARIO. Ver el [backlog](backlog.md#pendientes-detectados-en-la-segunda-iteración-tickets-secreq).
+  - **Descartado:** que `requiresRebooking` en `EventResponseDto` exponga conflictos a USUARIO. Es un dato de `event.read`, sin el conflicto ni el evento que lo desplaza.
 
 ## Incidencias de entorno
 
