@@ -51,8 +51,8 @@ Este documento consolida las decisiones cerradas del plan y las reglas de negoci
 - **Motivo:** la conformidad expresa la evaluación de cada área. Que la agenda sea viable se garantiza en la transición que efectivamente bloquea el recurso.
 
 ### Edición de eventos
-- Se permite editar eventos en `EN_REVISION`, `RESERVADO` y `APROBADO`; un evento `RECHAZADO` no se edita.
-- Si un evento `RESERVADO` o `APROBADO` cambia la agenda, la ubicación o los buffers, vuelve a `EN_REVISION` para una nueva revisión.
+- Se permite editar eventos en `EN_REVISION`, `RESERVADO` y `APROBADO`; un evento `RECHAZADO` o dado de baja no se edita.
+- Si un evento `RESERVADO` o `APROBADO` cambia la agenda, la ubicación o los buffers, vuelve a `EN_REVISION` con las dos conformidades en `false`, y se avisa el cambio de estado (REV-03). Lo mismo ocurre al reubicarlo por un conflicto de prioridad (REV-14). Ver ADR-25.
 - **Implementación verificada:** `EventService.update` rechaza `RECHAZADO` y restablece `EN_REVISION` cuando cambian agenda o buffers en un estado bloqueante; `EDITABLE_EVENT_STATUSES` en `frontend/src/features/events/utils/edit-event.ts` coincide con los tres estados permitidos.
 
 ### Envío de correos (hallazgo 5.5)
@@ -82,3 +82,8 @@ Este documento consolida las decisiones cerradas del plan y las reglas de negoci
 - **Calendario público:** `GET /public/events` expone sólo id, nombre, fecha y horario, estado, prioridad, espacio o ubicación libre y departamento; nunca expone el contacto del solicitante, usuarios, observaciones ni datos de gestión.
 - **Rechazos por conflicto de espacio o capacidad:** no se auditan, porque abortan la operación (`409`) sin persistir cambios; el usuario recibe el detalle del conflicto en la respuesta.
 - **Concurrencia de capacidad técnica:** las operaciones que consumen capacidad se serializan con un bloqueo pesimista sobre la configuración activa; el pool de conexiones usa `READ_COMMITTED`.
+- **Concurrencia de espacios, solicitudes y eventos:** la reserva o aprobación bloquea el espacio; la conversión y el cambio de estado bloquean la solicitud o el evento; una edición sobre una versión vieja responde `409 CONCURRENT_MODIFICATION` (ADR-30).
+- **Prioridad de la solicitud pública:** el solicitante no la elige; la solicitud entra en `MEDIUM` y el área ajusta la prioridad del evento ya convertido (ADR-31).
+- **Notificaciones internas:** solo las reciben y las leen cuentas administrativas activas; una cuenta degradada a USUARIO ve la bandeja vacía (ADR-32).
+- **Catálogos dados de baja:** un espacio o departamento inactivo no se asigna a eventos ni solicitudes nuevas, pero los eventos que ya lo tenían siguen operando (ADR-34).
+- **Auditoría de cuentas:** alta, edición, cambio de rol, activación y restablecimiento quedan en `user_audit`, consultable por ADMIN_FULL en `GET /api/users/{id}/history` (ADR-33).

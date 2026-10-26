@@ -1,6 +1,6 @@
 # Registro de cambios por ticket
 
-Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistema de tickets externo. Los tickets se revisan de a uno, aunque el hallazgo figure como corregido en [el historial](historial/hallazgos-2026-10.md): primero se verifica el código y el test, y después se corrige o se agrega cobertura.
+Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistema de tickets externo, y de la [revisión previa a la entrega](#revisión-previa-a-la-entrega) (`REV-xx`). Los tickets se revisan de a uno, aunque el hallazgo figure como corregido en [el historial](historial/hallazgos-2026-10.md): primero se verifica el código y el test, y después se corrige o se agrega cobertura.
 
 - **Horario:** hora del commit, en Argentina (UTC−03:00).
 - **Commit:** hash corto del commit que contiene el cambio. Los commits que solo actualizan esta bitácora no se registran.
@@ -126,3 +126,44 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 ## Incidencias de entorno
 
 - **2026-10-17 — Maven falla con `cannot find symbol` en clases con Lombok.** El plugin `jdtls-lsp` de Claude Code lanza Eclipse JDT LS (`jdtls` de Homebrew) sin el agente de Lombok. JDT LS importa el proyecto Maven, genera `.classpath`/`.project`/`.settings` (ignorados por git) y compila en el mismo `target/classes` que Maven. Esas clases salen sin getters, builders ni constructores de Lombok; como son más nuevas que los fuentes, Maven no recompila `main` y falla `testCompile`. Solución inmediata: `./mvnw clean test`. Los errores de Lombok que muestra el editor no son reales.
+
+## Revisión previa a la entrega
+
+**Fecha:** 2026-10-26. **Rama:** `migue/general`. **Motivo:** confirmar, antes de entregar el TFI, que el backend cumple lo que el documento afirma y que no quedan fallas fuertes.
+
+**Cómo se revisó.** Siete revisores en paralelo, en solo lectura y cada uno con un área: Claude Opus (trazabilidad de cada RF, RNF, RN y CU del TFI contra el código), Claude Sonnet (suite, E2E y sondas contra el stack), y Pi con `openai/gpt-6.1-sol` (solicitudes y correos), `minimax/MiniMax-M3` (eventos y auditoría), `opencode-go/deepseek-v4-pro` (disponibilidad, prioridad, capacidad y migraciones) y `openai/gpt-6-astra` (seguridad y cuentas). Cada hallazgo se verificó en el código antes de aceptarlo y, salvo REV-10 y REV-17, cada arreglo tiene un test que fallaba antes del cambio. El resumen y el estado del TODO están en el [backlog](backlog.md).
+
+| Fecha y hora | ID | Commit | Tipo | Cambio | Verificación |
+|---|---|---|---|---|---|
+| 2026-10-26 00:06 | REV-01 | `d8d239e` | fix | `/error` público y 401 para anónimos: los errores de login, seguimiento y formulario público llegaban como 403 vacío. El intento fallido de login ya no se pierde por rollback. | `ErrorStatusOverHttpIntegrationTest` 6/6 sobre servidor HTTP real (rojo previo: 403 en vez de 401/404/400, contador en 0) |
+| 2026-10-26 00:07 | REV-02 | `326afad` | fix | `/api/events/range`, `/date`, `/priority`, `/status` y `/user` excluyen los eventos dados de baja. | `EventSoftDeleteIntegrationTest` 2/2 (rojo previo) |
+| 2026-10-26 00:08 | REV-03 | `e392292` | fix | La vuelta a revisión por edición reinicia y audita las dos conformidades. | `EventLocationAndReviewIntegrationTest` (rojo previo) |
+| 2026-10-26 00:10 | REV-04 | `0d04117` | fix | La solicitud pública ignora `priority` y queda en `MEDIUM`. | `PublicRequestPriorityIntegrationTest` (rojo previo: HIGH) |
+| 2026-10-26 00:11 | REV-05 | `dc703db` | fix | `read(...)` aplica los mismos roles a `GET` y `HEAD` en toda la API. | `PermissionMatrixIntegrationTest` evalúa `HEAD` (rojo previo: 3 rutas abiertas) |
+| 2026-10-26 00:13 | REV-06 | `86431d6` | fix | Conversión y cambio de estado de solicitudes con `PESSIMISTIC_WRITE`. | `RequestConversionConcurrencyIntegrationTest` 3/3 (rojo previo: dos 200, dos eventos) |
+| 2026-10-26 00:15 | REV-07 | `5814aab` | fix | Bloqueo del evento en las transiciones, `@Version` en `Event` y `EventRequest` (V15) y 409 `CONCURRENT_MODIFICATION`. | `EventConcurrencyIntegrationTest` 4/4 (rojo previo: dos 202) |
+| 2026-10-26 00:17 | REV-08 | `eec78fd` | fix | Departamentos dados de baja: 404 en asignaciones nuevas. | `InactiveDepartmentIntegrationTest` 3/3 (rojo previo) |
+| 2026-10-26 00:20 | REV-09 | `1f37437` | feat | Tabla `user_audit` (V16) y `GET /api/users/{id}/history`. | `UserAdminAuditIntegrationTest` 3/3; frontend `tsc -b` y build |
+| 2026-10-26 00:21 | REV-10 | `36df3e0` | test | Conformidades por área, JWT inválido, vencido o de alcance limitado, y administración de cuentas. | 12 tests nuevos en verde |
+| 2026-10-26 00:23 | REV-11 | `799d64d` | fix | Sin clave JWT por defecto: el backend no arranca con la publicada, corta o ausente. | `JwtSecretValidationTest` 2/2; E2E con clave propia |
+| 2026-10-26 00:27 | REV-12 | `0126d3b` | fix | Rol desde la cuenta, reset que corta sesiones, revocaciones sin rollback y refresh que rechaza cuentas inactivas. | `SessionRevocationIntegrationTest` 4/4 (rojo previo en los 4) |
+| 2026-10-26 00:29 | REV-13 | `467a946` | fix | Ubicación asignada desde los valores validados, espacio dado de baja que no bloquea a sus eventos y edición de eventos dados de baja rechazada. | `EventLocationAndReviewIntegrationTest` (rojo previo en 3 casos) |
+| 2026-10-26 00:31 | REV-14 | `98d12ef` | fix | `REBOOK_OTHER` devuelve a revisión, reinicia conformidades y avisa; la reversión por edición publica el cambio de estado. | `RebookingRevisionIntegrationTest` 2/2 (rojo previo) |
+| 2026-10-26 00:32 | REV-15 | `7fc83bd` | fix | Bloqueo del espacio antes de comprometer ocupación; buffers del chequeo acotados a 240. | `SpaceReservationConcurrencyIntegrationTest` 3/3 (rojo previo: dos 200) |
+| 2026-10-26 00:34 | REV-16 | `502a181` | fix | Notificaciones solo para cuentas administrativas activas, al crear y al leer. | `InternalNotificationAudienceIntegrationTest` (rojo previo) |
+| 2026-10-26 00:36 | REV-17 | `94effd5` | docs | README institucional en la raíz. | Revisión del contenido contra el código |
+| 2026-10-26 00:54 | REV-18 | `f949992` | fix | Orden único de bloqueos (evento antes que capacidad en edición y reubicación), conflicto bloqueado al decidir y deadlocks como 409. | `EventConcurrencyIntegrationTest` (edición y reserva simultáneas sin 500) |
+| 2026-10-26 00:55 | REV-19 | `386abcd` | fix | Un cambio de agenda reinicia también la conformidad parcial de un evento en revisión; se admite reenviar el espacio actual dado de baja. | `EventLocationAndReviewIntegrationTest` (rojo previo en 2 casos) |
+| 2026-10-26 00:56 | REV-20 | `de9ba08` | fix | `sessions_invalid_before` (V17): los tokens previos a un restablecimiento o a una baja no reviven. | `SessionRevocationIntegrationTest` (rojo previo: 200) |
+| 2026-10-26 00:59 | REV-21 | `6498888` | fix | Contador de intentos fallidos atómico; `markAsRead` con el filtro de audiencia; test de REV-16 reforzado. | `ErrorStatusOverHttpIntegrationTest`, `InternalNotificationAudienceIntegrationTest` (rojo previo) |
+
+**Revisión cruzada.** Los commits REV-01 a REV-16 se revisaron otra vez con `openai/gpt-6.1-sol`, `minimax/MiniMax-M3` y `opencode-go/deepseek-v4-pro`, en solo lectura. Se confirmaron y corrigieron seis hallazgos (REV-18 a REV-21). Tres quedaron como decisiones o endurecimientos en el backlog: el refresh concurrente del mismo token, la doble ocupación durante un conflicto de prioridad y la conversión de una solicitud con un departamento dado de baja.
+
+**Verificación final:** suite backend 113/113 (`./mvnw clean test`); E2E sobre MySQL con el runner aislado, smoke 16/16 y Playwright 3/3, corrido dos veces (después de REV-17 y de REV-21). Las migraciones V15 a V17 validan contra las entidades (`ddl-auto: validate`).
+
+**Entorno local:** REV-11 obliga a definir `JWT_SECRET`. El `.env` local usaba la clave publicada y se reemplazó por una generada con `openssl rand -hex 32`. Las sesiones abiertas se cierran.
+
+**Decisiones registradas:** ADR-25 a ADR-34 en el [registro de decisiones](adr.md). ADR-05 y ADR-14 quedan reemplazadas.
+
+**Pendientes:** lo que quedó fuera de alcance está en la sección "Pendientes" del [backlog](backlog.md), y los ajustes de texto del TFI, en "Ajustes al texto del TFI".
+
