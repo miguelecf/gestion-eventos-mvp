@@ -188,7 +188,11 @@ public class EventService {
         int previousBufferBefore = event.getBufferBeforeMin();
         int previousBufferAfter = event.getBufferAfterMin();
 
-        Space newSpace = resolveSpace(req.spaceId());
+        // Reenviar el espacio actual se admite aunque se haya dado de baja después (REV-19).
+        Long currentSpaceId = event.getSpace() != null ? event.getSpace().getId() : null;
+        Space newSpace = req.spaceId() != null && req.spaceId().equals(currentSpaceId)
+                ? event.getSpace()
+                : resolveSpace(req.spaceId());
 
         Department newDept = null;
         if (req.departmentId() != null) {
@@ -341,25 +345,31 @@ public class EventService {
 
         boolean previousCeremonialOk = event.isCeremonialOk();
         boolean previousTechnicalOk = event.isTechnicalOk();
+        // RN-05: si cambió la planificación, toda conformidad dada sobre la agenda anterior se pierde,
+        // también la parcial de un evento todavía en revisión (REV-19).
+        boolean resetConformities = (agendaChanged || buffersChanged) && (previousCeremonialOk || previousTechnicalOk);
         if (requiresReprogram) {
             event.setStatus(Status.EN_REVISION);
-            // RN-05: la planificación cambió, así que las dos áreas vuelven a dar conformidad.
+        }
+        if (resetConformities) {
             event.setCeremonialOk(false);
             event.setTechnicalOk(false);
         }
 
         Event saved = eventRepository.save(event);
 
-        if (requiresReprogram) {
-            auditService.recordStatusChange(saved, currentUser, previousStatus, Status.EN_REVISION, null, null);
-            auditService.recordReprogram(saved, currentUser, saved.getDate(), saved.getScheduleFrom(),
-                    saved.getScheduleTo(), null, null);
+        if (resetConformities) {
             if (previousCeremonialOk) {
                 auditService.recordFieldUpdate(saved, currentUser, "ceremonial_ok", "true", "false", null, null);
             }
             if (previousTechnicalOk) {
                 auditService.recordFieldUpdate(saved, currentUser, "technical_ok", "true", "false", null, null);
             }
+        }
+        if (requiresReprogram) {
+            auditService.recordStatusChange(saved, currentUser, previousStatus, Status.EN_REVISION, null, null);
+            auditService.recordReprogram(saved, currentUser, saved.getDate(), saved.getScheduleFrom(),
+                    saved.getScheduleTo(), null, null);
             // Mismo aviso que un cambio de estado manual: correo al contacto y notificación al creador.
             eventPublisher.publishEvent(new EventStatusChangedEvent(saved.getId(), previousStatus,
                     saved.getStatus(), currentUser.getId()));

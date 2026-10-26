@@ -164,4 +164,32 @@ class EventLocationAndReviewIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isBadRequest());
         assertThat(reload(event).getName()).isNotEqualTo("Editado");
     }
+
+    @Test
+    void unaConformidadParcialSePierdeSiCambiaLaAgendaEnRevision() throws Exception {
+        Event event = newEvent(Status.EN_REVISION);
+        event.setCeremonialOk(true);
+        eventRepository.save(event);
+
+        mockMvc.perform(as(Role.ADMIN_FULL, json(patch("/api/events/{id}", event.getId()), Map.of("scheduleFrom", "09:00"))))
+                .andExpect(status().isOk());
+        assertThat(reload(event).isCeremonialOk()).isFalse();
+
+        // Técnica sola ya no alcanza para aprobar la agenda nueva.
+        mockMvc.perform(as(Role.ADMIN_TECNICA, json(post("/api/events/{id}/status", event.getId()), Map.of("to", "APROBADO"))))
+                .andExpect(status().isAccepted());
+        assertThat(reload(event).getStatus()).isEqualTo(Status.EN_REVISION);
+    }
+
+    @Test
+    void reenviarElEspacioActualDadoDeBajaSeAdmite() throws Exception {
+        Event event = newEvent(Status.EN_REVISION);
+        var space = event.getSpace();
+        space.setActive(false);
+        spaceRepository.save(space);
+
+        mockMvc.perform(as(Role.ADMIN_FULL, json(patch("/api/events/{id}", event.getId()),
+                        Map.of("spaceId", space.getId(), "name", "Formulario completo"))))
+                .andExpect(status().isOk());
+    }
 }
