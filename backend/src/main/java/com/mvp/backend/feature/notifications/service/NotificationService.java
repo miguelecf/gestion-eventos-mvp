@@ -22,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -33,12 +34,31 @@ public class NotificationService {
     private final EventRepository eventRepository;
     private final EventCommentRepository eventCommentRepository;
 
+    private static final Set<String> INTERNAL_AUDIENCE = Set.of("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA");
+
+    /**
+     * Las notificaciones nombran eventos internos y citan comentarios: solo las recibe y las lee una
+     * cuenta administrativa activa. Si el creador de un evento fue degradado a USUARIO, deja de
+     * recibirlas y de ver las anteriores (REV-16).
+     */
+    private static boolean isInternalAudience(User user) {
+        return user.isActive() && INTERNAL_AUDIENCE.contains(user.getRole());
+    }
+
+    private boolean isInternalAudience(Long userId) {
+        return userRepository.findById(userId).map(NotificationService::isInternalAudience).orElse(false);
+    }
+
+    /** Devuelve null si el destinatario no es una cuenta administrativa activa. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Notification create(CreateNotificationDto dto) {
         User user = userRepository.findById(dto.userId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Usuario no encontrado: " + dto.userId()));
+        if (!isInternalAudience(user)) {
+            return null;
+        }
 
         Event event = resolveEvent(dto.eventId());
         EventComment comment = resolveComment(dto.commentId());
@@ -69,6 +89,9 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public Page<NotificationDto> getRecentNotifications(Long userId, Pageable pageable) {
+        if (!isInternalAudience(userId)) {
+            return Page.empty(pageable);
+        }
         Page<Notification> notifications = notificationRepository
                 .findByUserIdAndActiveTrue(userId, pageable);
         return notifications.map(NotificationMapper::toDto);
@@ -76,6 +99,9 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public long countUnread(Long userId) {
+        if (!isInternalAudience(userId)) {
+            return 0;
+        }
         return notificationRepository.countByUserIdAndReadFalseAndActiveTrue(userId);
     }
 
