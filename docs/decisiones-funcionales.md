@@ -1,13 +1,12 @@
 # Decisiones funcionales y de alcance
 
-Este documento consolida las decisiones cerradas del plan y las reglas de negocio confirmadas en la versión corregida. Los identificadores del reporte se conservan como referencias, no como títulos. Es fuente para los capítulos finales del TFI.
+Este documento reúne las decisiones de alcance y las reglas de negocio vigentes. Los identificadores entre paréntesis (hallazgos del reporte de errores y tickets) remiten al [registro de decisiones](adr.md). Es fuente para los capítulos finales del TFI.
 
-## Decisiones cerradas del plan
+## Decisiones de alcance
 
-1. **Instrucciones:** `AGENTS.md` es el archivo canónico para todos los agentes; `CLAUDE.md` sólo lo importa.
-2. **Arquitectura:** la aplicación mantiene un monolito modular tipo microservicios. Las fronteras se documentan y vigilan con ArchUnit y lint. La deuda actual se congela; este plan no la refactoriza.
-3. **Permisos y reglas de negocio:** USUARIO puede leer catálogos; la baja lógica de eventos se permite en cualquier estado para roles admin; AT consulta conflictos de prioridad, pero sólo AF y AC los resuelven; el motivo de rechazo de una solicitud se comunica al solicitante y el de un evento es interno; la conformidad técnica es obligatoria para aprobar.
-4. **Alcance local:** `.atl/` se elimina, mientras `artifacts/` y `synthetic-user-engine/` permanecen locales e ignorados.
+1. **Arquitectura:** la aplicación mantiene un monolito modular tipo microservicios. Las fronteras se documentan y vigilan con ArchUnit y lint. La deuda actual se congela y no se refactoriza.
+2. **Permisos y reglas de negocio:** USUARIO puede leer catálogos; la baja lógica de eventos se permite en cualquier estado para roles admin; AT consulta conflictos de prioridad, pero sólo AF y AC los resuelven; el motivo de rechazo de una solicitud se comunica al solicitante y el de un evento es interno; la conformidad técnica es obligatoria para aprobar.
+3. **Pruebas de recorrido:** el motor de usuarios sintéticos (`synthetic-user-engine/`) se versiona y se mantiene junto con la API ([ADR-35](adr.md#adr-35)).
 
 ## Alcance futuro
 

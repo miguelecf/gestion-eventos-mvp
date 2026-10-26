@@ -1,6 +1,6 @@
 # Registro de cambios por ticket
 
-Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistema de tickets externo, y de la [revisión previa a la entrega](#revisión-previa-a-la-entrega) (`REV-xx`). Los tickets se revisan de a uno, aunque el hallazgo figure como corregido en [el historial](historial/hallazgos-2026-10.md): primero se verifica el código y el test, y después se corrige o se agrega cobertura.
+Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistema de tickets externo, y de la [revisión previa a la entrega](#revisión-previa-a-la-entrega) (`REV-xx`). Los tickets se revisan de a uno, aunque el hallazgo figure como corregido: primero se verifica el código y el test, y después se corrige o se agrega cobertura.
 
 - **Horario:** hora del commit, en Argentina (UTC−03:00).
 - **Commit:** hash corto del commit que contiene el cambio. Los commits que solo actualizan esta bitácora no se registran.
@@ -39,7 +39,7 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 - **Cambio:** `PublicEventDto` con id, nombre, fecha, horario, estado, prioridad, `spaceName`, `freeLocation` y `departmentName`. El frontend (`public-events.ts`, `PublicCalendarPage.tsx`) consume ese contrato. Regla registrada en [decisiones funcionales](decisiones-funcionales.md).
 - **Decisión:** la prioridad se mantiene en el contrato público porque el calendario la usa para el color.
 - **Verificación en OrbStack:** con el stack de Compose levantado, `GET /public/events` en `127.0.0.1:8080` devolvió solo los campos del DTO público. El E2E no se corrió; el smoke solo usa el `id` del evento, que se conserva.
-- **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. Los tres coincidieron en que la fuga queda cerrada y en que el resto de `/public/**` no expone datos personales ni de gestión. Se aceptaron sus huecos de test (lista exacta de campos, exclusión de internos/inactivos/no aprobados, `freeLocation`), cubiertos en `002aad7`.
+- **Revisión de código:** la fuga queda cerrada y el resto de `/public/**` no expone datos personales ni de gestión. Se aceptaron tres huecos de test (lista exacta de campos, exclusión de internos/inactivos/no aprobados, `freeLocation`), cubiertos en `002aad7`.
 
 ## SEC-03 — Permisos de creación, edición y baja de eventos del rol USUARIO
 
@@ -49,7 +49,7 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 - **Hueco:** las reglas eran por método (`PATCH` y `POST`). Un `PUT`/`DELETE` sobre `/api/events/**` caía en `anyRequest().authenticated()` y llegaba al dispatcher (405). Hoy no hay endpoints con esos métodos, pero uno futuro habría quedado abierto a USUARIO.
 - **Cambio:** después de `GET /api/events/**` (que incluye a USUARIO), una regla sin método reserva el resto de `/api/events/**` a AF/AC/AT. Reemplaza las reglas sueltas de `PATCH` y `POST`. Actualizada la matriz de [permisos](permisos.md).
 - **Cobertura agregada:** `PUT`/`DELETE` de USUARIO responden 403, y tras los intentos rechazados el evento conserva el nombre, el estado y `active`.
-- **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. Ninguno encontró hallazgos bloqueantes. Se descartaron dos notas menores: `HEAD` sobre `/api/events/**` ahora exige rol admin, pero no se usa y el contrato documenta solo `GET`; y una precisión de redacción del comentario, que ya describe el efecto real.
+- **Revisión de código:** sin hallazgos bloqueantes. Se descartaron dos notas menores: `HEAD` sobre `/api/events/**` ahora exige rol admin, pero no se usa y el contrato documenta solo `GET`; y una precisión de redacción del comentario, que ya describe el efecto real.
 
 ## REQ-01 — Preservar `requiresTech` al convertir solicitudes en eventos
 
@@ -59,7 +59,7 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 - **Valores por defecto:** sin body, el evento queda con `requiresTech=false`. Con `true` y sin modo, el modo es `SETUP_ONLY`. Con `true`, se valida la capacidad técnica antes de crear el evento.
 - **Interfaz:** el diálogo de conversión de `PublicRequestDetailPage` tiene un checkbox de soporte técnico y un selector de modo.
 - **Documentación:** regla agregada a [decisiones funcionales](decisiones-funcionales.md) (`33a5b9d`). Antes figuraba solo en el historial y en el Javadoc del controller.
-- **Cobertura:** `RequestConversionIntegrationTest` cubre la conversión con soporte `ATTENDED` y sin body (2/2). El rechazo por falta de capacidad técnica al convertir no tiene test; cargado en el [backlog](backlog.md#pendientes-detectados-en-la-segunda-iteración-tickets-secreq).
+- **Cobertura:** `RequestConversionIntegrationTest` cubre la conversión con soporte `ATTENDED` y sin body (2/2). El rechazo por falta de capacidad técnica al convertir no tiene test.
 
 ## REQ-02 — `CONVERTIDO` no equivale a `APROBADO`
 
@@ -71,13 +71,13 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
   - `RequestConfirmationPage` decía "Si es aprobada, el evento aparecerá en el calendario público". Ahora explica que la solicitud aceptada se convierte en evento y que aparece en el calendario cuando Ceremonial y Técnica lo aprueban.
   - `PublicRequestStatusSchema` (Zod, sin consumidores) modelaba la solicitud con `APROBADA`. Quedó alineado con `RequestStatus` del backend.
 - **Documentación:** regla agregada a [decisiones funcionales](decisiones-funcionales.md).
-- **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. Ninguno encontró otro lugar que equipare `CONVERTIDO` con `APROBADO`. Se aceptó el schema Zod legado. Queda pendiente, fuera de alcance: `EventStatusSchema` usa estados de evento que no existen (`CANCELADO`, `PENDIENTE`, `REPROGRAMADO`); cargado en el [backlog](backlog.md#pendientes-detectados-en-la-segunda-iteración-tickets-secreq).
+- **Revisión de código:** no hay otro lugar que equipare `CONVERTIDO` con `APROBADO`. Se aceptó el schema Zod legado. Queda pendiente, fuera de alcance: `EventStatusSchema` usa estados de evento que no existen (`CANCELADO`, `PENDIENTE`, `REPROGRAMADO`).
 
 ## SEC-04 — Matriz única de permisos entre backend y CASL
 
 **Estado:** corregido. Antes había tres copias que se alineaban a mano (hallazgo 1.5): la tabla de `docs/permisos.md`, `SecurityConfig` y `ability.ts`.
 
-- **Diseño (elegido por Miguel):** un JSON versionado como fuente única. Vive en `frontend/src/libs/` porque la imagen Docker del frontend solo copia `frontend/`; el test backend lo lee por ruta relativa (el build Docker del backend corre con `-DskipTests`).
+- **Diseño:** un JSON versionado como fuente única. Vive en `frontend/src/libs/` porque la imagen Docker del frontend solo copia `frontend/`; el test backend lo lee por ruta relativa (el build Docker del backend corre con `-DskipTests`).
 - **CASL:** `ability.ts` arma las reglas desde la matriz, sin `cannot` explícitos (lo que no figura queda denegado). Valida acciones y sujetos al cargar el módulo. `ADMIN_FULL` deja de tener `manage all` y recibe sus filas; la pantalla de usuarios pasa a `manage User` (`routes.tsx`, sidebar). Se comparó rol por rol con la versión anterior: ninguna consulta de la UI pierde permisos.
 - **Test:** `PermissionMatrixIntegrationTest` verifica:
   1. Que la matriz y los controllers tengan exactamente los mismos endpoints.
@@ -89,17 +89,17 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
   - Quitar `ADMIN_TECNICA` del `@PreAuthorize` de comentarios falla el test de `@PreAuthorize`.
   - Todas se revirtieron.
 - **Documentación:** `docs/permisos.md` explica la matriz, sus campos, las reglas que aplican los servicios, la infraestructura fuera de la matriz y qué no verifica el test. También se actualizaron `AGENTS.md` y `docs/arquitectura.md`.
-- **Revisión con Pi:** `opencode-go/deepseek-v4-pro`, `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura.
+- **Revisión de código:**
   - **Aceptado:** el test no evaluaba `@PreAuthorize` (agregado); las descripciones de comentarios decían "limita al autor", pero `verifyAuthorOrPrivileged` también deja pasar a AF/AC/AT (corregido); la documentación prometía más de lo que verifica el test (precisado).
   - **Documentado como límite:** una sola instancia por ruta; el mapeo de `casl` a filas es revisión humana.
-  - **Al backlog:** las filas sin endpoints (conformidades por rol), que no tienen test.
+  - **Pendiente:** las filas sin endpoints (conformidades por rol), que no tienen test. Cubierto después por REV-10.
   - **Descartado:** que el `manage all` anterior excluyera acciones custom. En CASL, `manage` es comodín.
 
 ## SEC-05 — Conflictos pendientes restringidos según el rol
 
 **Estado:** corregido. El hallazgo 1.6 (`9f0d668`) ya restringía `GET /api/priority/conflicts/**` a AF, AC y AT, y `POST /api/priority/decisions` a AF y AC, según la regla de [decisiones funcionales](decisiones-funcionales.md). La matriz (filas `priority.read` y `priority.resolve`) y `PermissionMatrixIntegrationTest` lo confirmaban, y el dashboard solo consulta `/pending` con `read Priority`; AT ve la alerta con "Ver eventos" en lugar de "Resolver".
 
-- **Fuga encontrada:** con un USUARIO autenticado, `HEAD /api/priority/conflicts/pending` y `HEAD /api/priority/conflicts?eventId=` respondían 200. Spring MVC atiende `HEAD` con el handler `GET`, y el matcher solo restringía `GET`, así que `HEAD` caía en `anyRequest().authenticated()` y el controller ejecutaba la consulta, aunque sin cuerpo. Los métodos sin handler daban 405 en lugar de 403. Lo detectó la revisión con Pi y se confirmó con una sonda descartable.
+- **Fuga encontrada:** con un USUARIO autenticado, `HEAD /api/priority/conflicts/pending` y `HEAD /api/priority/conflicts?eventId=` respondían 200. Spring MVC atiende `HEAD` con el handler `GET`, y el matcher solo restringía `GET`, así que `HEAD` caía en `anyRequest().authenticated()` y el controller ejecutaba la consulta, aunque sin cuerpo. Los métodos sin handler daban 405 en lugar de 403. Lo detectó la revisión de código y se confirmó con una sonda descartable.
 - **Corrección:** en `SecurityConfig`, después de las reglas específicas, una regla para cualquier método sobre `/api/priority/**` reservada a los tres roles admin, como hizo SEC-03 con `/api/events/**`. Como las reglas específicas se evalúan antes, AT sigue sin poder resolver.
 - **Tests (`PriorityConflictAccessIntegrationTest`):**
   - Anónimo y USUARIO reciben 403 en `/pending` y en `/conflicts?eventId=`. Los tres admins reciben 200 con un conflicto real, no solo una página vacía.
@@ -107,9 +107,9 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
   - El fixture de conflictos pasa de `PriorityConflictDecisionIntegrationTest` a `IntegrationTestBase` (`newPriorityConflict()`).
 - **Prueba negativa:** agregar USUARIO a la regla `GET` hace fallar los dos tests de consulta (403 esperado, 200 recibido). Se revirtió.
 - **Documentación:** `docs/permisos.md` aclara que `PermissionMatrixIntegrationTest` no evalúa `HEAD`.
-- **Revisión con Pi:** `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura, en dos rondas (la segunda sobre la corrección final, sin hallazgos). `opencode-go/deepseek-v4-pro` no corrió: el proveedor respondió `402 Insufficient account funds`.
+- **Revisión de código:** dos rondas; la segunda, sobre la corrección final, sin hallazgos.
   - **Aceptado:** el hueco de `HEAD` y de los métodos sin handler (corregido); `createdAt` del fixture era redundante porque `@PrePersist` lo pisa (quitado).
-  - **Al backlog:** el mismo hueco de `HEAD` en `/api/audit/**`, `/api/tech/**` y `/admin/event-requests/**` (la sonda dio 200 o 400 como USUARIO); y las notificaciones de conflicto a un admin degradado a USUARIO. Ver el [backlog](backlog.md#pendientes-detectados-en-la-segunda-iteración-tickets-secreq).
+  - **Pendiente en ese momento:** el mismo hueco de `HEAD` en `/api/audit/**`, `/api/tech/**` y `/admin/event-requests/**` (la sonda dio 200 o 400 como USUARIO), y las notificaciones de conflicto a un admin degradado a USUARIO. Los cerraron REV-05 y REV-16.
   - **Descartado:** que `requiresRebooking` en `EventResponseDto` exponga conflictos a USUARIO. Es un dato de `event.read`, sin el conflicto ni el evento que lo desplaza.
 
 ## SEC-06 — `deciderUserId` obtenido del usuario autenticado
@@ -119,19 +119,19 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 - **Hueco de cobertura:** el test existente solo probaba `KEEP_ORIGINAL` y solo miraba `decisionBy`. `REBOOK_OTHER` también usa al decisor, al modificar el evento y auditar el cambio de agenda, y no tenía test.
 - **Test agregado (`PriorityConflictDecisionIntegrationTest`):** AC reubica el evento desplazado con un `deciderUserId` de AF en el body. Verifica que `decisionBy`, `lastModifiedBy` y el actor de las auditorías `PRIORITY_CONFLICT` (cierre) y `SCHEDULE_CHANGE` sean AC, y que el evento haya cambiado de espacio. El principal es AC porque el fixture lo crea AF: un decisor tomado de otro lado no coincide por casualidad.
 - **Prueba negativa:** pasar `conflict.getCreatedBy()` a `applyRebooking` en lugar del decisor hace fallar el test (esperado AC, recibido AF). Se revirtió.
-- **Revisión con Pi:** `openai/gpt-6.1-sol` y `minimax/MiniMax-M3`, en solo lectura. `opencode-go/deepseek-v4-pro` volvió a responder `402 Insufficient account funds`.
+- **Revisión de código:**
   - **Sin hallazgos:** ningún camino toma al decisor del cliente. Tampoco hay otros endpoints que acepten un ID de actor para acciones auditables: `GET /api/events/user/{userId}` es un filtro, `/api/users/{id}` es el usuario objeto de la acción, y `CreateNotificationDto.userId` es un destinatario interno que ningún controller expone.
   - **Aceptado:** filtrar la auditoría `PRIORITY_CONFLICT` por `toValue == 'CLOSED'`, para que el test no dependa de que el fixture abra el conflicto sin auditar.
 
 ## Incidencias de entorno
 
-- **2026-10-17 — Maven falla con `cannot find symbol` en clases con Lombok.** El plugin `jdtls-lsp` de Claude Code lanza Eclipse JDT LS (`jdtls` de Homebrew) sin el agente de Lombok. JDT LS importa el proyecto Maven, genera `.classpath`/`.project`/`.settings` (ignorados por git) y compila en el mismo `target/classes` que Maven. Esas clases salen sin getters, builders ni constructores de Lombok; como son más nuevas que los fuentes, Maven no recompila `main` y falla `testCompile`. Solución inmediata: `./mvnw clean test`. Los errores de Lombok que muestra el editor no son reales.
+- **2026-10-17 — Maven falla con `cannot find symbol` en clases con Lombok.** Un editor que lanza Eclipse JDT LS (`jdtls` de Homebrew) sin el javaagent de Lombok rompe la compilación de Maven. JDT LS importa el proyecto Maven, genera `.classpath`/`.project`/`.settings` (ignorados por git) y compila en el mismo `target/classes` que Maven. Esas clases salen sin getters, builders ni constructores de Lombok; como son más nuevas que los fuentes, Maven no recompila `main` y falla `testCompile`. Solución inmediata: `./mvnw clean test`. Los errores de Lombok que muestra el editor no son reales.
 
 ## Revisión previa a la entrega
 
 **Fecha:** 2026-10-26. **Rama:** `migue/general`. **Motivo:** confirmar, antes de entregar el TFI, que el backend cumple lo que el documento afirma y que no quedan fallas fuertes.
 
-**Cómo se revisó.** Siete revisores en paralelo, en solo lectura y cada uno con un área: Claude Opus (trazabilidad de cada RF, RNF, RN y CU del TFI contra el código), Claude Sonnet (suite, E2E y sondas contra el stack), y Pi con `openai/gpt-6.1-sol` (solicitudes y correos), `minimax/MiniMax-M3` (eventos y auditoría), `opencode-go/deepseek-v4-pro` (disponibilidad, prioridad, capacidad y migraciones) y `openai/gpt-6-astra` (seguridad y cuentas). Cada hallazgo se verificó en el código antes de aceptarlo y, salvo REV-10 y REV-17, cada arreglo tiene un test que fallaba antes del cambio. El resumen y el estado del TODO están en el [backlog](backlog.md).
+**Cómo se revisó.** Se contrastó cada RF, RNF, RN y CU del TFI contra el código, se corrieron la suite, el E2E y sondas contra el stack, y se revisó el código por área: solicitudes y correos, eventos y auditoría, disponibilidad, prioridad y capacidad, y seguridad y cuentas. Cada hallazgo se verificó en el código antes de aceptarlo y, salvo REV-10, REV-17 y REV-24, cada arreglo tiene un test que fallaba antes del cambio.
 
 | Fecha y hora | ID | Commit | Tipo | Cambio | Verificación |
 |---|---|---|---|---|---|
@@ -156,14 +156,16 @@ Bitácora de los tickets `SEC-xx` (seguridad) y `REQ-xx` (requisitos) del sistem
 | 2026-10-26 00:55 | REV-19 | `386abcd` | fix | Un cambio de agenda reinicia también la conformidad parcial de un evento en revisión; se admite reenviar el espacio actual dado de baja. | `EventLocationAndReviewIntegrationTest` (rojo previo en 2 casos) |
 | 2026-10-26 00:56 | REV-20 | `de9ba08` | fix | `sessions_invalid_before` (V17): los tokens previos a un restablecimiento o a una baja no reviven. | `SessionRevocationIntegrationTest` (rojo previo: 200) |
 | 2026-10-26 00:59 | REV-21 | `6498888` | fix | Contador de intentos fallidos atómico; `markAsRead` con el filtro de audiencia; test de REV-16 reforzado. | `ErrorStatusOverHttpIntegrationTest`, `InternalNotificationAudienceIntegrationTest` (rojo previo) |
+| 2026-10-26 08:38 | REV-23 | `dbbeeba` | fix | La respuesta de la conversión informa `originType` y `originRequestId`, igual que el detalle del evento. | `RequestConversionIntegrationTest` (rojo previo: `null`); suite backend 114/114 |
+| 2026-10-26 09:01 | REV-24 | `081e1cb` | feat | Motor de usuarios sintéticos versionado y reescrito contra el contrato vigente: cinco personas recorren la app por HTTP y cada paso verifica una regla. | Tres rondas contra el stack E2E: 28 recorridos y 156 pasos sin fallas |
 
-**Revisión cruzada.** Los commits REV-01 a REV-16 se revisaron otra vez con `openai/gpt-6.1-sol`, `minimax/MiniMax-M3` y `opencode-go/deepseek-v4-pro`, en solo lectura. Se confirmaron y corrigieron seis hallazgos (REV-18 a REV-21). Tres quedaron como decisiones o endurecimientos en el backlog: el refresh concurrente del mismo token, la doble ocupación durante un conflicto de prioridad y la conversión de una solicitud con un departamento dado de baja.
+**Segunda revisión.** Los commits REV-01 a REV-16 se revisaron otra vez. Se confirmaron y corrigieron seis hallazgos (REV-18 a REV-21). Tres quedaron como decisiones o endurecimientos pendientes: el refresh concurrente del mismo token, la doble ocupación durante un conflicto de prioridad y la conversión de una solicitud con un departamento dado de baja.
 
 **Verificación final:** suite backend 113/113 (`./mvnw clean test`); E2E sobre MySQL con el runner aislado, smoke 16/16 y Playwright 3/3, corrido dos veces (después de REV-17 y de REV-21). Las migraciones V15 a V17 validan contra las entidades (`ddl-auto: validate`).
 
 **Entorno local:** REV-11 obliga a definir `JWT_SECRET`. El `.env` local usaba la clave publicada y se reemplazó por una generada con `openssl rand -hex 32`. Las sesiones abiertas se cierran.
 
-**Decisiones registradas:** ADR-25 a ADR-34 en el [registro de decisiones](adr.md). ADR-05 y ADR-14 quedan reemplazadas.
+**Recorridos sintéticos (REV-24):** tres rondas de los diez recorridos contra el stack E2E, 28 recorridos y 156 pasos sin fallas ni respuestas 5xx. La primera corrida encontró REV-23.
 
-**Pendientes:** lo que quedó fuera de alcance está en la sección "Pendientes" del [backlog](backlog.md), y los ajustes de texto del TFI, en "Ajustes al texto del TFI".
+**Decisiones registradas:** ADR-25 a ADR-35 en el [registro de decisiones](adr.md). ADR-05 y ADR-14 quedan reemplazadas.
 

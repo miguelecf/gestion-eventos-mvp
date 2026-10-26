@@ -5,7 +5,7 @@ Cada decisión de arquitectura y de negocio del TFI tiene una entrada en este do
 ## Cómo leerlo
 
 - **Estado:** `vigente` (rige hoy), `propuesta` (acordada, sin implementar), `reemplazada` (indica por cuál).
-- **Origen:** el hallazgo del reporte (`1.1`, `2.3`…) o el ticket externo (`SEC-xx`, `REQ-xx`, `API-xx`) que la motivó, con el commit que la implementa.
+- **Origen:** el hallazgo del reporte de errores (`1.1`, `2.3`…), el ítem del plan de trabajo (`C1`, `D2`…) o el ticket (`SEC-xx`, `REQ-xx`, `API-xx`, `REV-xx`) que la motivó, con el commit que la implementa.
 - **Fecha:** la del commit que la implementó o documentó por primera vez.
 - Una decisión no se edita para cambiarla. Se agrega una entrada nueva y la anterior pasa a `reemplazada`.
 
@@ -33,7 +33,7 @@ Cada decisión de arquitectura y de negocio del TFI tiene una entrada en este do
 | [18](#adr-18) | Motivo de rechazo: público en la solicitud, interno en el evento | vigente | 2026-10-01 | 2.5, 2.6, 6.3 |
 | [19](#adr-19) | Los rechazos por conflicto no se auditan | vigente | 2026-10-01 | 4.3 |
 | [20](#adr-20) | Correos después del commit; una falla no revierte la operación | vigente | 2026-10-01 | 2.5, 5.5 |
-| [21](#adr-21) | Migraciones Flyway inmutables | vigente | 2026-10-03 | plan 2026-10 |
+| [21](#adr-21) | Migraciones Flyway inmutables | vigente | 2026-10-03 | D2 |
 | [22](#adr-22) | Filtros del listado de eventos en el cliente | reemplazada por 23 | 2026-10-01 | 2.3 |
 | [23](#adr-23) | Filtros del listado de eventos en el servidor | propuesta | 2026-10-24 | API-02 |
 | [24](#adr-24) | Bandeja de solicitudes paginada en el servidor | propuesta | 2026-10-24 | API-03 |
@@ -47,6 +47,7 @@ Cada decisión de arquitectura y de negocio del TFI tiene una entrada en este do
 | [32](#adr-32) | Las notificaciones internas son solo para cuentas administrativas | vigente | 2026-10-26 | REV-16 |
 | [33](#adr-33) | Las acciones sobre cuentas internas se auditan | vigente | 2026-10-26 | REV-09 |
 | [34](#adr-34) | Un catálogo dado de baja no se asigna, pero no bloquea lo existente | vigente | 2026-10-26 | REV-08, REV-13 |
+| [35](#adr-35) | El motor de usuarios sintéticos se versiona y verifica la app por HTTP | vigente | 2026-10-26 | REV-24 |
 
 ## Arquitectura
 
@@ -112,7 +113,7 @@ Cada decisión de arquitectura y de negocio del TFI tiene una entrada en este do
 
 **Decisión.** Después de las reglas específicas, cada prefijo admin termina con una regla sin método que lo reserva a los roles admin. Las reglas específicas se evalúan antes, así que AT sigue sin poder resolver conflictos.
 
-**Consecuencias.** Un endpoint futuro bajo esos prefijos nace cerrado. `/api/audit/**`, `/api/tech/**` y `/admin/event-requests/**` todavía tienen el hueco de `HEAD`, cargado en el [backlog](backlog.md).
+**Consecuencias.** Un endpoint futuro bajo esos prefijos nace cerrado. `/api/audit/**`, `/api/tech/**` y `/admin/event-requests/**` tenían el mismo hueco de `HEAD`; lo cerró [ADR-26](#adr-26).
 
 <a id="adr-06"></a>
 
@@ -274,7 +275,7 @@ Cada decisión de arquitectura y de negocio del TFI tiene una entrada en este do
 
 **Decisión.** La solicitud pública no declara soporte técnico. El área lo define al convertir (body opcional `{requiresTech, techSupportMode}`), y el valor se guarda en el evento. Sin body el evento no consume capacidad. Con `requiresTech=true` y sin modo, el modo es `SETUP_ONLY`, y la conversión se rechaza si no hay cupo.
 
-**Consecuencias.** El rechazo por falta de cupo al convertir todavía no tiene test ([backlog](backlog.md)).
+**Consecuencias.** El rechazo por falta de cupo al convertir todavía no tiene test.
 
 **Se verifica en:** `RequestConversionIntegrationTest`.
 
@@ -331,7 +332,7 @@ Cada decisión de arquitectura y de negocio del TFI tiene una entrada en este do
 
 **Decisión.** AF, AC y AT consultan conflictos, y solo AF y AC los resuelven. Las decisiones son `REBOOK_OTHER` y `KEEP_ORIGINAL`. La pantalla de resolución queda como trabajo futuro, y hoy se opera por API.
 
-**Consecuencias.** El contrato está documentado en el [backlog](backlog.md#resolver-conflictos-de-prioridad) para cuando se construya la pantalla. AT ve la alerta del dashboard con "Ver eventos" en lugar de "Resolver".
+**Consecuencias.** La pantalla de resolución queda como trabajo futuro y usará este mismo contrato. AT ve la alerta del dashboard con "Ver eventos" en lugar de "Resolver".
 
 <a id="adr-17"></a>
 
@@ -395,7 +396,7 @@ Cada decisión de arquitectura y de negocio del TFI tiene una entrada en este do
 
 **Decisión.** Si un evento `RESERVADO` o `APROBADO` cambia fecha, horario, ubicación o buffers, por edición o por reubicación, vuelve a `EN_REVISION`. En cualquier estado, ese cambio pone en `false` las conformidades que hubiera, también la parcial de un evento que todavía estaba en revisión. Cada reinicio se audita. Se publica el cambio de estado (correo y notificación) y, si cambió la agenda, la reprogramación. Un evento `RECHAZADO` o dado de baja no se edita.
 
-**Consecuencias.** Coincide con RN-05 del TFI: las dos áreas evalúan la agenda nueva. La reversión manual por `POST /status` todavía conserva las conformidades que no se bajan explícitamente (ver backlog).
+**Consecuencias.** Coincide con RN-05 del TFI: las dos áreas evalúan la agenda nueva. La reversión manual por `POST /status` todavía conserva las conformidades que no se bajan explícitamente; queda como decisión pendiente.
 
 **Se verifica en:** `EventLocationAndReviewIntegrationTest`, `RebookingRevisionIntegrationTest`.
 
@@ -466,13 +467,25 @@ Cada decisión de arquitectura y de negocio del TFI tiene una entrada en este do
 
 ### ADR-21 · Migraciones Flyway inmutables
 
-**Estado:** vigente · **Fecha:** 2026-10-03 · **Origen:** plan 2026-10, ítem D2 (`df22516`, [historial](historial/plan-gestion-eventos-2026-10.md))
+**Estado:** vigente · **Fecha:** 2026-10-03 · **Origen:** D2 (`df22516`)
 
 **Contexto.** Las migraciones aplicadas forman parte del estado de cada base. Editar una deja bases que ya la corrieron con un esquema distinto al del código.
 
 **Decisión.** Nunca se edita una migración existente. Un error se corrige con la siguiente migración, y la entidad JPA se actualiza en el mismo cambio, porque el perfil de test genera el esquema desde JPA y no corre Flyway.
 
 **Consecuencias.** La historia de `db/migration` es acumulativa. Un desajuste entre migración y entidad no lo detectan los tests, solo el arranque contra MySQL.
+
+<a id="adr-35"></a>
+
+### ADR-35 · El motor de usuarios sintéticos se versiona y verifica la app por HTTP
+
+**Estado:** vigente · **Fecha:** 2026-10-26 · **Origen:** REV-24
+
+**Contexto.** `synthetic-user-engine/` estaba ignorado y usaba un contrato viejo: estados y roles retirados (`SOLICITADO`, `ADMIN_NORMAL`), rutas inexistentes y errores silenciados. Solo cargaba datos y no comprobaba nada.
+
+**Decisión.** El motor se versiona en la raíz y se mantiene junto con la API: un cambio de rutas, DTOs, códigos o roles actualiza sus recorridos en el mismo ítem. Cinco personas con sesión propia recorren los circuitos completos por HTTP, y cada paso verifica una regla con el código y el cuerpo esperados. La matriz de permisos se lee de `permisos.json`. El motor no toca la base y no cambia la contraseña, el rol ni el estado de las cuentas semilla. Se corre contra el stack E2E descartable.
+
+**Consecuencias.** Las carreras entre áreas y los circuitos que cruzan varios roles quedan probados sobre MySQL real y la imagen de producción, algo que los tests de integración (H2, un hilo por pedido) no cubren. Su primera corrida encontró REV-23. No reemplaza a los tests de integración ni al runner E2E: no corre en CI y depende de un stack levantado.
 
 ## Contratos de la API
 

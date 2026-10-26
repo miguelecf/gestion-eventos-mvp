@@ -16,7 +16,7 @@ public interface TechCapacityConfigRepository extends JpaRepository<TechCapacity
 
     /**
      * Configuración vigente: si por error hubiera varias activas, gana la más reciente (mayor id),
-     * de forma determinística. La configuración se gestiona por migración Flyway (ver docs/historial/hallazgos-2026-10.md, 3.5).
+     * de forma determinística. La configuración se gestiona por migración Flyway (ver docs/adr.md, ADR-13).
      */
     Optional<TechCapacityConfig> findFirstByActiveTrueOrderByIdDesc();
 

@@ -5,15 +5,11 @@ target/
 node_modules/
 .env
 .DS_Store
-docs/review-pack/
 
-# Local agent/tool data
+# Datos locales
 .atl/
 artifacts/
 
 # Generated Playwright artifacts
 frontend/test-results/
 frontend/playwright-report/
-
-# Internal agent coordination (local only)
-docs/reporte-codex.md

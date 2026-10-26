@@ -124,9 +124,12 @@ cd frontend && npx tsc -b && npm run build
 
 # De punta a punta: levanta un stack aislado, corre el smoke de API y Playwright, y lo descarta
 bash scripts/e2e/run.sh
+
+# Usuarios sintéticos: cinco personas recorren la app por HTTP y verifican cada regla
+cd synthetic-user-engine && .venv/bin/python main.py --base-url http://127.0.0.1:18080
 ```
 
-La suite de backend cubre las reglas de negocio de punta a punta sobre HTTP: permisos por rol contra la matriz única, disponibilidad, capacidad técnica, prioridad, conformidades, concurrencia, sesiones y trazabilidad. El runner E2E usa MySQL real y Mailpit, en un proyecto de Compose propio que no toca los datos locales.
+La suite de backend cubre las reglas de negocio de punta a punta sobre HTTP: permisos por rol contra la matriz única, disponibilidad, capacidad técnica, prioridad, conformidades, concurrencia, sesiones y trazabilidad. El runner E2E usa MySQL real y Mailpit, en un proyecto de Compose propio que no toca los datos locales. El [motor de usuarios sintéticos](synthetic-user-engine/README.md) recorre los circuitos completos con varias personas a la vez, incluidas carreras entre áreas, y deja un informe por corrida.
 
 ## Tecnologías
 
@@ -146,6 +149,7 @@ gestion-eventos-mvp/
 ├── frontend/                Interfaz pública e interna (React)
 │   └── src/libs/permisos.json             matriz única de permisos
 ├── scripts/e2e/             Runner de pruebas de punta a punta en un stack descartable
+├── synthetic-user-engine/   Personas sintéticas que recorren la app y verifican sus reglas
 ├── docker-compose*.yml      Stack local y variantes de acceso a MySQL y Mailpit
 └── DOCKER.md                Guía del entorno local
 ```
