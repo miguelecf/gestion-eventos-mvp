@@ -41,22 +41,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Long userId = Long.parseLong(claims.getSubject());
                 UserDetails userDetails = userDetailsService.loadUserById(userId);
 
-                if (userDetails.isEnabled()) {
-                    Set<GrantedAuthority> authorities = new HashSet<>();
-                    Set<String> scopes = tokenProvider.extractScopes(claims);
-                    scopes.forEach(scope -> authorities.add(new SimpleGrantedAuthority("SCOPE_" + scope)));
+                Set<String> scopes = tokenProvider.extractScopes(claims);
+                boolean passwordOnly = scopes.contains("password:update");
+                // Una cuenta con contraseña restablecida solo acepta el token de cambio de contraseña:
+                // las sesiones emitidas antes del restablecimiento dejan de valer (REV-12).
+                boolean staleSession = userDetails instanceof UserPrincipal principal
+                        && principal.isMustChangePassword() && !passwordOnly;
 
-                    String role = claims.get("role", String.class);
-                    if (StringUtils.hasText(role) && !scopes.contains("password:update")) {
-                        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                if (userDetails.isEnabled() && !staleSession) {
+                    Set<GrantedAuthority> authorities = new HashSet<>();
+                    scopes.forEach(scope -> authorities.add(new SimpleGrantedAuthority("SCOPE_" + scope)));
+                    // El rol sale de la cuenta, no del claim: un cambio de rol rige desde la petición
+                    // siguiente, sin esperar a que venza el token (REV-12).
+                    if (!passwordOnly) {
+                        authorities.addAll(userDetails.getAuthorities());
                     }
 
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
-                            authorities.isEmpty() ? userDetails.getAuthorities() : authorities
+                            authorities
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else if (staleSession) {
+                    request.setAttribute("jwt_invalid", true);
                 }
             } catch (ExpiredJwtException ex) {
                 request.setAttribute("jwt_expired", true);

@@ -44,7 +44,8 @@ public class RefreshTokenService {
         return new GeneratedRefreshToken(plainToken, saved);
     }
 
-    @Transactional
+    // Sin rollback por el 401/403: la revocación defensiva y la del token vencido deben persistir.
+    @Transactional(dontRollbackOn = ResponseStatusException.class)
     public RefreshToken validate(String token) {
         if (!org.springframework.util.StringUtils.hasText(token)) {
             throw new ResponseStatusException(UNAUTHORIZED, "Refresh token inválido");

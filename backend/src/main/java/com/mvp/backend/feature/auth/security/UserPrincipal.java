@@ -18,13 +18,16 @@ public class UserPrincipal implements UserDetails {
     private final String password;
     private final Set<GrantedAuthority> authorities;
     private final boolean active;
+    private final boolean mustChangePassword;
 
-    private UserPrincipal(Long id, String username, String password, Set<GrantedAuthority> authorities, boolean active) {
+    private UserPrincipal(Long id, String username, String password, Set<GrantedAuthority> authorities, boolean active,
+                          boolean mustChangePassword) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.authorities = authorities;
         this.active = active;
+        this.mustChangePassword = mustChangePassword;
     }
 
     public static UserPrincipal fromUser(User user) {
@@ -37,7 +40,8 @@ public class UserPrincipal implements UserDetails {
                 user.getUsername(),
                 user.getPassword(),
                 authorities,
-                user.isActive()
+                user.isActive(),
+                user.isMustChangePassword()
         );
     }
 

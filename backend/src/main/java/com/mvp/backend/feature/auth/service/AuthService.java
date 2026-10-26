@@ -138,10 +138,15 @@ public class AuthService {
         refreshTokenService.revokeAll(user);
     }
 
-    @Transactional
+    // Sin rollback por el 401/403: si no, se pierden las revocaciones de validate() y de abajo (REV-12).
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public LoginResponse refresh(RefreshRequest request) {
         RefreshToken existing = refreshTokenService.validate(request.getRefreshToken());
         User user = existing.getUser();
+        if (!user.isActive()) {
+            refreshTokenService.revoke(existing);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario inactivo");
+        }
         if (user.isMustChangePassword()) {
             refreshTokenService.revoke(existing);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Debe cambiar la contraseña");

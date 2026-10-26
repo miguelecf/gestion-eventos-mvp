@@ -1,6 +1,7 @@
 package com.mvp.backend.feature.users.service;
 
 import com.mvp.backend.feature.auth.security.CurrentUserService;
+import com.mvp.backend.feature.auth.service.RefreshTokenService;
 import com.mvp.backend.feature.auth.service.EmailService;
 import com.mvp.backend.feature.users.dto.CreateUserRequest;
 import com.mvp.backend.feature.users.dto.UpdateUserRequest;
@@ -46,6 +47,7 @@ public class UserAdminService {
     private final EmailService emailService;
     private final CurrentUserService currentUserService;
     private final UserAuditService userAuditService;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional(readOnly = true)
     public Page<UserAdminResponse> list(String q, Boolean active, String role, Pageable pageable) {
@@ -234,6 +236,11 @@ public class UserAdminService {
 
     public UserAdminResponse resetPassword(Long id) {
         User user = findUser(id);
+        // Las sesiones anteriores se cortan: el refresh se revoca y el access token deja de valer
+        // porque mustChangePassword vuelve a true (JwtAuthenticationFilter). Va antes de modificar la
+        // cuenta: la revocación limpia el contexto de persistencia y descartaría esos cambios.
+        refreshTokenService.revokeAll(user);
+        user = findUser(id);
         String temporaryPassword = generateTemporaryPassword();
 
         user.setPassword(passwordEncoder.encode(temporaryPassword));
