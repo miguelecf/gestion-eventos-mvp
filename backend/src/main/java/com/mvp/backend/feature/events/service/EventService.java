@@ -16,6 +16,7 @@ import com.mvp.backend.feature.priority.model.PriorityConflict;
 import com.mvp.backend.feature.priority.service.PriorityConflictService;
 import com.mvp.backend.feature.notifications.event.EventCreatedEmailEvent;
 import com.mvp.backend.feature.notifications.event.EventRescheduledEmailEvent;
+import com.mvp.backend.feature.notifications.event.EventStatusChangedEvent;
 import com.mvp.backend.feature.requests.repository.EventRequestRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import com.mvp.backend.feature.tech.exception.TechCapacityExceededException;
@@ -357,6 +358,9 @@ public class EventService {
             if (previousTechnicalOk) {
                 auditService.recordFieldUpdate(saved, currentUser, "technical_ok", "true", "false", null, null);
             }
+            // Mismo aviso que un cambio de estado manual: correo al contacto y notificación al creador.
+            eventPublisher.publishEvent(new EventStatusChangedEvent(saved.getId(), previousStatus,
+                    saved.getStatus(), currentUser.getId()));
         }
 
         if (agendaChanged) {

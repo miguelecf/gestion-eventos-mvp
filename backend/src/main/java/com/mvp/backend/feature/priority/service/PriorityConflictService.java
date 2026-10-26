@@ -16,12 +16,15 @@ import com.mvp.backend.feature.priority.dto.PendingPriorityConflictResponse;
 import com.mvp.backend.feature.priority.model.PriorityConflict;
 import com.mvp.backend.feature.priority.model.PriorityConflictDecision;
 import com.mvp.backend.feature.priority.model.PriorityConflictStatus;
+import com.mvp.backend.feature.events.model.Status;
 import com.mvp.backend.feature.priority.repository.PriorityConflictRepository;
 import com.mvp.backend.feature.tech.exception.TechCapacityExceededException;
 import com.mvp.backend.feature.tech.service.TechCapacityService;
 import com.mvp.backend.feature.users.model.User;
 import com.mvp.backend.feature.auth.security.CurrentUserService;
 import com.mvp.backend.shared.DomainValidationException;
+import com.mvp.backend.feature.notifications.event.EventRescheduledEmailEvent;
+import com.mvp.backend.feature.notifications.event.EventStatusChangedEvent;
 import com.mvp.backend.feature.notifications.event.PriorityConflictEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -34,6 +37,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -257,6 +261,18 @@ public class PriorityConflictService {
             }
         }
 
+        LocalDate previousDate = displaced.getDate();
+        LocalTime previousFrom = displaced.getScheduleFrom();
+        LocalTime previousTo = displaced.getScheduleTo();
+        Long previousSpaceId = displaced.getSpace() != null ? displaced.getSpace().getId() : null;
+        String previousFreeLocation = displaced.getFreeLocation();
+        Status previousStatus = displaced.getStatus();
+        boolean previousCeremonialOk = displaced.isCeremonialOk();
+        boolean previousTechnicalOk = displaced.isTechnicalOk();
+        // RN-05: la reubicación es una modificación relevante. Un evento comprometido vuelve a revisión
+        // y las dos áreas evalúan la nueva agenda, igual que al editarlo (REV-14).
+        boolean backToReview = previousStatus == Status.RESERVADO || previousStatus == Status.APROBADO;
+
         displaced.setDate(target.date());
         displaced.setScheduleFrom(target.from());
         displaced.setScheduleTo(target.to());
@@ -264,11 +280,29 @@ public class PriorityConflictService {
         displaced.setFreeLocation(null);
         displaced.setLastModifiedBy(decider);
         displaced.setRequiresRebooking(false);
+        if (backToReview) {
+            displaced.setStatus(Status.EN_REVISION);
+            displaced.setCeremonialOk(false);
+            displaced.setTechnicalOk(false);
+        }
 
         eventRepository.save(displaced);
 
         auditService.recordScheduleChange(displaced, decider, displaced.getDate(), displaced.getScheduleFrom(),
                 displaced.getScheduleTo());
+        if (backToReview) {
+            auditService.recordStatusChange(displaced, decider, previousStatus, Status.EN_REVISION, request.reason(), null);
+            if (previousCeremonialOk) {
+                auditService.recordFieldUpdate(displaced, decider, "ceremonial_ok", "true", "false", request.reason(), null);
+            }
+            if (previousTechnicalOk) {
+                auditService.recordFieldUpdate(displaced, decider, "technical_ok", "true", "false", request.reason(), null);
+            }
+            eventPublisher.publishEvent(new EventStatusChangedEvent(displaced.getId(), previousStatus,
+                    Status.EN_REVISION, decider.getId()));
+        }
+        eventPublisher.publishEvent(new EventRescheduledEmailEvent(displaced.getId(), previousDate, previousFrom,
+                previousTo, previousSpaceId, previousFreeLocation));
     }
 
     private String buildCode(LocalDate date, long sequence) {
