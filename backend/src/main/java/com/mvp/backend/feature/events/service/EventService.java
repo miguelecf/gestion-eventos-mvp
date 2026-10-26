@@ -71,7 +71,9 @@ public class EventService {
 
         Space space = resolveSpace(dto.spaceId());
 
+        // Como con los espacios, un departamento dado de baja no se asigna (RF-14, REV-08).
         Department department = departmentRepository.findById(dto.departmentId())
+                .filter(Department::isActive)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found"));
 
         String freeLocation = trimToNull(dto.freeLocation());
@@ -183,7 +185,10 @@ public class EventService {
 
         Department newDept = null;
         if (req.departmentId() != null) {
+            // Reenviar el departamento actual se admite aunque se haya dado de baja después.
+            Long currentDeptId = event.getDepartment() != null ? event.getDepartment().getId() : null;
             newDept = departmentRepository.findById(req.departmentId())
+                    .filter(d -> d.isActive() || d.getId().equals(currentDeptId))
                     .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Department not found"));
         }
 

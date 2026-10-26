@@ -110,6 +110,7 @@ public class EventRequestService {
         Department department = null;
         if (dto.requestingDepartmentId() != null) {
             department = departmentRepository.findById(dto.requestingDepartmentId())
+                    .filter(Department::isActive)
                     .orElseThrow(() -> new EntityNotFoundException("Department not found"));
         }
 
