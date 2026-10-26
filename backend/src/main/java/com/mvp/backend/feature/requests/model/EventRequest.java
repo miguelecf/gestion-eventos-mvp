@@ -24,6 +24,11 @@ import java.time.LocalTime;
 @Builder
 public class EventRequest extends BaseEntity {
 
+        /** Control optimista (REV-07): una escritura sobre una versión vieja falla con 409. */
+        @Version
+        @Column(nullable = false)
+        private Long version;
+
         // Token público para seguimiento
         @Column(name = "tracking_uuid", nullable = false, length = 36, unique = true)
         private String trackingUuid;

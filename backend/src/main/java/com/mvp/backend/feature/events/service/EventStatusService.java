@@ -63,7 +63,7 @@ public class EventStatusService {
         User actor = currentUserService.get();
         ensureOperativeRole(actor);
 
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
 
         if (!event.isActive()) {

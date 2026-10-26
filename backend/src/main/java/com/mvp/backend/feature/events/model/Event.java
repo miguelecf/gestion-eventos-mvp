@@ -23,6 +23,11 @@ import java.time.LocalTime;
 @Builder
 public class Event extends BaseEntity {
 
+    /** Control optimista (REV-07): una escritura sobre una versión vieja falla con 409. */
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     @Column(nullable = false)
     private LocalDate date;
 

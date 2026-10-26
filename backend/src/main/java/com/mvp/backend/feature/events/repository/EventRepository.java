@@ -5,19 +5,30 @@ import com.mvp.backend.feature.events.model.Status;
 import com.mvp.backend.shared.Priority;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
 
   // Devolver todos
   List<Event> findAll();
+
+  /**
+   * Evento con bloqueo de fila hasta el fin de la transacción: serializa los cambios de estado y
+   * conformidad, para que dos áreas que actúan a la vez no pisen sus conformidades (REV-07).
+   */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select e from Event e where e.id = :id")
+  Optional<Event> findByIdForUpdate(@Param("id") Long id);
 
   // Consultas operativas: solo eventos activos (la baja lógica los retira de la agenda, REV-02)
 
