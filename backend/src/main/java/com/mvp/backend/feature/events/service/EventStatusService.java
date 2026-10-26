@@ -218,6 +218,7 @@ public class EventStatusService {
     }
 
     private List<Event> ensureAvailability(Event event) {
+        availabilityService.lockSpace(event.getSpace() != null ? event.getSpace().getId() : null);
         AvailabilityParams params = AvailabilityParams.builder()
                 .date(event.getDate())
                 .spaceId(event.getSpace() != null ? event.getSpace().getId() : null)

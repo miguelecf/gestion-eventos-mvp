@@ -3,6 +3,7 @@ package com.mvp.backend.feature.availability.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.mvp.backend.feature.availability.model.AvailabilityParams;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
@@ -15,8 +16,9 @@ public record AvailabilityCheckRequestDto(
         String freeLocation,
         @NotNull @JsonFormat(pattern = "HH:mm") LocalTime scheduleFrom,
         @NotNull @JsonFormat(pattern = "HH:mm") LocalTime scheduleTo,
-        @PositiveOrZero Integer bufferBeforeMin,
-        @PositiveOrZero Integer bufferAfterMin,
+        // Mismo tope que el alta, la edición y la solicitud (REV-15).
+        @PositiveOrZero @Max(240) Integer bufferBeforeMin,
+        @PositiveOrZero @Max(240) Integer bufferAfterMin,
         Long ignoreEventId
 ) {
 

@@ -9,6 +9,8 @@ import com.mvp.backend.feature.events.repository.EventRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -20,6 +22,18 @@ import java.util.List;
 public class AvailabilityService {
     private final EventRepository eventRepository;
     private final SpaceRepository spaceRepository;
+
+    /**
+     * Bloquea el espacio hasta el fin de la transacción. Se llama antes de comprometer la ocupación
+     * (reserva o aprobación): dos eventos distintos sobre el mismo espacio ya no pasan el control a la
+     * vez y terminan solapados (REV-15). Con READ_COMMITTED, el control posterior ve lo confirmado.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void lockSpace(Long spaceId) {
+        if (spaceId != null) {
+            spaceRepository.findByIdForUpdate(spaceId);
+        }
+    }
 
     public AvailabilityResult checkSpaceAvailability(AvailabilityParams params) {
         if (params.spaceId() == null) {
