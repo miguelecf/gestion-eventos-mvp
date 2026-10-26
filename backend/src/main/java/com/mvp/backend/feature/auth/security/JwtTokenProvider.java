@@ -34,8 +34,21 @@ public class JwtTokenProvider {
         this.accessTokenExpirationMs = accessTokenExpirationMs;
     }
 
+    /** Clave que publicaban application.yml y .env.example: cualquiera podía firmar tokens con ella. */
+    private static final String PUBLISHED_SECRET = "aaee89681dd2ffeec808837802a9fdb19b157c71aea36e1886e42c7b2fe0fd7c";
+    private static final int MIN_SECRET_BYTES = 32;
+
     @PostConstruct
     void init() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT_SECRET no está definido. Generá uno con: openssl rand -hex 32");
+        }
+        if (PUBLISHED_SECRET.equals(secret)) {
+            throw new IllegalStateException("JWT_SECRET es la clave publicada en el repositorio. Generá una propia con: openssl rand -hex 32");
+        }
+        if (secret.getBytes(StandardCharsets.UTF_8).length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException("JWT_SECRET debe tener al menos " + MIN_SECRET_BYTES + " bytes");
+        }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 

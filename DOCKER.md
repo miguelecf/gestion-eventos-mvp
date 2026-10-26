@@ -85,7 +85,7 @@ Copiá `.env.example` a `.env` y ajustá los valores locales. Compose toma `.env
 | `MAILPIT_HOST_PORT` | `8025` | Puerto local de la UI, solo con `docker-compose.mail-access.yml`. |
 | `APP_PUBLIC_BASE_URL` | `http://127.0.0.1:${FRONTEND_PORT:-8080}` | URL pública del frontend conocida por el backend, por ejemplo para enlaces de correo. |
 | `APP_CORS_ALLOWED_ORIGINS` | `http://127.0.0.1:8080,http://localhost:8080` | Orígenes web autorizados por el backend; lista separada por comas. |
-| `JWT_SECRET` | Valor de desarrollo de `.env.example` | Secreto de firma JWT. Reemplazalo por un secreto propio y no lo compartas. |
+| `JWT_SECRET` | Sin valor por defecto (obligatorio) | Secreto de firma JWT. Generalo con `openssl rand -hex 32` y no lo compartas. El backend no arranca si falta, si tiene menos de 32 bytes o si es la clave que publicaba `.env.example`. |
 | `JWT_ACCESS_TOKEN_EXPIRATION` | `900000` | Vigencia del access token en milisegundos (15 minutos). |
 | `JWT_REFRESH_TOKEN_EXPIRATION` | `604800000` | Vigencia del refresh token en milisegundos (7 días). |
 | `BACKEND_JAVA_OPTS` | vacío | Opciones de JVM pasadas al backend mediante `JAVA_OPTS`. |

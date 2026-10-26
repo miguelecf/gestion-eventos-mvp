@@ -12,6 +12,9 @@ spring:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
 
+jwt:
+  secret: test-only-signing-secret-not-for-reuse-0123456789abcdef
+
 app:
   mail:
     mock-mode: ${MAIL_MOCK_MODE:true}
