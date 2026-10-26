@@ -20,10 +20,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.springframework.security.config.Customizer.withDefaults;
@@ -51,18 +55,18 @@ public class SecurityConfig {
                         // Security lo bloquea, todo error de un anónimo llega como 403 vacío.
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**", "/actuator/info")
+                        .requestMatchers(read("/actuator/health", "/actuator/health/**", "/actuator/info"))
                         .permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**")
                         .permitAll()
                         .requestMatchers("/api/users/**").hasRole("ADMIN_FULL")
                         .requestMatchers(HttpMethod.POST, "/public/event-requests").permitAll()
                         .requestMatchers(HttpMethod.POST, "/public/availability/check").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/public/spaces/*/occupancy").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/public/track/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/public/catalogs/spaces").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/public/events").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/catalogs/**")
+                        .requestMatchers(read("/public/spaces/*/occupancy")).permitAll()
+                        .requestMatchers(read("/public/track/**")).permitAll()
+                        .requestMatchers(read("/public/catalogs/spaces")).permitAll()
+                        .requestMatchers(read("/public/events")).permitAll()
+                        .requestMatchers(read("/api/catalogs/**"))
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "USUARIO")
                         .requestMatchers(HttpMethod.POST, "/api/catalogs/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
@@ -71,12 +75,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register").hasRole("ADMIN_FULL")
                         .requestMatchers(HttpMethod.POST, "/auth/change-password", "/auth/logout").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/events/*/status")
+                        .requestMatchers(read("/auth/me")).authenticated()
+                        .requestMatchers(read("/api/events/*/status"))
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.POST, "/api/events/*/status")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
-                        .requestMatchers(HttpMethod.GET, "/api/events/*/comments/**")
+                        .requestMatchers(read("/api/events/*/comments/**"))
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.POST, "/api/events/*/comments")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
@@ -84,7 +88,7 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.DELETE, "/api/events/*/comments/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
-                        .requestMatchers(HttpMethod.GET, "/api/events/**")
+                        .requestMatchers(read("/api/events/**"))
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "USUARIO")
                         // Alta, edición y baja lógica de eventos (cualquier método que no sea GET): sólo
                         // roles admin. USUARIO sólo crea solicitudes (POST /public/event-requests) —
@@ -93,13 +97,13 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.POST, "/api/availability/check")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "USUARIO")
-                        .requestMatchers(HttpMethod.GET, "/api/audit/**")
+                        .requestMatchers(read("/api/audit/**"))
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
-                        .requestMatchers(HttpMethod.GET, "/api/tech/capacity")
+                        .requestMatchers(read("/api/tech/capacity"))
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
-                        .requestMatchers(HttpMethod.GET, "/api/tech/events")
+                        .requestMatchers(read("/api/tech/events"))
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
-                        .requestMatchers(HttpMethod.GET, "/api/priority/conflicts", "/api/priority/conflicts/**")
+                        .requestMatchers(read("/api/priority/conflicts", "/api/priority/conflicts/**"))
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.POST, "/api/priority/decisions")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL")
@@ -108,11 +112,11 @@ public class SecurityConfig {
                         // anyRequest().authenticated() — hallazgo 1.6, SEC-05, docs/permisos.md.
                         .requestMatchers("/api/priority/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
-                        .requestMatchers(HttpMethod.GET, "/api/notifications/**")
+                        .requestMatchers(read("/api/notifications/**"))
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "USUARIO")
                         .requestMatchers(HttpMethod.PATCH, "/api/notifications/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA", "USUARIO")
-                        .requestMatchers(HttpMethod.GET, "/admin/event-requests/**")
+                        .requestMatchers(read("/admin/event-requests/**"))
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
                         .requestMatchers(HttpMethod.PATCH, "/admin/event-requests/**")
                         .hasAnyRole("ADMIN_FULL", "ADMIN_CEREMONIAL", "ADMIN_TECNICA")
@@ -123,6 +127,20 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Regla de lectura: GET y HEAD con los mismos roles. Spring MVC atiende HEAD con el handler GET,
+     * así que una regla solo por GET dejaba HEAD en anyRequest().authenticated() (REV-05).
+     */
+    private static RequestMatcher read(String... patterns) {
+        PathPatternRequestMatcher.Builder paths = PathPatternRequestMatcher.withDefaults();
+        List<RequestMatcher> matchers = new ArrayList<>();
+        for (String pattern : patterns) {
+            matchers.add(paths.matcher(HttpMethod.GET, pattern));
+            matchers.add(paths.matcher(HttpMethod.HEAD, pattern));
+        }
+        return new OrRequestMatcher(matchers);
     }
 
     @Bean

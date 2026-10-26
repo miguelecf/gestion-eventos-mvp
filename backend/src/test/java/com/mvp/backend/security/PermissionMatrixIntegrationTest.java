@@ -32,7 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * SEC-04: la matriz única de permisos (frontend/src/libs/permisos.json, la misma que arma CASL)
  * coincide con los controllers, con SecurityConfig y con los @PreAuthorize. Las reglas que aplican
- * los servicios (filas sin endpoints) no se verifican acá. Contrato en docs/permisos.md.
+ * los servicios (filas sin endpoints) no se verifican acá. Cada GET no público se evalúa también
+ * como HEAD. Contrato en docs/permisos.md.
  */
 class PermissionMatrixIntegrationTest extends IntegrationTestBase {
 
@@ -86,6 +87,16 @@ class PermissionMatrixIntegrationTest extends IntegrationTestBase {
                     if (expected != actual) {
                         mismatches.add("%s %s como %s: matriz=%s, SecurityConfig=%s"
                                 .formatted(row.get("id").asText(), endpoint.asText(), subject, expected, actual));
+                    }
+                    // Spring MVC atiende HEAD con el handler GET: una regla solo por GET lo deja abierto
+                    // (REV-05). Para las filas públicas no hace falta que HEAD quede abierto.
+                    if ("GET".equals(parts[0]) && !isPublic) {
+                        boolean headExpected = allowed.contains(subject);
+                        boolean headActual = privilegeEvaluator.isAllowed("", uri, "HEAD", authenticationFor(subject));
+                        if (headExpected != headActual) {
+                            mismatches.add("%s HEAD %s como %s: matriz=%s, SecurityConfig=%s"
+                                    .formatted(row.get("id").asText(), parts[1], subject, headExpected, headActual));
+                        }
                     }
                 }
             }
