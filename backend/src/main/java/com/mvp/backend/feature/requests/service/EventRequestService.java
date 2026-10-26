@@ -8,6 +8,7 @@ import com.mvp.backend.feature.catalogs.model.Department;
 import com.mvp.backend.feature.catalogs.model.Space;
 import com.mvp.backend.feature.catalogs.repository.DepartmentRepository;
 import com.mvp.backend.feature.catalogs.repository.SpaceRepository;
+import com.mvp.backend.feature.events.dto.EventOriginType;
 import com.mvp.backend.feature.events.dto.EventResponseDto;
 import com.mvp.backend.feature.events.model.Event;
 import com.mvp.backend.feature.events.model.Status;
@@ -526,7 +527,7 @@ public class EventRequestService {
         eventPublisher.publishEvent(new EventRequestStatusChangedEmailEvent(savedRequest.getId(),
                 RequestStatus.CONVERTIDO, null));
 
-        return EventMapper.toDto(savedEvent);
+        return EventMapper.toDto(savedEvent, EventOriginType.PUBLIC_REQUEST, savedRequest.getId());
     }
 
     private void validateStatusTransition(RequestStatus from, RequestStatus to) {
