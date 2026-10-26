@@ -43,6 +43,7 @@ import com.mvp.backend.feature.requests.repository.EventRequestRepository;
 import com.mvp.backend.feature.users.model.User;
 import com.mvp.backend.feature.notifications.event.EventRequestCreatedEmailEvent;
 import com.mvp.backend.shared.DomainValidationException;
+import com.mvp.backend.shared.Priority;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -130,7 +131,8 @@ public class EventRequestService {
                 .requirements(trimToNull(dto.requirements()))
                 .coverage(trimToNull(dto.coverage()))
                 .observations(trimToNull(dto.observations()))
-                .priority(dto.priority())
+                // RN-09: el solicitante no elige la prioridad; el área la ajusta en el evento si corresponde.
+                .priority(Priority.MEDIUM)
                 .audienceType(dto.audienceType())
                 .contactName(contactName)
                 .contactEmail(contactEmail)

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mvp.backend.feature.requests.validation.TimeRange;
 import com.mvp.backend.feature.requests.validation.XorLocation;
 import com.mvp.backend.shared.AudienceType;
-import com.mvp.backend.shared.Priority;
 import jakarta.validation.constraints.*;
 import com.mvp.backend.shared.validation.HasLocationChoice;
 import com.mvp.backend.shared.validation.HasScheduleRange;
@@ -53,9 +52,6 @@ public record CreateEventRequestDto(
         String coverage,
 
         String observations,
-
-        @NotNull(message = "priority is required")
-        Priority priority,
 
         @JsonProperty("audienceType")
         @NotNull(message = "audienceType is required")
