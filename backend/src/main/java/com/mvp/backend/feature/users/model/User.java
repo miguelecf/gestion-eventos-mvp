@@ -49,4 +49,8 @@ public class User extends BaseEntity {
 
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
+
+    /** Los tokens emitidos antes de este momento no valen (restablecimiento o desactivación, REV-20). */
+    @Column(name = "sessions_invalid_before")
+    private Instant sessionsInvalidBefore;
 }

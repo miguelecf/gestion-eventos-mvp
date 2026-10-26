@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -227,6 +228,10 @@ public class UserAdminService {
 
         boolean wasActive = target.isActive();
         target.setActive(nextActive);
+        if (wasActive && !nextActive) {
+            // Una reactivación posterior no revive los tokens de antes de la baja (REV-20).
+            target.setSessionsInvalidBefore(Instant.now());
+        }
         User saved = userRepository.save(target);
         if (wasActive != nextActive) {
             userAuditService.record(saved, actor, UserAuditAction.STATUS_CHANGED, nextActive ? "activado" : "desactivado");
@@ -245,6 +250,8 @@ public class UserAdminService {
 
         user.setPassword(passwordEncoder.encode(temporaryPassword));
         user.setMustChangePassword(true);
+        // Las sesiones anteriores no reviven cuando el titular defina su contraseña (REV-20).
+        user.setSessionsInvalidBefore(Instant.now());
         user.setFailedLoginAttempts(0);
 
         User saved = userRepository.save(user);

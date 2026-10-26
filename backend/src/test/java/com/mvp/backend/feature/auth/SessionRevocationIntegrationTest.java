@@ -100,4 +100,22 @@ class SessionRevocationIntegrationTest extends IntegrationTestBase {
         mockMvc.perform(json(post("/auth/refresh"), Map.of("refreshToken", session.get("refreshToken").asText())))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void elTokenAnteriorAlRestablecimientoNoRevivaAlCambiarLaContrasena() throws Exception {
+        User account = account("ADMIN_CEREMONIAL");
+        JsonNode session = login(account);
+        // El token viejo y el reset no deben caer en el mismo segundo: el iat tiene precisión de segundos.
+        Thread.sleep(1100);
+
+        mockMvc.perform(as(Role.ADMIN_FULL, post("/api/users/{id}/reset-password", account.getId()))).andExpect(status().isOk());
+        // El titular define su contraseña: mustChangePassword vuelve a false.
+        User reset = userRepository.findById(account.getId()).orElseThrow();
+        reset.setPassword(passwordEncoder.encode(PASSWORD));
+        reset.setMustChangePassword(false);
+        userRepository.save(reset);
+
+        mockMvc.perform(get("/api/events").header(HttpHeaders.AUTHORIZATION, bearer(session))).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/events").header(HttpHeaders.AUTHORIZATION, bearer(login(account)))).andExpect(status().isOk());
+    }
 }

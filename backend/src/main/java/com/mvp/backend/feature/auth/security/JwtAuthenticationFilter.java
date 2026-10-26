@@ -46,7 +46,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Una cuenta con contraseña restablecida solo acepta el token de cambio de contraseña:
                 // las sesiones emitidas antes del restablecimiento dejan de valer (REV-12).
                 boolean staleSession = userDetails instanceof UserPrincipal principal
-                        && principal.isMustChangePassword() && !passwordOnly;
+                        && ((principal.isMustChangePassword() && !passwordOnly)
+                            || issuedBefore(claims, principal.getSessionsInvalidBefore()));
 
                 if (userDetails.isEnabled() && !staleSession) {
                     Set<GrantedAuthority> authorities = new HashSet<>();
@@ -97,5 +98,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearer.substring(7);
         }
         return null;
+    }
+
+    /** Token emitido antes de la marca de invalidación de la cuenta (REV-20); el iat tiene precisión de segundos. */
+    private static boolean issuedBefore(Claims claims, java.time.Instant invalidBefore) {
+        return invalidBefore != null && claims.getIssuedAt() != null
+                && claims.getIssuedAt().toInstant().isBefore(invalidBefore.truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
     }
 }
