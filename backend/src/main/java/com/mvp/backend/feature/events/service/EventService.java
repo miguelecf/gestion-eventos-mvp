@@ -433,27 +433,27 @@ public class EventService {
 
     @Transactional(readOnly = true)
     public List<EventResponseDto> findByDate(LocalDate date) {
-        return eventRepository.findByDate(date).stream().map(EventMapper::toDto).toList();
+        return eventRepository.findByActiveTrueAndDate(date).stream().map(EventMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
     public List<EventResponseDto> findByDateBetween(LocalDate start, LocalDate end) {
-        return eventRepository.findByDateBetween(start, end).stream().map(EventMapper::toDto).toList();
+        return eventRepository.findByActiveTrueAndDateBetween(start, end).stream().map(EventMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
     public List<EventResponseDto> findByPriority(Priority p) {
-        return eventRepository.findByPriority(p).stream().map(EventMapper::toDto).toList();
+        return eventRepository.findByActiveTrueAndPriority(p).stream().map(EventMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
     public List<EventResponseDto> findByStatus(Status s) {
-        return eventRepository.findByStatus(s).stream().map(EventMapper::toDto).toList();
+        return eventRepository.findByActiveTrueAndStatus(s).stream().map(EventMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
     public List<EventResponseDto> findByUser(Long userId) {
-        return eventRepository.findByCreatedById(userId).stream().map(EventMapper::toDto).toList();
+        return eventRepository.findByActiveTrueAndCreatedById(userId).stream().map(EventMapper::toDto).toList();
     }
 
     /* -----Mapping----- */

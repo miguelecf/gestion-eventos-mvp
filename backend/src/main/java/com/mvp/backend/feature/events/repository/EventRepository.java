@@ -19,20 +19,22 @@ public interface EventRepository extends JpaRepository<Event, Long> {
   // Devolver todos
   List<Event> findAll();
 
+  // Consultas operativas: solo eventos activos (la baja lógica los retira de la agenda, REV-02)
+
   // Buscar por fecha exacta
-  List<Event> findByDate(LocalDate date);
+  List<Event> findByActiveTrueAndDate(LocalDate date);
 
   // Buscar entre fechas
-  List<Event> findByDateBetween(LocalDate startDate, LocalDate endDate);
+  List<Event> findByActiveTrueAndDateBetween(LocalDate startDate, LocalDate endDate);
 
   // Buscar por prioridad
-  List<Event> findByPriority(Priority priority);
+  List<Event> findByActiveTrueAndPriority(Priority priority);
 
   // Buscar por estado
-  List<Event> findByStatus(Status status);
+  List<Event> findByActiveTrueAndStatus(Status status);
 
   // Buscar por user
-  List<Event> findByCreatedById(Long userId);
+  List<Event> findByActiveTrueAndCreatedById(Long userId);
 
   // Buscar activo
 
