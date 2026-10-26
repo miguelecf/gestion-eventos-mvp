@@ -53,7 +53,8 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional
+    // Sin rollback por el 401/423: si no, el intento fallido registrado abajo se pierde.
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public LoginResponse login(LoginRequest request) {
         Authentication authentication;
         try {

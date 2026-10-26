@@ -27,7 +27,7 @@ class PriorityConflictAccessIntegrationTest extends IntegrationTestBase {
     void pendientesSoloParaAdmins() throws Exception {
         PriorityConflict conflict = newPriorityConflict();
 
-        mockMvc.perform(get("/api/priority/conflicts/pending")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/priority/conflicts/pending")).andExpect(status().isUnauthorized());
         mockMvc.perform(as(Role.USUARIO, get("/api/priority/conflicts/pending"))).andExpect(status().isForbidden());
         // Los tres roles admin consultan y reciben el conflicto abierto, no solo una página vacía.
         for (Role role : new Role[]{Role.ADMIN_FULL, Role.ADMIN_CEREMONIAL, Role.ADMIN_TECNICA}) {
@@ -43,7 +43,7 @@ class PriorityConflictAccessIntegrationTest extends IntegrationTestBase {
         Long highEventId = conflict.getHighEvent().getId();
 
         mockMvc.perform(get("/api/priority/conflicts").param("eventId", highEventId.toString()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(as(Role.USUARIO, get("/api/priority/conflicts").param("eventId", highEventId.toString())))
                 .andExpect(status().isForbidden());
         for (Role role : new Role[]{Role.ADMIN_FULL, Role.ADMIN_CEREMONIAL, Role.ADMIN_TECNICA}) {
