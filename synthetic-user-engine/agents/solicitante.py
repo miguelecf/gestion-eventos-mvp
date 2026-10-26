@@ -31,9 +31,9 @@ class Solicitante:
             body["freeLocation"] = slot.free_location
         result = self.s.json("POST", "/public/availability/check", auth=False, json=body)
         for conflict in result.get("conflicts") or []:
-            # La vista pública de un choque no identifica eventos internos ni a sus responsables.
-            ensure("eventId" not in conflict and "internal" not in conflict,
-                   f"la disponibilidad pública expone datos internos del evento que choca: {conflict}")
+            # La vista pública de un choque solo dice que el horario está ocupado: ni nombre, ni id, ni espacio.
+            ensure(set(conflict) <= {"status", "from", "to"},
+                   f"la disponibilidad pública expone datos del evento que choca: {sorted(conflict)}")
         return result
 
     def submit(self, body: dict[str, Any]) -> str:

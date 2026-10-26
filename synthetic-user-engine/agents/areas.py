@@ -41,9 +41,6 @@ class Tecnica(Staff):
         ensure(all(b["available"] >= 0 for b in blocks), f"un bloque informa más uso que cupo: {blocks}")
         return result
 
-    def tech_events(self, day: str) -> list[dict[str, Any]]:
-        return self.s.json("GET", "/api/tech/events", params={"date": day})
-
 
 class Administracion(Ceremonial):
     """ADMIN_FULL: puede todo lo de Ceremonial y Técnica, y además administra cuentas."""
@@ -72,9 +69,6 @@ class Administracion(Ceremonial):
 
     def set_active(self, user_id: int, active: bool) -> dict[str, Any]:
         return self.s.json("PATCH", f"/api/users/{user_id}/status", json={"active": active})
-
-    def reset_password(self, user_id: int) -> dict[str, Any]:
-        return self.s.json("POST", f"/api/users/{user_id}/reset-password")
 
     def account_history(self, user_id: int) -> list[dict[str, Any]]:
         return self.s.json("GET", f"/api/users/{user_id}/history")

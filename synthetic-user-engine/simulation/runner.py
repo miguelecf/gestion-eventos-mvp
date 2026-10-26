@@ -17,12 +17,13 @@ def select(only: list[str] | None) -> list[JourneyDef]:
     known = {j.key for j in JOURNEYS}
     unknown = set(only) - known
     if unknown:
-        raise SystemExit(f"Recorridos desconocidos: {', '.join(sorted(unknown))}. Disponibles: {', '.join(sorted(known))}")
+        raise RuntimeError(f"recorridos desconocidos: {', '.join(sorted(unknown))}. Disponibles: {', '.join(sorted(known))}")
     return [j for j in JOURNEYS if j.key in only]
 
 
 def run(config: dict[str, Any], *, rounds: int, seed: int, only: list[str] | None, shuffle: bool,
         pause: float, report_dir: Path) -> Report:
+    selected = select(only)  # Un nombre inválido se rechaza antes de iniciar sesión.
     run_tag = f"{seed:x}"[-6:]
     report = Report(config["api"]["base_url"], run_tag, seed)
     ctx = Context(config, report, seed, run_tag)
@@ -39,7 +40,7 @@ def run(config: dict[str, Any], *, rounds: int, seed: int, only: list[str] | Non
     order_rng = random.Random(seed)
     try:
         for number in range(1, rounds + 1):
-            batch = [j for j in select(only) if number == 1 or not j.once]
+            batch = [j for j in selected if number == 1 or not j.once]
             if shuffle:
                 order_rng.shuffle(batch)
             for journey in batch:
