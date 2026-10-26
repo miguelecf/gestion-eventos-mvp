@@ -5,6 +5,7 @@ import com.mvp.backend.feature.users.dto.UpdateUserRequest;
 import com.mvp.backend.feature.users.dto.UpdateUserRoleRequest;
 import com.mvp.backend.feature.users.dto.UpdateUserStatusRequest;
 import com.mvp.backend.feature.users.dto.UserAdminResponse;
+import com.mvp.backend.feature.users.dto.UserAuditEntryResponse;
 import com.mvp.backend.feature.users.dto.UserRoleOptionResponse;
 import com.mvp.backend.feature.users.service.UserAdminService;
 import jakarta.validation.Valid;
@@ -48,6 +49,12 @@ public class UserController {
     @GetMapping("/{id}")
     public UserAdminResponse getById(@PathVariable Long id) {
         return service.getById(id);
+    }
+
+    /** Historial de acciones administrativas sobre la cuenta, del más reciente al más antiguo. */
+    @GetMapping("/{id}/history")
+    public List<UserAuditEntryResponse> history(@PathVariable Long id) {
+        return service.history(id);
     }
 
     @PostMapping

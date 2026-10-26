@@ -2,9 +2,12 @@ package com.mvp.backend.feature.auth.service;
 
 import com.mvp.backend.feature.auth.dto.*;
 import com.mvp.backend.feature.auth.model.RefreshToken;
+import com.mvp.backend.feature.auth.security.CurrentUserService;
 import com.mvp.backend.feature.auth.security.JwtTokenProvider;
 import com.mvp.backend.feature.auth.security.UserPrincipal;
 import com.mvp.backend.feature.users.model.User;
+import com.mvp.backend.feature.users.model.UserAuditAction;
+import com.mvp.backend.feature.users.service.UserAuditService;
 import com.mvp.backend.feature.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,6 +38,8 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
     private final EmailService emailService;
+    private final CurrentUserService currentUserService;
+    private final UserAuditService userAuditService;
 
     private static final String TOKEN_TYPE = "Bearer";
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -44,6 +49,7 @@ public class AuthService {
         String temporaryPassword = generateTemporaryPassword();
         String encoded = passwordEncoder.encode(temporaryPassword);
         User user = userService.register(request, encoded);
+        userAuditService.record(user, currentUserService.get(), UserAuditAction.CREATED, "rol " + user.getRole() + ", activo");
         emailService.sendNewPassword(user.getEmail(), temporaryPassword);
         return RegisterResponse.builder()
                 .id(user.getId())

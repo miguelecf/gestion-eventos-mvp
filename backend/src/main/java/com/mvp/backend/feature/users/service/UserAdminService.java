@@ -6,10 +6,12 @@ import com.mvp.backend.feature.users.dto.CreateUserRequest;
 import com.mvp.backend.feature.users.dto.UpdateUserRequest;
 import com.mvp.backend.feature.users.dto.UpdateUserRoleRequest;
 import com.mvp.backend.feature.users.dto.UpdateUserStatusRequest;
+import com.mvp.backend.feature.users.dto.UserAuditEntryResponse;
 import com.mvp.backend.feature.users.dto.UserAdminResponse;
 import com.mvp.backend.feature.users.dto.UserRoleOptionResponse;
 import com.mvp.backend.feature.users.model.RoleName;
 import com.mvp.backend.feature.users.model.User;
+import com.mvp.backend.feature.users.model.UserAuditAction;
 import com.mvp.backend.feature.users.repository.UserRepository;
 import com.mvp.backend.shared.Priority;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -41,6 +45,7 @@ public class UserAdminService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final CurrentUserService currentUserService;
+    private final UserAuditService userAuditService;
 
     @Transactional(readOnly = true)
     public Page<UserAdminResponse> list(String q, Boolean active, String role, Pageable pageable) {
@@ -76,6 +81,12 @@ public class UserAdminService {
         return toResponse(findUser(id));
     }
 
+    @Transactional(readOnly = true)
+    public List<UserAuditEntryResponse> history(Long id) {
+        findUser(id);
+        return userAuditService.history(id);
+    }
+
     public UserAdminResponse create(CreateUserRequest request) {
         String username = normalizeRequired(request.username(), "username");
         String email = normalizeRequired(request.email(), "email");
@@ -108,6 +119,8 @@ public class UserAdminService {
         user.setActive(request.active() == null || request.active());
 
         User saved = userRepository.save(user);
+        userAuditService.record(saved, currentUserService.get(), UserAuditAction.CREATED,
+                "rol " + saved.getRole() + (saved.isActive() ? ", activo" : ", inactivo"));
         emailService.sendNewPassword(saved.getEmail(), temporaryPassword);
 
         return toResponse(saved);
@@ -115,12 +128,16 @@ public class UserAdminService {
 
     public UserAdminResponse update(Long id, UpdateUserRequest request) {
         User user = findUser(id);
+        List<String> changed = new ArrayList<>();
 
         if (request.username() != null) {
             String username = normalizeRequired(request.username(), "username");
             if (!username.equalsIgnoreCase(user.getUsername()) &&
                     userRepository.existsByUsernameIgnoreCaseAndIdNot(username, id)) {
                 throw new ResponseStatusException(CONFLICT, "El nombre de usuario ya está en uso");
+            }
+            if (!username.equals(user.getUsername())) {
+                changed.add("username");
             }
             user.setUsername(username);
         }
@@ -131,22 +148,41 @@ public class UserAdminService {
                     userRepository.existsByEmailIgnoreCaseAndIdNot(email, id)) {
                 throw new ResponseStatusException(CONFLICT, "El email ya está en uso");
             }
+            if (!email.equals(user.getEmail())) {
+                changed.add("email");
+            }
             user.setEmail(email);
         }
 
         if (request.name() != null) {
-            user.setName(normalizeRequired(request.name(), "name"));
+            String name = normalizeRequired(request.name(), "name");
+            if (!name.equals(user.getName())) {
+                changed.add("name");
+            }
+            user.setName(name);
         }
 
         if (request.lastName() != null) {
-            user.setLastName(normalizeRequired(request.lastName(), "lastName"));
+            String lastName = normalizeRequired(request.lastName(), "lastName");
+            if (!lastName.equals(user.getLastName())) {
+                changed.add("lastName");
+            }
+            user.setLastName(lastName);
         }
 
         if (request.priority() != null) {
+            if (request.priority() != user.getPriority()) {
+                changed.add("priority");
+            }
             user.setPriority(request.priority());
         }
 
-        return toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+        if (!changed.isEmpty()) {
+            userAuditService.record(saved, currentUserService.get(), UserAuditAction.UPDATED,
+                    "campos: " + String.join(", ", changed));
+        }
+        return toResponse(saved);
     }
 
     public UserAdminResponse updateRole(Long id, UpdateUserRoleRequest request) {
@@ -166,7 +202,11 @@ public class UserAdminService {
         }
 
         target.setRole(nextRole.name());
-        return toResponse(userRepository.save(target));
+        User saved = userRepository.save(target);
+        if (!nextRole.name().equals(currentRole)) {
+            userAuditService.record(saved, actor, UserAuditAction.ROLE_CHANGED, currentRole + " → " + nextRole.name());
+        }
+        return toResponse(saved);
     }
 
     public UserAdminResponse updateStatus(Long id, UpdateUserStatusRequest request) {
@@ -183,8 +223,13 @@ public class UserAdminService {
             throw new ResponseStatusException(CONFLICT, "Debe existir al menos un ADMIN_FULL activo");
         }
 
+        boolean wasActive = target.isActive();
         target.setActive(nextActive);
-        return toResponse(userRepository.save(target));
+        User saved = userRepository.save(target);
+        if (wasActive != nextActive) {
+            userAuditService.record(saved, actor, UserAuditAction.STATUS_CHANGED, nextActive ? "activado" : "desactivado");
+        }
+        return toResponse(saved);
     }
 
     public UserAdminResponse resetPassword(Long id) {
@@ -196,6 +241,8 @@ public class UserAdminService {
         user.setFailedLoginAttempts(0);
 
         User saved = userRepository.save(user);
+        userAuditService.record(saved, currentUserService.get(), UserAuditAction.PASSWORD_RESET,
+                "contraseña temporal enviada por correo");
         emailService.sendNewPassword(saved.getEmail(), temporaryPassword);
         return toResponse(saved);
     }

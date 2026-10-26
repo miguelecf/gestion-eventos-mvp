@@ -223,6 +223,7 @@
         "GET /api/users",
         "POST /api/users",
         "GET /api/users/{id}",
+        "GET /api/users/{id}/history",
         "PATCH /api/users/{id}",
         "POST /api/users/{id}/reset-password",
         "PATCH /api/users/{id}/role",
