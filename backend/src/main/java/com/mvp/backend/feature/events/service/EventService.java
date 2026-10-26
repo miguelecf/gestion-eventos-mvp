@@ -167,6 +167,10 @@ public class EventService {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Event not found"));
 
+        // Como el cambio de estado: un evento dado de baja ya no se opera (7.5.1, REV-13).
+        if (!event.isActive()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "EVENT_INACTIVE");
+        }
         if (event.getStatus() == Status.RECHAZADO) {
             throw new DomainValidationException("No se puede editar un evento rechazado");
         }
@@ -323,13 +327,10 @@ public class EventService {
         if (newDept != null)
             event.setDepartment(newDept);
 
-        if (req.spaceId() != null) { // Cambia a espacio
-            event.setSpace(newSpace);
-            event.setFreeLocation(null);
-        } else if (req.freeLocation() != null) { // Cambia a free location
-            event.setSpace(null);
-            event.setFreeLocation(effectiveFreeLocation);
-        }
+        // Se asignan los valores efectivos ya validados: con los del request, un freeLocation en
+        // blanco sobre un evento con espacio lo dejaba sin espacio ni ubicación (REV-13).
+        event.setSpace(effectiveSpace);
+        event.setFreeLocation(hasSpace ? null : effectiveFreeLocation);
 
         event.setBufferBeforeMin(effectiveBufferBefore);
         event.setBufferAfterMin(effectiveBufferAfter);

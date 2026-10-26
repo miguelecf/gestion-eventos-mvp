@@ -31,8 +31,10 @@ public class AvailabilityService {
                     .build();
         }
 
+        // Un espacio dado de baja no se ofrece para asignaciones nuevas (RF-13), pero un evento que ya
+        // lo tenía (ignoreEventId) sigue validándose: si no, quedaba sin poder editarse ni reservarse.
         Space space = spaceRepository.findById(params.spaceId())
-                .filter(Space::isActive)
+                .filter(s -> s.isActive() || params.ignoreEventId() != null)
                 .orElseThrow(() -> new EntityNotFoundException("Space not found"));
 
         int bufferBefore = resolveBuffer(params.bufferBeforeMin(), space.getDefaultBufferBeforeMin());
