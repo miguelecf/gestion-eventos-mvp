@@ -330,8 +330,13 @@ public class EventService {
         event.setBufferAfterMin(effectiveBufferAfter);
         event.setLastModifiedBy(currentUser);
 
+        boolean previousCeremonialOk = event.isCeremonialOk();
+        boolean previousTechnicalOk = event.isTechnicalOk();
         if (requiresReprogram) {
             event.setStatus(Status.EN_REVISION);
+            // RN-05: la planificación cambió, así que las dos áreas vuelven a dar conformidad.
+            event.setCeremonialOk(false);
+            event.setTechnicalOk(false);
         }
 
         Event saved = eventRepository.save(event);
@@ -340,6 +345,12 @@ public class EventService {
             auditService.recordStatusChange(saved, currentUser, previousStatus, Status.EN_REVISION, null, null);
             auditService.recordReprogram(saved, currentUser, saved.getDate(), saved.getScheduleFrom(),
                     saved.getScheduleTo(), null, null);
+            if (previousCeremonialOk) {
+                auditService.recordFieldUpdate(saved, currentUser, "ceremonial_ok", "true", "false", null, null);
+            }
+            if (previousTechnicalOk) {
+                auditService.recordFieldUpdate(saved, currentUser, "technical_ok", "true", "false", null, null);
+            }
         }
 
         if (agendaChanged) {

@@ -14,7 +14,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Hallazgos 2.9 (cambio espacio ↔ ubicación libre) y 3.7 (cambios que invalidan la revisión). */
+/**
+ * Hallazgos 2.9 (cambio espacio ↔ ubicación libre) y 3.7 (cambios que invalidan la revisión).
+ * REV-03: la vuelta a revisión reinicia las dos conformidades (RN-05 del TFI).
+ */
 class EventLocationAndReviewIntegrationTest extends IntegrationTestBase {
 
     private Event reload(Event e) {
@@ -80,5 +83,40 @@ class EventLocationAndReviewIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk());
 
         assertThat(reload(event).getStatus()).isEqualTo(Status.EN_REVISION);
+    }
+
+    @Test
+    void volverARevisionPorUnCambioRelevanteReiniciaLasConformidades() throws Exception {
+        Event event = newEvent(Status.APROBADO);
+        event.setCeremonialOk(true);
+        event.setTechnicalOk(true);
+        eventRepository.save(event);
+
+        mockMvc.perform(as(Role.ADMIN_FULL, json(patch("/api/events/{id}", event.getId()), Map.of("scheduleTo", "13:00"))))
+                .andExpect(status().isOk());
+
+        Event after = reload(event);
+        assertThat(after.getStatus()).isEqualTo(Status.EN_REVISION);
+        assertThat(after.isCeremonialOk()).isFalse();
+        assertThat(after.isTechnicalOk()).isFalse();
+        mockMvc.perform(as(Role.ADMIN_FULL, get("/api/audit/{id}", event.getId())))
+                .andExpect(jsonPath("$.entries[?(@.type == 'FIELD_UPDATE' && @.field == 'ceremonial_ok')]").value(hasSize(1)))
+                .andExpect(jsonPath("$.entries[?(@.type == 'FIELD_UPDATE' && @.field == 'technical_ok')]").value(hasSize(1)));
+    }
+
+    @Test
+    void unCambioSinImpactoEnLaPlanificacionConservaLasConformidades() throws Exception {
+        Event event = newEvent(Status.APROBADO);
+        event.setCeremonialOk(true);
+        event.setTechnicalOk(true);
+        eventRepository.save(event);
+
+        mockMvc.perform(as(Role.ADMIN_FULL, json(patch("/api/events/{id}", event.getId()), Map.of("observations", "Llevar banderas"))))
+                .andExpect(status().isOk());
+
+        Event after = reload(event);
+        assertThat(after.getStatus()).isEqualTo(Status.APROBADO);
+        assertThat(after.isCeremonialOk()).isTrue();
+        assertThat(after.isTechnicalOk()).isTrue();
     }
 }
