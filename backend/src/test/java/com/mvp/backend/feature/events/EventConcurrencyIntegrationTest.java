@@ -72,4 +72,40 @@ class EventConcurrencyIntegrationTest extends IntegrationTestBase {
         assertThatThrownBy(() -> eventRepository.save(stale))
                 .isInstanceOf(ObjectOptimisticLockingFailureException.class);
     }
+
+    /** REV-18: edición y reserva del mismo evento técnico a la vez terminan sin error de servidor. */
+    @RepeatedTest(3)
+    void edicionYReservaSimultaneasNoTerminanEnErrorDeServidor() throws Exception {
+        Event event = newEvent(Status.EN_REVISION);
+        event.setRequiresTech(true);
+        event.setTechSupportMode(com.mvp.backend.feature.events.model.TechSupportMode.SETUP_ONLY);
+        eventRepository.save(event);
+        String token = token(Role.ADMIN_FULL);
+
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        Future<Integer> edit = pool.submit(() -> {
+            start.await();
+            return mockMvc.perform(patch("/api/events/{id}", event.getId())
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(Map.of("observations", "Edición concurrente"))))
+                    .andReturn().getResponse().getStatus();
+        });
+        Future<Integer> reserve = pool.submit(() -> {
+            start.await();
+            return mockMvc.perform(post("/api/events/{id}/status", event.getId())
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(Map.of("to", "RESERVADO"))))
+                    .andReturn().getResponse().getStatus();
+        });
+        start.countDown();
+        int editStatus = edit.get();
+        int reserveStatus = reserve.get();
+        pool.shutdown();
+
+        assertThat(editStatus).isIn(200, 409);
+        assertThat(reserveStatus).isIn(200, 409);
+    }
 }

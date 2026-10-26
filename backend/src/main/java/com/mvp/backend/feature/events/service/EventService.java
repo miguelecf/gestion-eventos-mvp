@@ -165,7 +165,9 @@ public class EventService {
 
         User currentUser = currentUserService.get();
 
-        Event event = eventRepository.findById(id)
+        // Orden de bloqueo común con el cambio de estado (REV-18): primero el evento, después la
+        // capacidad técnica. Al revés, una edición y una reserva simultáneas podían quedar en deadlock.
+        Event event = eventRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Event not found"));
 
         // Como el cambio de estado: un evento dado de baja ya no se opera (7.5.1, REV-13).

@@ -151,7 +151,7 @@ public class PriorityConflictService {
 
     @Transactional
     public PriorityConflict applyDecision(PriorityConflictDecisionRequest request) {
-        PriorityConflict conflict = repository.findByConflictCode(request.conflictId())
+        PriorityConflict conflict = repository.findByConflictCodeForUpdate(request.conflictId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conflict not found"));
 
         if (conflict.getStatus() == PriorityConflictStatus.CLOSED) {
@@ -165,6 +165,9 @@ public class PriorityConflictService {
         if (displaced == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Displaced event not found");
         }
+        // Orden de bloqueo común (REV-18): primero el evento, después la capacidad técnica.
+        displaced = eventRepository.findByIdForUpdate(displaced.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Displaced event not found"));
 
         if (request.decision() == PriorityConflictDecision.REBOOK_OTHER) {
             applyRebooking(request, displaced, decider);
