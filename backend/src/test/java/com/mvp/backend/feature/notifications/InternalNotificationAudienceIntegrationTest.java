@@ -24,6 +24,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class InternalNotificationAudienceIntegrationTest extends IntegrationTestBase {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.mvp.backend.feature.notifications.repository.NotificationRepository notificationRepository;
+
     @Test
     void unaCuentaDegradadaNoRecibeNiLeeNotificacionesInternas() throws Exception {
         String username = "notif." + UUID.randomUUID().toString().substring(0, 8);
@@ -47,9 +50,16 @@ class InternalNotificationAudienceIntegrationTest extends IntegrationTestBase {
         mockMvc.perform(as(Role.ADMIN_FULL, json(post("/api/events/{id}/comments", event.getId()), Map.of("body", "Otro dato interno"))))
                 .andExpect(status().isCreated());
 
+        // El segundo comentario no generó una notificación nueva: solo queda la anterior a la degradación.
+        org.assertj.core.api.Assertions.assertThat(notificationRepository.findAll())
+                .filteredOn(n -> n.getUser().getId().equals(creator.getId())).hasSize(1);
         mockMvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty());
+        mockMvc.perform(patch("/api/notifications/read-all").header(HttpHeaders.AUTHORIZATION, session))
+                .andExpect(status().isNoContent());
+        org.assertj.core.api.Assertions.assertThat(notificationRepository.findAll())
+                .filteredOn(n -> n.getUser().getId().equals(creator.getId()) && n.isRead()).isEmpty();
         mockMvc.perform(get("/api/notifications/count/unread").header(HttpHeaders.AUTHORIZATION, session))
                 .andExpect(jsonPath("$.unreadCount").value(0));
     }

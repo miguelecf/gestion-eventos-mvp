@@ -106,6 +106,9 @@ public class NotificationService {
     }
 
     public void markAsRead(Long notificationId, Long userId) {
+        if (!isInternalAudience(userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Notificacion no encontrada o no pertenece al usuario");
+        }
         Notification notification = notificationRepository
                 .findByIdAndUserIdAndActiveTrue(notificationId, userId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -119,6 +122,9 @@ public class NotificationService {
     }
 
     public int markAllAsRead(Long userId) {
+        if (!isInternalAudience(userId)) {
+            return 0;
+        }
         List<Notification> unreadNotifications = notificationRepository
                 .findByUserIdAndReadFalseAndActiveTrue(userId);
 

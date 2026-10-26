@@ -47,6 +47,30 @@ class ErrorStatusOverHttpIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    void intentosFallidosSimultaneosSumanTodos() throws Exception {
+        int before = user(Role.ADMIN_CEREMONIAL).getFailedLoginAttempts();
+        String body = "{\"username\":\"it.admin_ceremonial\",\"password\":\"incorrecta\"}";
+
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(4);
+        var start = new java.util.concurrent.CountDownLatch(1);
+        var results = new java.util.ArrayList<java.util.concurrent.Future<HttpResponse<String>>>();
+        for (int i = 0; i < 4; i++) {
+            results.add(pool.submit(() -> {
+                start.await();
+                return post("/auth/login", body);
+            }));
+        }
+        start.countDown();
+        for (var result : results) {
+            assertThat(result.get().statusCode()).isEqualTo(401);
+        }
+        pool.shutdown();
+
+        assertThat(userRepository.findByUsername("it.admin_ceremonial").orElseThrow().getFailedLoginAttempts())
+                .isEqualTo(before + 4);
+    }
+
+    @Test
     void trackingInexistenteResponde404() throws Exception {
         HttpResponse<String> response = get("/public/track/" + UUID.randomUUID(), null);
 

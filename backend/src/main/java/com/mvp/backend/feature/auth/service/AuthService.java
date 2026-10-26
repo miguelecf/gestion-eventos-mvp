@@ -70,10 +70,7 @@ public class AuthService {
         } catch (LockedException ex) {
             throw new ResponseStatusException(HttpStatus.LOCKED, "Usuario bloqueado o pendiente");
         } catch (BadCredentialsException ex) {
-            userService.findByUsername(request.getUsername()).ifPresent(user -> {
-                user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
-                userService.save(user);
-            });
+            userService.incrementFailedLoginAttempts(request.getUsername());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         }
 

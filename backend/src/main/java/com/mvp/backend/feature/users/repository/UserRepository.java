@@ -42,4 +42,9 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     int updatePassword(@Param("id") Long id,
                        @Param("password") String passwordHash,
                        @Param("updatedAt") Instant updatedAt);
+
+    /** Incremento atómico: dos intentos fallidos simultáneos suman dos (REV-21). */
+    @Modifying
+    @Query("update User u set u.failedLoginAttempts = u.failedLoginAttempts + 1 where u.username = :username")
+    int incrementFailedLoginAttempts(@Param("username") String username);
 }

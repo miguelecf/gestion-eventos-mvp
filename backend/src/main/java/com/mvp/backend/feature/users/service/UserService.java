@@ -60,6 +60,10 @@ public class UserService {
                 .orElseThrow(() -> new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Credenciales inválidas"));
     }
 
+    public void incrementFailedLoginAttempts(String username) {
+        userRepository.incrementFailedLoginAttempts(username);
+    }
+
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
