@@ -10,7 +10,6 @@ docs/review-pack/
 # Local agent/tool data
 .atl/
 artifacts/
-synthetic-user-engine/
 
 # Generated Playwright artifacts
 frontend/test-results/

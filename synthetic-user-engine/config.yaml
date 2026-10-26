@@ -1,0 +1,90 @@
+# Configuración del motor de usuarios sintéticos.
+# Las variables ENGINE_BASE_URL, ENGINE_MAILPIT_URL y ENGINE_PASSWORD pisan estos valores.
+
+api:
+  base_url: "http://127.0.0.1:8080"   # nginx del stack local: sirve la interfaz y la API
+  timeout: 15
+
+# Cuentas semilla (V2__seed.sql). El motor nunca cambia su contraseña, rol ni estado.
+accounts:
+  password: "admin123"
+  ceremonial: "admin.ceremonial"
+  tecnica: "admin.tecnica"
+  administracion: "admin.full"
+  consulta: "viewer"
+
+# Solo accesible si el stack se levantó con docker-compose.mail-access.yml.
+mailpit:
+  base_url: "http://127.0.0.1:8025"
+
+generation:
+  locale: "es_AR"
+  # Los recorridos usan días a partir de este horizonte, lejos de los datos de demostración.
+  horizon_days: 400
+
+  event_types:
+    - "Jornada de Capacitación"
+    - "Congreso"
+    - "Taller"
+    - "Charla Abierta"
+    - "Seminario de Posgrado"
+    - "Foro de Debate"
+    - "Muestra"
+    - "Presentación de Libro"
+    - "Encuentro de Graduados"
+    - "Feria de Ciencias"
+    - "Defensa de Tesis"
+    - "Jornada de Puertas Abiertas"
+    - "Ciclo de Cine"
+    - "Concierto"
+
+  topics:
+    - "de Salud Comunitaria"
+    - "de Planificación Urbana"
+    - "de Desarrollo Productivo"
+    - "de Humanidades y Artes"
+    - "de Justicia y Derechos Humanos"
+    - "de Sistemas"
+    - "de Economía Social"
+    - "de Ambiente"
+    - "de Educación"
+    - "de Cooperativismo"
+
+  requesting_areas:
+    - "Secretaría Académica"
+    - "Secretaría de Cooperación y Servicio Público"
+    - "Dirección de Posgrado"
+    - "Centro de Estudiantes"
+    - "Biblioteca"
+    - "Dirección de Cultura"
+    - "Secretaría de Investigación"
+    - "Coordinación de Carrera"
+
+  requirements:
+    - "Proyector y micrófono inalámbrico"
+    - "Sillas adicionales y mesa de recepción"
+    - "Sonido para 200 personas"
+    - "Transmisión en vivo"
+    - "Iluminación de escenario"
+    - "Mesa de acreditación"
+    - "Conexión a internet para invitados"
+
+  comments:
+    ceremonial:
+      - "Confirmamos protocolo de bienvenida y orden de oradores."
+      - "Falta la lista de autoridades invitadas; la pedimos al área."
+      - "Se coordina la cartelería con Comunicación."
+      - "Revisado el guion de la apertura, sin observaciones."
+    tecnica:
+      - "Sonido y proyección verificados en el espacio."
+      - "Hace falta una extensión eléctrica adicional para el escenario."
+      - "La transmisión necesita un punto de red cableado."
+      - "Se asigna un técnico para el armado y la prueba de sonido."
+    administracion:
+      - "Se informa al área solicitante el estado del pedido."
+
+  rejection_reasons:
+    - "El espacio no está disponible en la fecha pedida."
+    - "La actividad excede la capacidad del espacio."
+    - "Falta el aval del área responsable."
+    - "La fecha coincide con el cierre del cuatrimestre."
