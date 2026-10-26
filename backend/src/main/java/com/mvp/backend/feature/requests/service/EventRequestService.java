@@ -342,7 +342,7 @@ public class EventRequestService {
 
     @Transactional
     public EventRequestResponseDto changeStatus(Long id, ChangeRequestStatusDto dto) {
-        EventRequest request = eventRequestRepository.findById(id)
+        EventRequest request = eventRequestRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new EntityNotFoundException("EventRequest not found with id: " + id));
 
         RequestStatus current = request.getStatus();
@@ -395,7 +395,7 @@ public class EventRequestService {
 
     @Transactional
     public EventResponseDto convertToEvent(Long id, ConvertRequestToEventDto options) {
-        EventRequest request = eventRequestRepository.findById(id)
+        EventRequest request = eventRequestRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new EntityNotFoundException("EventRequest not found with id: " + id));
 
         RequestStatus current = request.getStatus();
